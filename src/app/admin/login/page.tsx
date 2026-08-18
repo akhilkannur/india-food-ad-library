@@ -2,6 +2,8 @@ import Link from "next/link";
 import { LoginForm } from "@/components/login-form";
 import { hasAdminCredentials } from "@/lib/config";
 
+export const dynamic = "force-dynamic";
+
 export default function LoginPage() {
   return (
     <main className="login-page">

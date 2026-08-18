@@ -9,7 +9,7 @@ A media-first catalogue of approved ads from Indian food and beverage brands, wi
 - Single-admin, signed HTTP-only session authentication
 - Supabase Postgres schema with public read access limited to approved ads
 - Demo mode when Supabase is not configured
-- Weekly GitHub Actions Meta collector that queues new Ad Library records as `pending`
+- Weekly Cloudflare Browser Run collector that queues new Meta Ad Library records as `pending`
 - Responsive layouts for 320, 375, 414 and 768 px viewports
 
 The public library only shows approved records. Automated discoveries remain private until reviewed.
@@ -42,7 +42,7 @@ Generate `AUTH_SECRET` with a password manager or `openssl rand -base64 32`. Kee
 
 ## Automated collection and approval
 
-The scheduled workflow runs every Monday at 05:17 Asia/Kolkata. It uses the MIT-licensed `meta-ads-collector` package on the GitHub runner—never on the Cloudflare build or your machine—to query Meta's public Ad Library GraphQL service for the Indian food brands in `data/brands.json`. The dependency handles Meta's session tokens, request fingerprint, pagination, retries and changing response shapes.
+The `india-food-ad-scraper` Worker runs every Monday at 05:17 Asia/Kolkata. It uses Cloudflare Browser Run to render Meta's public Ad Library for the Indian brands in `scraper-worker/src/brands.js`. This avoids Meta's rate-limit block on GitHub-hosted IP addresses and fits within Browser Run's free daily allowance. The earlier MIT-licensed `meta-ads-collector` implementation remains in `scraper/` as a local or self-hosted fallback.
 
 For each discovery it:
 
@@ -50,18 +50,20 @@ For each discovery it:
 2. Upserts the real brand record.
 3. Deduplicates by `platform + source_ad_id`.
 4. Inserts only new ads with `status = pending`.
-5. Uploads a 14-day run report as a private GitHub Actions artifact.
+5. Returns a compact run report with per-brand discovery counts.
 
-Meta changes its public UI regularly. A run that discovers zero ads fails visibly instead of silently reporting success, so selector changes can be repaired.
+Meta changes its public UI regularly, so every candidate is brand-page matched and still requires approval in `/admin`. The public library never exposes pending records.
 
-The workflow needs these GitHub Actions repository secrets:
+The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `RUN_TOKEN` as encrypted runtime secrets. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
+
+Cloudflare Cron is the weekly scheduler. The GitHub Actions workflow is a manual fallback and run-report UI; it needs:
 
 ```text
-NEXT_PUBLIC_SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
+SCRAPER_WORKER_URL
+SCRAPER_RUN_TOKEN
 ```
 
-You can also run the workflow manually with a small `brand_limit` for a smoke test.
+You can run one brand, the first few brands, or the full list from the GitHub Actions form.
 
 ## Manual queue import
 

@@ -1,13 +1,14 @@
-name: Weekly Indian food ad scrape
+name: Run Indian food ad scraper
 
 on:
-  schedule:
-    # Monday 05:17 India time. The odd minute avoids the top-of-hour Actions rush.
-    - cron: "47 23 * * 0"
   workflow_dispatch:
     inputs:
-      brand_limit:
-        description: "Only scrape the first N brands (0 = all)"
+      brand:
+        description: "Brand slug (blank runs all brands)"
+        required: false
+        default: ""
+      limit:
+        description: "First N brands when brand is blank (0 runs all)"
         required: false
         default: "0"
 
@@ -15,37 +16,36 @@ permissions:
   contents: read
 
 concurrency:
-  group: weekly-indian-food-ad-scrape
+  group: indian-food-ad-scrape
   cancel-in-progress: false
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
-    defaults:
-      run:
-        working-directory: scraper
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: scraper/requirements.txt
-      - name: Install isolated scraper dependency
-        run: pip install --requirement requirements.txt
-      - name: Discover ads and queue new records for approval
-        run: python scrape.py
+      - name: Ask the protected Cloudflare scraper to run
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          BRAND_LIMIT: ${{ inputs.brand_limit || '0' }}
-          MAX_ADS_PER_BRAND: "24"
-      - name: Upload scraper report
+          SCRAPER_WORKER_URL: ${{ secrets.SCRAPER_WORKER_URL }}
+          SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
+          BRAND: ${{ inputs.brand }}
+          LIMIT: ${{ inputs.limit }}
+        run: |
+          query=""
+          if [ -n "$BRAND" ]; then
+            query="?brand=$BRAND"
+          elif [ "$LIMIT" != "0" ]; then
+            query="?limit=$LIMIT"
+          fi
+          curl --fail-with-body --silent --show-error --max-time 600 \
+            --request POST \
+            --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
+            "$SCRAPER_WORKER_URL/run$query" | tee scraper-result.json
+      - name: Upload run report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: scraper-report-${{ github.run_id }}
-          path: scraper/artifacts/
+          path: scraper-result.json
           if-no-files-found: warn
           retention-days: 14

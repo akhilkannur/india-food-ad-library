@@ -1,0 +1,14 @@
+{
+  "name": "india-food-ad-scraper-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@cloudflare/playwright": "1.3.5"
+  },
+  "devDependencies": {
+    "wrangler": "^4.118.0"
+  }
+}

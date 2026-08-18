@@ -1,0 +1,14 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "india-food-ad-scraper",
+  "main": "src/index.js",
+  "workers_dev": true,
+  "compatibility_date": "2026-08-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "triggers": {
+    "crons": ["47 23 * * SUN"]
+  },
+  "browser": {
+    "binding": "BROWSER"
+  }
+}
