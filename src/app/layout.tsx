@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Indian Food Ad Library",
-  description: "A curated index of advertising creative from Indian food and beverage brands.",
+  title: "India Food Ad Library — Creative Index",
+  description: "A living index of advertising creative from Indian food and beverage brands.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
