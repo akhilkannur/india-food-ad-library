@@ -6,7 +6,7 @@
   "compatibility_date": "2026-08-18",
   "compatibility_flags": ["nodejs_compat"],
   "triggers": {
-    "crons": ["47 23 * * SUN"]
+    "crons": ["47 23 * * *"]
   },
   "browser": {
     "binding": "BROWSER"

@@ -233,6 +233,12 @@ function authorized(request, env) {
   return env.RUN_TOKEN && request.headers.get("Authorization") === `Bearer ${env.RUN_TOKEN}`;
 }
 
+function boundedInteger(value, fallback, minimum, maximum) {
+  if (value === null || value === "") return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(Math.max(Math.trunc(parsed), minimum), maximum) : fallback;
+}
+
 const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -243,10 +249,11 @@ const worker = {
     if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
 
     const slug = url.searchParams.get("brand");
-    const limit = Math.min(Number(url.searchParams.get("limit") || "0"), MAX_MANUAL_BRANDS);
+    const limit = boundedInteger(url.searchParams.get("limit"), MAX_MANUAL_BRANDS, 1, MAX_MANUAL_BRANDS);
+    const offset = boundedInteger(url.searchParams.get("offset"), 0, 0, Math.max(BRANDS.length - 1, 0));
     const selected = slug
       ? BRANDS.filter((brand) => brand.slug === slug)
-      : limit > 0 ? BRANDS.slice(0, limit) : BRANDS;
+      : BRANDS.slice(offset, offset + limit);
     if (!selected.length) return Response.json({ error: "Unknown brand" }, { status: 400 });
 
     try {
@@ -256,8 +263,11 @@ const worker = {
     }
   },
 
-  async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(run(env, BRANDS));
+  async scheduled(controller, env, ctx) {
+    const batchCount = Math.ceil(BRANDS.length / MAX_MANUAL_BRANDS);
+    const scheduledDay = Math.floor(controller.scheduledTime / 86_400_000);
+    const batchOffset = (scheduledDay % batchCount) * MAX_MANUAL_BRANDS;
+    ctx.waitUntil(run(env, BRANDS.slice(batchOffset, batchOffset + MAX_MANUAL_BRANDS)));
   },
 };
 

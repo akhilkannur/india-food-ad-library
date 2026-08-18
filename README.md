@@ -42,28 +42,28 @@ Generate `AUTH_SECRET` with a password manager or `openssl rand -base64 32`. Kee
 
 ## Automated collection and approval
 
-The `india-food-ad-scraper` Worker runs every Monday at 05:17 Asia/Kolkata. It uses Cloudflare Browser Run to render Meta's public Ad Library for the Indian brands in `scraper-worker/src/brands.js`. This avoids Meta's rate-limit block on GitHub-hosted IP addresses and fits within Browser Run's free daily allowance. The earlier MIT-licensed `meta-ads-collector` implementation remains in `scraper/` as a local or self-hosted fallback.
+The `india-food-ad-scraper` Worker runs every day at 05:17 Asia/Kolkata. It rotates through four-brand batches, so the full list is refreshed every six days without exceeding Browser Run's free-plan launch and request limits. It renders Meta's public Ad Library for the Indian brands in `scraper-worker/src/brands.js`. The earlier MIT-licensed `meta-ads-collector` implementation remains in `scraper/` as a local or self-hosted fallback.
 
 For each discovery it:
 
 1. Extracts the Meta Library ID, source link, copy and available creative URLs.
 2. Upserts the real brand record.
 3. Deduplicates by `platform + source_ad_id`.
-4. Inserts only new ads with `status = pending`.
+4. Inserts new ads with `status = pending`, while refreshing media URLs without changing existing approval decisions.
 5. Returns a compact run report with per-brand discovery counts.
 
 Meta changes its public UI regularly, so every candidate is brand-page matched and still requires approval in `/admin`. The public library never exposes pending records.
 
 The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `RUN_TOKEN` as encrypted runtime secrets. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
 
-Cloudflare Cron is the weekly scheduler. The GitHub Actions workflow is a manual fallback and run-report UI; it needs:
+Cloudflare Cron is the rotating daily scheduler. The GitHub Actions workflow is a manual fallback and run-report UI; it needs:
 
 ```text
 SCRAPER_WORKER_URL
 SCRAPER_RUN_TOKEN
 ```
 
-You can run one brand, the first few brands, or the full list from the GitHub Actions form.
+You can run one brand or a four-brand batch from any offset in the GitHub Actions form.
 
 ## Manual queue import
 

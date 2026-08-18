@@ -4,11 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       brand:
-        description: "Brand slug (blank runs all brands)"
+        description: "Brand slug (blank runs a batch)"
         required: false
         default: ""
       limit:
-        description: "First N brands when brand is blank (0 runs all)"
+        description: "Batch size when brand is blank (maximum 4)"
+        required: false
+        default: "4"
+      offset:
+        description: "Start position in the brand list when brand is blank"
         required: false
         default: "0"
 
@@ -30,12 +34,13 @@ jobs:
           SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
           BRAND: ${{ inputs.brand }}
           LIMIT: ${{ inputs.limit }}
+          OFFSET: ${{ inputs.offset }}
         run: |
           query=""
           if [ -n "$BRAND" ]; then
             query="?brand=$BRAND"
-          elif [ "$LIMIT" != "0" ]; then
-            query="?limit=$LIMIT"
+          else
+            query="?limit=$LIMIT&offset=$OFFSET"
           fi
           curl --fail-with-body --silent --show-error --max-time 600 \
             --request POST \
