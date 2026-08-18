@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, ChevronDown, SlidersHorizontal } from "lucide-react";
+import { MasonryPhotoAlbum } from "react-photo-album";
+import "react-photo-album/masonry.css";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { CreativePreview } from "@/components/creative-preview";
 import { SiteFooter } from "@/components/site-footer";
@@ -35,6 +37,17 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
         return sortOrder === "newest" ? delta : -delta;
       });
   }, [ads, category, search, sortOrder]);
+
+  const photos = useMemo(
+    () => visibleAds.map((ad) => ({
+      key: ad.id,
+      src: ad.thumbnail_url || ad.creative_url || "",
+      width: 4,
+      height: 5,
+      alt: `${ad.brand.name} advertising creative`,
+    })),
+    [visibleAds],
+  );
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -106,29 +119,36 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
 
         {visibleAds.length ? (
           <section className="ad-grid" aria-label="Approved ads">
-            {visibleAds.map((ad, index) => (
-              <article className="ad-card" key={ad.id}>
-                <div className="ad-card__media">
-                  <CreativePreview ad={ad} priority={index === 0} />
-                  <button className="ad-card__open" type="button" onClick={() => setSelectedAd(ad)}>
-                    View creative <ArrowUpRight size={15} strokeWidth={1.8} />
-                  </button>
-                  <button
-                    className="icon-button card-action"
-                    type="button"
-                    onClick={() => setSelectedAd(ad)}
-                    aria-label={`View details for ${ad.brand.name} ad`}
-                  >
-                    <ArrowUpRight size={17} strokeWidth={1.8} />
-                  </button>
-                </div>
-                <div className="ad-card__meta">
-                  <h2 className="ad-card__brand">{ad.brand.name}</h2>
-                  <span className="ad-card__date">{new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(new Date(ad.first_seen_at))}</span>
-                  <p className="ad-card__tags"><span>{ad.creative_style || ad.format}</span><span>{ad.selling_angle || ad.hook || "Unclassified"}</span></p>
-                </div>
-              </article>
-            ))}
+            <MasonryPhotoAlbum
+              photos={photos}
+              columns={(width) => width < 520 ? 2 : width < 900 ? 3 : 4}
+              spacing={(width) => width < 520 ? 12 : 18}
+              breakpoints={[300, 520, 900]}
+              onClick={({ index }) => setSelectedAd(visibleAds[index] ?? null)}
+              render={{
+                photo: ({ onClick }, { photo, width, height }) => {
+                  const ad = visibleAds.find((item) => item.id === String(photo.key));
+                  if (!ad) return null;
+                  return (
+                    <button
+                      className="album-card"
+                      type="button"
+                      onClick={onClick}
+                      style={{ width, height }}
+                      aria-label={`View ${ad.brand.name} creative`}
+                    >
+                      <CreativePreview ad={ad} compact />
+                      <span className="album-card__scrim" />
+                      <span className="album-card__info">
+                        <strong>{ad.brand.name}</strong>
+                        <small>{ad.creative_style || ad.format} · {ad.selling_angle || ad.hook || "Unclassified"}</small>
+                      </span>
+                      <span className="album-card__arrow"><ArrowUpRight size={16} /></span>
+                    </button>
+                  );
+                },
+              }}
+            />
           </section>
         ) : (
           <section className="empty-state">
