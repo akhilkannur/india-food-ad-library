@@ -2,10 +2,11 @@ import { demoAds, demoBrands } from "@/lib/demo-data";
 import { hasDatabase } from "@/lib/config";
 import type { Ad, AdStatus, Brand } from "@/lib/types";
 
-const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
 async function supabaseFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  // Bracket access keeps these server-only values dynamic in Next.js instead of
+  // inlining NEXT_PUBLIC_SUPABASE_URL during the remote build.
+  const baseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
+  const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
   if (!baseUrl || !serviceKey) throw new Error("Supabase is not configured.");
 
   const response = await fetch(`${baseUrl}/rest/v1/${path}`, {
@@ -41,7 +42,14 @@ export async function getAds(status?: AdStatus): Promise<Ad[]> {
 }
 
 export async function getApprovedAds(): Promise<Ad[]> {
-  return getAds("approved");
+  try {
+    return await getAds("approved");
+  } catch (error) {
+    // A source outage should not take the public catalogue offline. Moderation
+    // routes still fail loudly so ingestion/configuration problems are visible.
+    console.error("Approved ad query failed", error);
+    return [];
+  }
 }
 
 export async function getBrands(): Promise<Brand[]> {
