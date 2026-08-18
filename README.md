@@ -54,7 +54,9 @@ For each discovery it:
 
 Meta changes its public UI regularly, so every candidate is brand-page matched and still requires approval in `/admin`. The public library never exposes pending records.
 
-The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `RUN_TOKEN` as encrypted runtime secrets. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
+The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RUN_TOKEN`, and `GEMINI_API_KEY` as encrypted runtime secrets. `GEMINI_API_KEY` is used only for new or unclassified creatives; videos are limited to the first 20 seconds at low media resolution and are deleted from Gemini after analysis. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
+
+Run `supabase/migrations/002_ai_classifications.sql` after the initial schema migration. It adds the reviewed `creative_style` and `selling_angle` fields used by the public catalogue and moderation queue.
 
 Cloudflare Cron is the rotating daily scheduler. The GitHub Actions workflow is a manual fallback and run-report UI; it needs:
 
