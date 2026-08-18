@@ -1,0 +1,24 @@
+[
+  {
+    "brand": {
+      "name": "Example Food Brand",
+      "slug": "example-food-brand",
+      "category": "Snacks",
+      "website_url": "https://example.com"
+    },
+    "ad": {
+      "platform": "meta",
+      "source_ad_id": "replace-with-platform-id",
+      "source_url": "https://www.facebook.com/ads/library/",
+      "headline": "Source headline",
+      "body_copy": "Source copy",
+      "cta": "Shop now",
+      "format": "UGC",
+      "language": "Hinglish",
+      "category": "Snacks",
+      "hook": "Problem / solution",
+      "funnel_stage": "Conversion",
+      "first_seen_at": "2026-08-18T00:00:00.000Z"
+    }
+  }
+]
