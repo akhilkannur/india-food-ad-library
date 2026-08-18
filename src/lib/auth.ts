@@ -29,9 +29,9 @@ export async function createAdminSession() {
   const expiresAt = Math.floor(Date.now() / 1000) + SESSION_SECONDS;
   const email = process.env.ADMIN_EMAIL!.trim().toLowerCase();
   const payload = `${email}.${expiresAt}`;
-  const value = `${payload}.${digest(payload)}`;
+  const signature = digest(payload);
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, value, {
+  cookieStore.set(COOKIE_NAME, `${expiresAt}.${signature}`, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -53,9 +53,9 @@ export async function isAdminAuthenticated() {
   const value = cookieStore.get(COOKIE_NAME)?.value;
   if (!value) return false;
 
-  const [email, expiresRaw, signature] = value.split(".");
+  const [expiresRaw, signature] = value.split(".");
   const expiresAt = Number(expiresRaw);
-  if (!email || !expiresAt || !signature || expiresAt < Date.now() / 1000) return false;
-  if (!secureEqual(signature, digest(`${email}.${expiresAt}`))) return false;
-  return secureEqual(email, process.env.ADMIN_EMAIL!.trim().toLowerCase());
+  if (!expiresAt || !signature || expiresAt < Date.now() / 1000) return false;
+  const email = process.env.ADMIN_EMAIL!.trim().toLowerCase();
+  return secureEqual(signature, digest(`${email}.${expiresAt}`));
 }
