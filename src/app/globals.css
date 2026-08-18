@@ -2,7 +2,7 @@
  * F6 grid knobs: ratio=4/5, density=4-up, action=watch · N13 search: right-of-brand, flat · Ft2 footer: spaced
  * pre-emit critique: P5 H5 E5 S5 R5 V4 · contrast: pass (40–41) · slop: pass (42–49) · mobile: pass (34, 49–57)
  */
-@import url("https://api.fontshare.com/v2/css?f[]=general-sans@500,600,700&f[]=switzer@400,500,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap");
 @import "../../tokens.css";
 
@@ -1036,9 +1036,9 @@ h3 {
 .album-card:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
 
 /* Product shell based on the quiet workspace pattern used by Twenty. */
-body { background: oklch(96.8% 0.006 80); }
+body { background: var(--color-paper-2); }
 .site-header { position: static; z-index: var(--z-sticky); border: 0; background: transparent; color: var(--color-ink); }
-.site-rail { position: fixed; inset: 0 auto 0 0; z-index: var(--z-sticky); width: 15.25rem; display: flex; flex-direction: column; padding: var(--space-lg) var(--space-md); border-inline-end: var(--rule-thin) solid var(--color-rule); background: var(--color-paper); }
+.site-rail { position: fixed; inset: 0 auto 0 0; z-index: var(--z-sticky); width: 15.25rem; display: flex; flex-direction: column; padding: var(--space-md) var(--space-sm); border-inline-end: var(--rule-thin) solid var(--color-rule); background: var(--color-paper); }
 .site-rail .wordmark { display: flex; align-items: center; gap: var(--space-sm); min-height: auto; color: var(--color-ink); font-size: var(--text-sm); letter-spacing: -0.02em; }
 .wordmark__mark { display: grid; width: 2.1rem; height: 2.1rem; place-items: center; border-radius: var(--radius-xs); background: var(--color-ink); color: var(--color-paper); font-family: var(--font-mono); font-size: .68rem; letter-spacing: -.08em; }
 .site-rail .wordmark strong, .site-rail .wordmark small { display: block; }
@@ -1050,12 +1050,12 @@ body { background: oklch(96.8% 0.006 80); }
 .site-nav__item:hover { background: var(--color-paper-2); color: var(--color-ink); }
 .site-rail__footer { margin-block-start: auto; padding: var(--space-sm); border-block-start: var(--rule-thin) solid var(--color-rule); color: var(--color-muted); font-family: var(--font-mono); font-size: .65rem; line-height: 1.6; text-transform: uppercase; }
 .site-rail__footer span { color: var(--color-soft); }
-.site-topbar { position: fixed; inset: 0 0 auto 15.25rem; z-index: var(--z-dropdown); height: 4.5rem; border-block-end: var(--rule-thin) solid var(--color-rule); background: color-mix(in oklch, var(--color-paper) 92%, transparent); backdrop-filter: blur(14px); }
+.site-topbar { position: fixed; inset: 0 0 auto 15.25rem; z-index: var(--z-dropdown); height: 4.5rem; border-block-end: var(--rule-thin) solid var(--color-rule); background: var(--color-paper); }
 .site-topbar__inner { height: 100%; display: grid; grid-template-columns: minmax(8rem, .5fr) minmax(18rem, 1fr) auto; align-items: center; gap: var(--space-lg); }
 .topbar-context { display: grid; gap: .1rem; }
 .topbar-context span { color: var(--color-muted); font-family: var(--font-mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
 .topbar-context strong { font-family: var(--font-display); font-size: .94rem; font-weight: 600; }
-.site-topbar .header-search { width: min(100%, 32rem); height: 2.35rem; justify-self: center; border-color: var(--color-rule); border-radius: var(--radius-xs); background: var(--color-paper-2); }
+.site-topbar .header-search { width: min(100%, 32rem); height: 2.35rem; justify-self: center; border-color: var(--color-rule); border-radius: var(--radius-sm); background: var(--color-paper); }
 .site-topbar .header-search kbd { background: var(--color-paper); }
 .site-topbar .header-action { min-height: 2.35rem; padding-inline: var(--space-sm); border-color: var(--color-rule); border-radius: var(--radius-xs); color: var(--color-ink); }
 .site-topbar .header-action:hover { background: var(--color-paper-2); }

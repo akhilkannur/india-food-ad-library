@@ -66,10 +66,10 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
       <main className="shell">
         <section className="library-hero">
           <div className="library-hero__copy">
-            <p className="eyebrow">India / food creative index</p>
-            <h1 className="page-intro__heading">What food brands are putting into market.</h1>
+            <p className="eyebrow">Creative library</p>
+            <h1 className="page-intro__heading">Library</h1>
             <p className="page-intro__description">
-              A considered collection of live Indian food advertising. Browse the visual language, offers and hooks shaping the category.
+              Approved Meta creatives from Indian food and beverage brands, reviewed and organized for research.
             </p>
           </div>
           <div className="library-hero__stats" aria-label="Library summary">

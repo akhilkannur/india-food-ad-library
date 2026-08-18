@@ -1,23 +1,23 @@
 :root {
-  --color-paper: oklch(97.6% 0.008 84);
-  --color-paper-2: oklch(94.8% 0.012 82);
-  --color-paper-3: oklch(91.8% 0.015 78);
-  --color-ink: oklch(19% 0.014 62);
-  --color-ink-2: oklch(31% 0.013 64);
-  --color-muted: oklch(46% 0.011 68);
-  --color-soft: oklch(62% 0.011 72);
-  --color-rule: oklch(85.5% 0.013 80);
-  --color-rule-strong: oklch(69% 0.016 76);
-  --color-accent: oklch(74% 0.158 71);
-  --color-accent-deep: oklch(46% 0.132 55);
-  --color-accent-ink: oklch(18% 0.018 58);
-  --color-focus: oklch(45% 0.145 53);
+  --color-paper: oklch(100% 0 0);
+  --color-paper-2: oklch(96.8% 0.007 247.896);
+  --color-paper-3: oklch(92.9% 0.013 255.508);
+  --color-ink: oklch(12.9% 0.042 264.695);
+  --color-ink-2: oklch(20.8% 0.042 265.755);
+  --color-muted: oklch(55.4% 0.046 257.417);
+  --color-soft: oklch(70.4% 0.04 256.788);
+  --color-rule: oklch(92.9% 0.013 255.508);
+  --color-rule-strong: oklch(70.4% 0.04 256.788);
+  --color-accent: oklch(96.8% 0.007 247.896);
+  --color-accent-deep: oklch(20.8% 0.042 265.755);
+  --color-accent-ink: oklch(98.4% 0.003 247.858);
+  --color-focus: oklch(70.4% 0.04 256.788);
   --color-success: oklch(48% 0.112 151);
   --color-success-soft: oklch(93% 0.036 148);
   --color-error: oklch(51% 0.17 27);
   --color-error-soft: oklch(94% 0.035 28);
-  --color-backdrop: oklch(16% 0.012 62 / 0.46);
-  --color-shadow: oklch(24% 0.012 62 / 0.1);
+  --color-backdrop: oklch(12.9% 0.042 264.695 / 0.5);
+  --color-shadow: oklch(20.8% 0.042 265.755 / 0.1);
 
   --color-creative-turmeric: oklch(84% 0.14 84);
   --color-creative-turmeric-ink: oklch(25% 0.06 60);
@@ -32,8 +32,8 @@
   --color-creative-cacao: oklch(39% 0.055 48);
   --color-creative-cacao-ink: oklch(94% 0.025 78);
 
-  --font-display: "General Sans", "Avenir Next", ui-sans-serif, sans-serif;
-  --font-body: "Switzer", "Segoe UI", ui-sans-serif, sans-serif;
+  --font-display: "Manrope", ui-sans-serif, sans-serif;
+  --font-body: "Inter", ui-sans-serif, sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
 
   --space-3xs: 0.125rem;
