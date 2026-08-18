@@ -97,14 +97,19 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
 
         {visibleAds.length ? (
           <section className="ad-grid" aria-label="Approved ads">
-            {visibleAds.map((ad) => (
+            {visibleAds.map((ad, index) => (
               <article className="ad-card" key={ad.id}>
-                <button className="ad-card__button" type="button" onClick={() => setSelectedAd(ad)}>
-                  <CreativePreview ad={ad} />
-                  <span className="icon-button card-action" aria-hidden="true">
+                <div className="ad-card__media">
+                  <CreativePreview ad={ad} priority={index === 0} />
+                  <button
+                    className="icon-button card-action"
+                    type="button"
+                    onClick={() => setSelectedAd(ad)}
+                    aria-label={`View details for ${ad.brand.name} ad`}
+                  >
                     <ArrowUpRight size={17} strokeWidth={1.8} />
-                  </span>
-                </button>
+                  </button>
+                </div>
                 <div className="ad-card__meta">
                   <h2 className="ad-card__brand">{ad.brand.name}</h2>
                   <span className="ad-card__date">{new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(new Date(ad.first_seen_at))}</span>

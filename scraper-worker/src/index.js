@@ -108,10 +108,12 @@ async function extractPage(page, brand) {
         }))
         .filter((image) => /^https?:\/\//.test(image.src))
         .sort((left, right) => right.area - left.area);
-      const video = card.querySelector("video")?.currentSrc
-        || card.querySelector("video")?.src
+      const videoElement = card.querySelector("video");
+      const video = videoElement?.currentSrc
+        || videoElement?.src
         || card.querySelector("video source")?.src
         || null;
+      const poster = videoElement?.poster || null;
 
       seen.add(match[1]);
       output.push({
@@ -121,7 +123,7 @@ async function extractPage(page, brand) {
         headline,
         cta,
         started: lines.find((line) => /^Started running on /i.test(line)) || null,
-        image: images[0]?.src || null,
+        image: poster || images[0]?.src || null,
         video,
       });
     }
@@ -149,11 +151,8 @@ function toAd(record, brand, timestamp) {
     creative_url: creative,
     thumbnail_url: record.image,
     creative_theme: "auto-imported",
-    status: "pending",
     started_at: parseStartedAt(record.started),
-    first_seen_at: timestamp,
     last_seen_at: timestamp,
-    submitted_at: timestamp,
   };
 }
 
@@ -189,7 +188,7 @@ async function queueAds(env, discoveries) {
   })));
   const inserted = await supabase(env, "ads?on_conflict=platform,source_ad_id&select=id", {
     method: "POST",
-    headers: { Prefer: "resolution=ignore-duplicates,return=representation" },
+    headers: { Prefer: "resolution=merge-duplicates,return=representation" },
     body: JSON.stringify(rows),
   });
   return inserted.length;

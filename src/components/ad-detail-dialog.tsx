@@ -44,7 +44,7 @@ export function AdDetailDialog({ ad, onClose }: { ad: Ad | null; onClose: () => 
         </header>
         <div className="ad-dialog__body">
           <div className="ad-dialog__creative">
-            <CreativePreview ad={ad} />
+            <CreativePreview ad={ad} priority />
           </div>
           <div className="detail-copy">
             <div>
