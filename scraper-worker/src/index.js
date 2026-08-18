@@ -3,6 +3,8 @@ import { BRANDS } from "./brands.js";
 
 const MAX_ADS_PER_BRAND = 16;
 const MAX_MANUAL_BRANDS = 4;
+const GEMINI_MODEL = "gemini-3.1-flash-lite";
+const GEMINI_VIDEO_SECONDS = 20;
 
 function normalize(value) {
   return String(value || "")
@@ -156,6 +158,115 @@ function toAd(record, brand, timestamp) {
   };
 }
 
+const classificationSchema = {
+  type: "OBJECT",
+  properties: {
+    creative_style: {
+      type: "STRING",
+      enum: ["Product demo", "Recipe/how-to", "UGC", "Testimonial", "Product shot", "Lifestyle", "Offer"],
+    },
+    selling_angle: {
+      type: "STRING",
+      enum: ["Taste/craving", "Health", "Convenience", "Value", "Ingredients", "Tradition/emotion", "Social proof"],
+    },
+  },
+  required: ["creative_style", "selling_angle"],
+};
+
+async function geminiFileUpload(env, bytes, mimeType, displayName) {
+  const base = "https://generativelanguage.googleapis.com";
+  const query = `?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+  const start = await fetch(`${base}/upload/v1beta/files${query}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Upload-Protocol": "resumable",
+      "X-Goog-Upload-Command": "start",
+      "X-Goog-Upload-Header-Content-Length": String(bytes.byteLength),
+      "X-Goog-Upload-Header-Content-Type": mimeType,
+    },
+    body: JSON.stringify({ file: { displayName } }),
+  });
+  if (!start.ok) throw new Error(`Gemini upload start failed (${start.status})`);
+  const uploadUrl = start.headers.get("x-goog-upload-url");
+  if (!uploadUrl) throw new Error("Gemini did not return an upload URL");
+  const uploaded = await fetch(uploadUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": mimeType,
+      "X-Goog-Upload-Offset": "0",
+      "X-Goog-Upload-Command": "upload, finalize",
+    },
+    body: bytes,
+  });
+  if (!uploaded.ok) throw new Error(`Gemini video upload failed (${uploaded.status})`);
+  let file = (await uploaded.json()).file;
+  for (let attempt = 0; file?.state === "PROCESSING" && attempt < 30; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    const status = await fetch(`${base}/v1beta/${file.name}${query}`);
+    if (!status.ok) throw new Error(`Gemini file status failed (${status.status})`);
+    file = await status.json();
+  }
+  if (file?.state !== "ACTIVE") throw new Error(`Gemini video is ${file?.state || "unavailable"}`);
+  return file;
+}
+
+async function classifyWithGemini(env, ad) {
+  if (!env.GEMINI_API_KEY || !ad.creative_url || !["Image", "Video"].includes(ad.format)) return null;
+  const mediaResponse = await fetch(ad.creative_url, {
+    headers: { Referer: "https://www.facebook.com/", "User-Agent": "IndiaFoodAdLibrary/1.0" },
+  });
+  if (!mediaResponse.ok) throw new Error(`Creative download failed (${mediaResponse.status})`);
+  const mimeType = mediaResponse.headers.get("content-type")?.split(";")[0]
+    || (ad.format === "Video" ? "video/mp4" : "image/jpeg");
+  const bytes = await mediaResponse.arrayBuffer();
+  const base = "https://generativelanguage.googleapis.com";
+  const query = `?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+  let uploadedFile = null;
+  try {
+    let mediaPart;
+    if (ad.format === "Video") {
+      uploadedFile = await geminiFileUpload(env, bytes, mimeType, `ad-${ad.source_ad_id || ad.id}`);
+      mediaPart = {
+        fileData: { mimeType: uploadedFile.mimeType, fileUri: uploadedFile.uri },
+        videoMetadata: { startOffset: "0s", endOffset: `${GEMINI_VIDEO_SECONDS}s`, fps: 1 },
+        mediaResolution: { level: "MEDIA_RESOLUTION_LOW" },
+      };
+    } else {
+      mediaPart = {
+        inlineData: { mimeType, data: "" },
+        mediaResolution: { level: "MEDIA_RESOLUTION_LOW" },
+      };
+      let binary = "";
+      for (const byte of new Uint8Array(bytes)) binary += String.fromCharCode(byte);
+      mediaPart.inlineData.data = btoa(binary);
+    }
+    const prompt = `Classify this Indian food ad for a creative library. Use the actual creative and the copy as context. Return JSON only.\nBrand: ${ad.brand_name || "Unknown"}\nCategory: ${ad.category || "Unknown"}\nHeadline: ${ad.headline || "None"}\nCopy: ${ad.body_copy || "None"}`;
+    const requestBody = {
+      contents: [{ role: "user", parts: [{ text: prompt }, mediaPart] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 120, responseMimeType: "application/json", responseSchema: classificationSchema },
+    };
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const response = await fetch(`${base}/v1beta/models/${GEMINI_MODEL}:generateContent${query}`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(requestBody),
+      });
+      const payload = await response.json();
+      if (response.ok) {
+        const text = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "{}";
+        const result = JSON.parse(text);
+        return { creative_style: result.creative_style || null, selling_angle: result.selling_angle || null };
+      }
+      if (![429, 500, 502, 503].includes(response.status) || attempt === 2) {
+        throw new Error(payload?.error?.message || `Gemini request failed (${response.status})`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1_000 * (attempt + 1)));
+    }
+  } finally {
+    if (uploadedFile?.name) await fetch(`${base}/v1beta/${uploadedFile.name}${query}`, { method: "DELETE" });
+  }
+  return null;
+}
+
 async function supabase(env, path, options = {}) {
   const response = await fetch(`${env.SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${path}`, {
     ...options,
@@ -181,11 +292,28 @@ async function queueAds(env, discoveries) {
     body: JSON.stringify(configuredBrands.map(({ name, slug, category }) => ({ name, slug, category }))),
   });
   const brandIds = new Map(brandRows.map((row) => [row.slug, row.id]));
+  const sourceIds = discoveries.flatMap(({ records }) => records.map((record) => record.id));
+  const existingRows = sourceIds.length
+    ? await supabase(env, `ads?source_ad_id=in.(${sourceIds.join(",")})&select=source_ad_id,creative_style,selling_angle`)
+    : [];
+  const existing = new Map(existingRows.map((row) => [row.source_ad_id, row]));
   const timestamp = new Date().toISOString();
-  const rows = discoveries.flatMap(({ brand, records }) => records.map((record) => ({
-    ...toAd(record, brand, timestamp),
-    brand_id: brandIds.get(brand.slug),
-  })));
+  const rows = [];
+  for (const { brand, records } of discoveries) {
+    for (const record of records) {
+      const ad = toAd(record, brand, timestamp);
+      const prior = existing.get(record.id);
+      let labels = prior || {};
+      if ((!prior || (!prior.creative_style && !prior.selling_angle)) && env.GEMINI_API_KEY) {
+        try {
+          labels = await classifyWithGemini(env, { ...ad, brand_name: brand.name });
+        } catch (error) {
+          console.log(JSON.stringify({ event: "gemini_classification_failed", source_ad_id: record.id, error: error instanceof Error ? error.message : String(error) }));
+        }
+      }
+      rows.push({ ...ad, ...labels, brand_id: brandIds.get(brand.slug) });
+    }
+  }
   const inserted = await supabase(env, "ads?on_conflict=platform,source_ad_id&select=id", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=representation" },

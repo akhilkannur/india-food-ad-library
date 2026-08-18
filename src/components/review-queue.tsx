@@ -84,7 +84,7 @@ export function ReviewQueue({ initialAds, demoMode }: { initialAds: Ad[]; demoMo
                 </div>
                 <p className="review-card__copy">{ad.body_copy || "No body copy captured."}</p>
                 <p className="review-card__meta">
-                  <span>{ad.category}</span><span>{ad.format}</span><span>{ad.language}</span><span>{ad.hook || "Hook untagged"}</span>
+                  <span>{ad.category}</span><span>{ad.creative_style || ad.format}</span><span>{ad.selling_angle || "Angle untagged"}</span><span>{ad.language}</span>
                 </p>
               </div>
               <div className="review-card__actions">

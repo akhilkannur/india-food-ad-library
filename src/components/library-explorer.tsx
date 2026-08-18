@@ -26,7 +26,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => {
         if (!query) return true;
-        return [ad.brand.name, ad.category, ad.format, ad.hook, ad.headline, ad.language]
+        return [ad.brand.name, ad.category, ad.format, ad.creative_style, ad.selling_angle, ad.hook, ad.headline, ad.language]
           .filter(Boolean)
           .some((value) => value!.toLowerCase().includes(query));
       })
@@ -55,7 +55,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
           <h1 className="page-intro__heading">Indian food ads, chosen with intent.</h1>
           <div className="page-intro__meta">
             <p className="page-intro__description">
-              Browse approved creative by category, format and hook. Every record is reviewed before it appears here.
+              Browse approved creative by category, format and message. Every record is reviewed before it appears here.
             </p>
             <p className="dataset-note">
               {visibleAds.length} {demoMode ? "demo" : "approved"} {visibleAds.length === 1 ? "ad" : "ads"}
@@ -113,7 +113,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
                 <div className="ad-card__meta">
                   <h2 className="ad-card__brand">{ad.brand.name}</h2>
                   <span className="ad-card__date">{new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(new Date(ad.first_seen_at))}</span>
-                  <p className="ad-card__tags">{ad.format} · {ad.hook || "Unclassified"} · {ad.language}</p>
+                  <p className="ad-card__tags">{ad.creative_style || ad.format} · {ad.selling_angle || ad.hook || "Unclassified"} · {ad.language}</p>
                 </div>
               </article>
             ))}

@@ -30,6 +30,8 @@ export type Ad = {
   creative_url?: string | null;
   thumbnail_url?: string | null;
   creative_theme?: string | null;
+  creative_style?: string | null;
+  selling_angle?: string | null;
   status: AdStatus;
   started_at?: string | null;
   first_seen_at: string;
