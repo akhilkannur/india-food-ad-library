@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { CreativePreview } from "@/components/creative-preview";
 import { SiteFooter } from "@/components/site-footer";
@@ -51,12 +51,20 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
     <>
       <SiteHeader search={search} onSearch={setSearch} />
       <main className="shell">
-        <section className="page-intro">
-          <h1 className="page-intro__heading">Indian food ads, chosen with intent.</h1>
-          <div className="page-intro__meta">
+        <section className="library-hero">
+          <div className="library-hero__copy">
+            <p className="eyebrow">India / food creative index</p>
+            <h1 className="page-intro__heading">What food brands are putting into market.</h1>
             <p className="page-intro__description">
-              Browse approved creative by category, format and message. Every record is reviewed before it appears here.
+              A considered collection of live Indian food advertising. Browse the visual language, offers and hooks shaping the category.
             </p>
+          </div>
+          <div className="library-hero__stats" aria-label="Library summary">
+            <div><strong>{ads.length}</strong><span>ads captured</span></div>
+            <div><strong>{categories.length - 1}</strong><span>categories</span></div>
+            <div><strong>Weekly</strong><span>new releases</span></div>
+          </div>
+          <div className="page-intro__meta">
             <p className="dataset-note">
               {visibleAds.length} {demoMode ? "demo" : "approved"} {visibleAds.length === 1 ? "ad" : "ads"}
             </p>
@@ -65,6 +73,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
 
         <section className="filter-band" aria-label="Filter ads">
           <div className="filter-band__inner">
+            <div className="filter-label"><SlidersHorizontal size={15} /> Filter by</div>
             <div className="filter-scroll">
               {categories.map((item) => (
                 <button
@@ -78,19 +87,19 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
                 </button>
               ))}
             </div>
-            <select
-              className="sort-select"
-              value={sortOrder}
-              onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-              aria-label="Sort ads"
-            >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
+            <label className="sort-control">
+              <span className="sr-only">Sort ads</span>
+              <select className="sort-select" value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)}>
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+              <ChevronDown size={14} aria-hidden="true" />
+            </label>
           </div>
         </section>
 
         <div className="result-line" aria-live="polite">
+          <span className="result-line__title">Latest creative</span>
           <span>{visibleAds.length} results</span>
           {demoMode && <span>Sample records · connect Supabase for live data</span>}
         </div>
@@ -101,6 +110,9 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
               <article className="ad-card" key={ad.id}>
                 <div className="ad-card__media">
                   <CreativePreview ad={ad} priority={index === 0} />
+                  <button className="ad-card__open" type="button" onClick={() => setSelectedAd(ad)}>
+                    View creative <ArrowUpRight size={15} strokeWidth={1.8} />
+                  </button>
                   <button
                     className="icon-button card-action"
                     type="button"
@@ -113,7 +125,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
                 <div className="ad-card__meta">
                   <h2 className="ad-card__brand">{ad.brand.name}</h2>
                   <span className="ad-card__date">{new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(new Date(ad.first_seen_at))}</span>
-                  <p className="ad-card__tags">{ad.creative_style || ad.format} · {ad.selling_angle || ad.hook || "Unclassified"} · {ad.language}</p>
+                  <p className="ad-card__tags"><span>{ad.creative_style || ad.format}</span><span>{ad.selling_angle || ad.hook || "Unclassified"}</span></p>
                 </div>
               </article>
             ))}
