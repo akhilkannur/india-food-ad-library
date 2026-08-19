@@ -32,8 +32,8 @@
   --color-creative-cacao: oklch(39% 0.055 48);
   --color-creative-cacao-ink: oklch(94% 0.025 78);
 
-  --font-display: "Manrope", ui-sans-serif, sans-serif;
-  --font-body: "Inter", ui-sans-serif, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Space Grotesk", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
 
   --space-3xs: 0.125rem;
