@@ -1,7 +1,6 @@
 import { demoAds, demoBrands } from "@/lib/demo-data";
 import { hasDatabase } from "@/lib/config";
 import type { Ad, AdStatus, Brand } from "@/lib/types";
-import { dedupeCreatives } from "@/lib/dedup";
 
 // These labels came from the Gemini evaluation run performed before the AI
 // pipeline was deployed. The idempotent bootstrap lets an existing catalogue
@@ -84,7 +83,7 @@ export async function getAds(status?: AdStatus): Promise<Ad[]> {
 export async function getApprovedAds(): Promise<Ad[]> {
   try {
     await ensureVerifiedClassifications();
-    return dedupeCreatives(await getAds("approved"));
+    return await getAds("approved");
   } catch (error) {
     // A source outage should not take the public catalogue offline. Moderation
     // routes still fail loudly so ingestion/configuration problems are visible.
