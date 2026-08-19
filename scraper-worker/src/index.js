@@ -158,6 +158,21 @@ function toAd(record, brand, timestamp) {
   };
 }
 
+// Deterministic, zero-token dedupe. CDN query strings are signed/resized and
+// should not make the same product image look like a new creative.
+function creativeKey(ad) {
+  const asset = ad.creative_url || ad.thumbnail_url;
+  if (asset) {
+    try {
+      const url = new URL(asset);
+      return `${ad.brand_id || ""}|${ad.format || ""}|asset:${url.origin}${url.pathname}`.toLowerCase();
+    } catch {
+      return `${ad.brand_id || ""}|${ad.format || ""}|asset:${asset.split("?")[0]}`.toLowerCase();
+    }
+  }
+  return `${ad.brand_id || ""}|${ad.format || ""}|text:${[ad.headline, ad.body_copy].filter(Boolean).join(" ").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}`;
+}
+
 const classificationSchema = {
   type: "OBJECT",
   properties: {
@@ -294,15 +309,19 @@ async function queueAds(env, discoveries) {
   const brandIds = new Map(brandRows.map((row) => [row.slug, row.id]));
   const sourceIds = discoveries.flatMap(({ records }) => records.map((record) => record.id));
   const existingRows = sourceIds.length
-    ? await supabase(env, `ads?source_ad_id=in.(${sourceIds.join(",")})&select=source_ad_id,creative_style,selling_angle`)
+    ? await supabase(env, `ads?source_ad_id=in.(${sourceIds.join(",")})&select=source_ad_id,creative_url,thumbnail_url,creative_style,selling_angle`)
     : [];
   const existing = new Map(existingRows.map((row) => [row.source_ad_id, row]));
+  const existingKeys = new Set(existingRows.map((row) => creativeKey(row)));
   const timestamp = new Date().toISOString();
   const rows = [];
   for (const { brand, records } of discoveries) {
     for (const record of records) {
       const ad = toAd(record, brand, timestamp);
       const prior = existing.get(record.id);
+      const key = creativeKey({ ...ad, brand_id: brandIds.get(brand.slug) });
+      if (!prior && existingKeys.has(key)) continue;
+      if (!prior) existingKeys.add(key);
       let labels = prior || {};
       if ((!prior || (!prior.creative_style && !prior.selling_angle)) && env.GEMINI_API_KEY) {
         try {
