@@ -1,5 +1,6 @@
 // Curated Indian packaged-food and DTC brands. Restaurant chains and legacy staples
 // are intentionally excluded so the library stays useful for consumer-brand research.
+// Deployed catalogue revision: 2026-08-19.
 export const BRANDS = [
   { name: "Amul", slug: "amul", category: "Dairy", query: "Amul", aliases: ["amul"] },
   { name: "Haldiram's", slug: "haldirams", category: "Snacks & Sweets", query: "Haldiram's", aliases: ["haldiram"] },
