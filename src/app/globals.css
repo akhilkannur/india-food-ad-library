@@ -944,6 +944,191 @@ h3 {
   }
 }
 
+/* Dub-style workspace pass: a quiet product shell with dense, inspectable content. */
+.gallery-header {
+  min-height: 4rem;
+  grid-template-columns: auto auto minmax(14rem, 1fr) auto;
+  gap: var(--space-lg);
+  border-block-end: 1px solid var(--color-rule);
+}
+
+.gallery-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: -.03em;
+  white-space: nowrap;
+}
+
+.gallery-brand__mark {
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  place-items: center;
+  border-radius: var(--radius-xs);
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  letter-spacing: -.08em;
+}
+
+.site-header__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.site-header__nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 2.25rem;
+  padding-inline: var(--space-sm);
+  border-radius: var(--radius-xs);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.site-header__nav-link:hover,
+.site-header__nav-link--active {
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+}
+
+.gallery-header .header-search {
+  width: min(100%, 30rem);
+  height: 2.35rem;
+  justify-self: center;
+  border-color: var(--color-rule);
+  border-radius: var(--radius-xs);
+  background: var(--color-paper-2);
+}
+
+.gallery-header .header-search kbd { background: var(--color-paper); }
+.gallery-admin { font-size: var(--text-xs); }
+
+.workspace-heading {
+  align-items: start;
+  padding-block: clamp(2.5rem, 6vw, 4.5rem) var(--space-xl);
+  text-align: start;
+}
+
+.workspace-heading .library-hero__copy { align-items: start; }
+.workspace-heading .eyebrow { color: var(--color-muted); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; }
+.workspace-heading .page-intro__heading { font-size: clamp(2.4rem, 5vw, 4rem); line-height: .98; }
+.workspace-heading .page-intro__description { margin-block-start: var(--space-md); font-size: var(--text-base); }
+
+.workspace-heading .library-hero__stats {
+  display: grid;
+  min-width: 19rem;
+  grid-template-columns: 1fr;
+  border-block-start: 0;
+}
+
+.workspace-heading .library-hero__stats div {
+  grid-template-columns: 6rem 1fr;
+  align-items: baseline;
+  padding-block: var(--space-xs);
+  border-block-end: 1px solid var(--color-rule);
+}
+
+.workspace-heading .library-hero__stats strong { font-size: 1.15rem; }
+.workspace-heading .library-hero__stats span { font-size: .62rem; }
+
+.workspace-toolbar {
+  margin-inline: 0;
+  padding-block: var(--space-xs);
+  background: color-mix(in oklch, var(--color-paper) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.workspace-toolbar .filter-band__inner { min-width: 0; }
+.workspace-toolbar .filter-scroll { min-width: 0; }
+.workspace-toolbar .filter-chip { min-height: 2.25rem; }
+
+.workspace-results {
+  padding-block: var(--space-xl) var(--space-md);
+  border-block-end: 1px solid var(--color-rule);
+}
+
+.workspace-results > span:last-child { margin-inline-start: 0; }
+.workspace-results > span:nth-child(2) { margin-inline-start: auto; }
+
+.ad-library-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-content: initial;
+  align-items: initial;
+  gap: var(--space-lg) var(--space-md);
+  perspective: none;
+  transform-style: flat;
+}
+
+.ad-library-grid .gallery-item {
+  flex: initial;
+  width: auto;
+  height: auto;
+  max-width: none;
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  text-align: start;
+  transition: transform var(--dur-short) var(--ease-out);
+}
+
+.ad-library-grid .gallery-item .creative {
+  aspect-ratio: 4 / 5;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-xs);
+  transition: border-color var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+}
+
+.ad-library-grid .gallery-item::after { display: none; }
+.ad-library-grid .gallery-item__caption {
+  position: static;
+  display: grid;
+  gap: .2rem;
+  padding-block: var(--space-sm) 0;
+  color: var(--color-ink);
+  opacity: 1;
+  transform: none;
+  text-align: start;
+}
+
+.ad-library-grid .gallery-item__caption strong { font-size: var(--text-sm); font-weight: 600; }
+.ad-library-grid .gallery-item__caption small { color: var(--color-muted); font-family: var(--font-mono); font-size: .62rem; text-transform: uppercase; }
+.ad-library-grid .gallery-item:hover { filter: none; transform: translateY(-2px); }
+.ad-library-grid .gallery-item:hover .creative,
+.ad-library-grid .gallery-item:focus-visible .creative { border-color: var(--color-ink); box-shadow: 0 8px 20px var(--color-shadow); }
+.ad-library-grid .gallery-item:hover + *, .ad-library-grid .gallery-item:hover + * + *, .ad-library-grid .gallery-item:has(+ *:hover), .ad-library-grid .gallery-item:has(+ * + *:hover) { filter: none; transform: none; }
+
+@media (max-width: 64rem) {
+  .gallery-header { grid-template-columns: auto minmax(12rem, 1fr) auto; }
+  .site-header__nav { display: none; }
+  .ad-library-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 40rem) {
+  .gallery-header { grid-template-columns: 1fr auto; padding-block: var(--space-sm); }
+  .gallery-header .header-search { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+  .gallery-admin { font-size: 0; }
+  .gallery-admin svg { width: 18px; height: 18px; }
+  .workspace-heading { padding-block: var(--space-xl); }
+  .workspace-heading .library-hero__stats { min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-sm); }
+  .workspace-heading .library-hero__stats div { display: grid; grid-template-columns: 1fr; gap: .2rem; border-block-end: 0; }
+  .workspace-toolbar { position: static; }
+  .workspace-results { flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); }
+  .workspace-results > span:nth-child(2) { margin-inline-start: auto; }
+  .ad-library-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg) var(--space-sm); }
+}
+
 @media (pointer: coarse) {
   .filter-chip,
   .status-tab,

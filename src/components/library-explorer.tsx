@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, ChevronDown, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { CreativePreview } from "@/components/creative-preview";
 import { SiteFooter } from "@/components/site-footer";
@@ -51,18 +51,18 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
     <>
       <SiteHeader search={search} onSearch={setSearch} />
       <main className="shell">
-        <section className="library-hero">
+        <section className="library-hero workspace-heading">
           <div className="library-hero__copy">
-            <p className="eyebrow">Creative library</p>
-            <h1 className="page-intro__heading">Library</h1>
+            <p className="eyebrow">Workspace / Creative intelligence</p>
+            <h1 className="page-intro__heading">Ad library</h1>
             <p className="page-intro__description">
-              Approved Meta creatives from Indian food and beverage brands, reviewed and organized for research.
+              A searchable record of approved Meta creatives from Indian food and beverage brands.
             </p>
           </div>
           <div className="library-hero__stats" aria-label="Library summary">
             <div><strong>{ads.length}</strong><span>ads captured</span></div>
             <div><strong>{categories.length - 1}</strong><span>categories</span></div>
-            <div><strong>Weekly</strong><span>new releases</span></div>
+            <div><strong>Meta</strong><span>source platform</span></div>
           </div>
           <div className="page-intro__meta">
             <p className="dataset-note">
@@ -71,7 +71,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
           </div>
         </section>
 
-        <section className="filter-band" aria-label="Filter ads">
+        <section className="filter-band workspace-toolbar" aria-label="Filter ads">
           <div className="filter-band__inner">
             <div className="filter-label"><SlidersHorizontal size={15} /> Filter by</div>
             <div className="filter-scroll">
@@ -98,19 +98,22 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
           </div>
         </section>
 
-        <div className="result-line" aria-live="polite">
-          <span className="result-line__title">Latest creative</span>
+        <div className="result-line workspace-results" aria-live="polite">
+          <span className="result-line__title">All approved ads</span>
           <span>{visibleAds.length} results</span>
           {demoMode && <span>Sample records · connect Supabase for live data</span>}
         </div>
 
         {visibleAds.length ? (
           <section className="ad-grid" aria-label="Approved ads">
-            <div className="gallery-wall">
+            <div className="gallery-wall ad-library-grid">
               {visibleAds.map((ad, index) => (
                 <button className="gallery-item" key={ad.id} type="button" onClick={() => setSelectedAd(ad)} aria-label={`View ${ad.brand.name} creative`}>
                   <CreativePreview ad={ad} compact priority={index < 4} />
-                  <span className="gallery-item__caption">{ad.brand.name}</span>
+                  <span className="gallery-item__caption">
+                    <strong>{ad.brand.name}</strong>
+                    <small>{ad.format} · {ad.language}</small>
+                  </span>
                 </button>
               ))}
             </div>

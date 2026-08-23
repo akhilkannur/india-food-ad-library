@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Search } from "lucide-react";
+import { ArrowUpRight, BookOpen, Search, ShieldCheck } from "lucide-react";
 
 export function SiteHeader({
   search,
@@ -13,7 +13,14 @@ export function SiteHeader({
   return (
     <header className="site-header">
       <div className="gallery-header shell">
-        <Link className="gallery-brand" href="/">India Food Ad Library</Link>
+        <Link className="gallery-brand" href="/" aria-label="India Food Ad Library home">
+          <span className="gallery-brand__mark">IF</span>
+          <span>India Food Ad Library</span>
+        </Link>
+        <nav className="site-header__nav" aria-label="Primary navigation">
+          <Link className="site-header__nav-link site-header__nav-link--active" href="/"><BookOpen size={15} /> Library</Link>
+          <Link className="site-header__nav-link" href="/admin"><ShieldCheck size={15} /> Review</Link>
+        </nav>
         {onSearch ? (
           <label className="header-search">
             <Search aria-hidden="true" size={16} strokeWidth={1.8} />
@@ -21,7 +28,7 @@ export function SiteHeader({
             <kbd>/</kbd>
           </label>
         ) : <span />}
-        <Link className="gallery-admin" href={admin ? "/" : "/admin"}>{admin ? "Library" : "Review"}<ArrowUpRight size={14} /></Link>
+        <Link className="gallery-admin" href={admin ? "/" : "/admin"}>{admin ? "Back to library" : "Open review queue"}<ArrowUpRight size={14} /></Link>
       </div>
     </header>
   );
