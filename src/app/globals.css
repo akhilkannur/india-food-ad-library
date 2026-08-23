@@ -945,6 +945,7 @@ h3 {
 }
 
 /* Dub-style workspace pass: a quiet product shell with dense, inspectable content. */
+/* Deployment trigger: 2026-08-24 */
 .gallery-header {
   min-height: 4rem;
   grid-template-columns: auto auto minmax(14rem, 1fr) auto;
