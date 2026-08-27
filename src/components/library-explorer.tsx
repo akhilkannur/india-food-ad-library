@@ -62,26 +62,6 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
     <>
       <SiteHeader search={search} onSearch={setSearch} />
       <main className="shell">
-        <section className="library-hero workspace-heading">
-          <div className="library-hero__copy">
-            <p className="eyebrow">Workspace / Creative intelligence</p>
-            <h1 className="page-intro__heading">Ad library</h1>
-            <p className="page-intro__description">
-              A searchable record of approved Meta creatives from Indian food and beverage brands.
-            </p>
-          </div>
-          <div className="library-hero__stats" aria-label="Library summary">
-            <div><strong>{ads.length}</strong><span>ads captured</span></div>
-            <div><strong>{categories.length - 1}</strong><span>categories</span></div>
-            <div><strong>Meta</strong><span>source platform</span></div>
-          </div>
-          <div className="page-intro__meta">
-            <p className="dataset-note">
-              {visibleAds.length} {demoMode ? "demo" : "approved"} {visibleAds.length === 1 ? "ad" : "ads"}
-            </p>
-          </div>
-        </section>
-
         <section className="filter-band workspace-toolbar" aria-label="Filter ads">
           <div className="filter-band__inner">
             <div className="filter-label"><SlidersHorizontal size={15} /> Filter by</div>
