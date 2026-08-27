@@ -123,7 +123,8 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
                   <CreativePreview ad={ad} compact priority={index < 4} onUnavailable={() => hideUnavailable(ad)} />
                   <span className="gallery-item__caption">
                     <strong>{ad.brand.name}</strong>
-                    <small>{ad.format} · {ad.language}</small>
+                    <small>{ad.category} · {ad.format}</small>
+                    <em>{ad.headline}</em>
                   </span>
                 </button>
               ))}

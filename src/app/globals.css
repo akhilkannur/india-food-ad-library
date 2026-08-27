@@ -1028,6 +1028,61 @@ body { background: var(--color-paper); }
   .sort-select { width: 100%; border-block-start: var(--rule-thin) solid var(--color-rule); border-inline-start: 0; }
 }
 
+/* Visual archive pass · Tumblr-like post rhythm with Pinterest-like browsing.
+ * Cards carry their own editorial metadata; the collection should feel browsed,
+ * not presented as a product dashboard.
+ */
+body { background: #f4f1ec; }
+.site-header { border-block-end: 1px solid #d8d2c9; background: #f4f1ec; }
+.gallery-header { min-height: 4rem; grid-template-columns: auto minmax(12rem, 1fr) auto; }
+.gallery-brand { display: inline-flex; align-items: center; gap: .65rem; font-size: .92rem; }
+.gallery-brand__mark { width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 50%; background: #1b1b1b; color: #f4f1ec; font-family: var(--font-mono); font-size: .62rem; letter-spacing: -.08em; }
+.gallery-header .header-search { width: min(100%, 27rem); height: 2.35rem; border-color: #cfc8bf; background: #faf8f4; }
+.gallery-admin { color: #625d57; }
+.library-hero { align-items: start; padding-block: clamp(3.5rem, 8vw, 6.5rem) clamp(2rem, 4vw, 3.5rem); text-align: left; }
+.library-hero__copy { align-items: start; }
+.library-hero .eyebrow { color: #7c746b; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; }
+.library-hero .page-intro__heading { max-width: 10ch; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3.8rem, 8vw, 7.8rem); font-weight: 400; letter-spacing: -.08em; line-height: .86; }
+.library-hero .page-intro__description { max-width: 31rem; margin-block-start: 1.75rem; color: #756e66; font-size: 1rem; }
+.library-hero__stats { align-self: end; }
+.filter-band { margin-block-end: 1.1rem; border-block-color: #cfc8bf; background: #f4f1ec; }
+.filter-band__inner { gap: .7rem; }
+.filter-chip { border-color: #d4cec6; border-radius: 999px; background: transparent; }
+.filter-chip[aria-pressed="true"] { background: #1b1b1b; color: #f4f1ec; }
+.result-line { padding-block: 1.1rem 1.35rem; }
+.result-line__title { font-family: Georgia, "Times New Roman", serif; font-size: 1.15rem; font-weight: 400; }
+.ad-grid { padding-block-end: 5rem; }
+.ad-library-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 2.4rem 1.15rem; }
+.ad-library-grid .gallery-item { display: grid; grid-template-rows: auto auto; width: 100%; height: auto; max-width: none; margin: 0; overflow: visible; border-radius: 0; background: transparent; text-align: left; transform: none; }
+.ad-library-grid .gallery-item .creative { width: 100%; height: auto; min-height: 0; aspect-ratio: 4 / 5; border: 0; border-radius: .25rem; background: #e8e2da; transition: transform 260ms var(--ease-out), box-shadow 260ms var(--ease-out); }
+.ad-library-grid .gallery-item:nth-child(3n + 2) .creative { aspect-ratio: 1 / 1.15; }
+.ad-library-grid .gallery-item:nth-child(5n + 3) .creative { aspect-ratio: 4 / 5.7; }
+.ad-library-grid .gallery-item:nth-child(7n + 4) .creative { aspect-ratio: 1 / 1.32; }
+.ad-library-grid .gallery-item .creative__media { object-fit: cover; }
+.ad-library-grid .gallery-item__caption { position: static; display: grid; gap: .2rem; padding: .7rem .1rem 0; color: #1b1b1b; opacity: 1; transform: none; }
+.ad-library-grid .gallery-item__caption strong { font-size: .88rem; font-weight: 650; letter-spacing: -.02em; }
+.ad-library-grid .gallery-item__caption small { color: #817970; font-family: var(--font-mono); font-size: .62rem; letter-spacing: .04em; text-transform: uppercase; }
+.ad-library-grid .gallery-item__caption em { overflow: hidden; color: #59534d; font-family: Georgia, "Times New Roman", serif; font-size: .9rem; font-style: normal; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.ad-library-grid .gallery-item::after { display: none; }
+.ad-library-grid .gallery-item:hover, .ad-library-grid .gallery-item:focus-visible { filter: none; transform: none; }
+.ad-library-grid .gallery-item:hover .creative, .ad-library-grid .gallery-item:focus-visible .creative { border-color: transparent; box-shadow: 0 .7rem 1.6rem rgb(42 35 28 / .14); transform: translateY(-.22rem); }
+.ad-library-grid .gallery-item + *, .ad-library-grid .gallery-item:has(+ *:hover), .ad-library-grid .gallery-item:has(+ * + *:hover) { filter: none; transform: none; }
+.site-footer.shell { padding-block: 2rem; border-block-start-color: #cfc8bf; }
+
+@media (max-width: 59.999rem) {
+  .ad-library-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 39.999rem) {
+  .gallery-header { min-height: 0; }
+  .library-hero { padding-block: 3.5rem 2.25rem; }
+  .library-hero .page-intro__heading { font-size: clamp(3.5rem, 19vw, 5.6rem); }
+  .library-hero__stats { display: none; }
+  .ad-library-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.8rem .7rem; }
+  .ad-library-grid .gallery-item__caption { padding-top: .55rem; }
+  .ad-library-grid .gallery-item__caption em { font-size: .82rem; }
+}
+
 /* Dub-style workspace pass: a quiet product shell with dense, inspectable content. */
 /* Deployment trigger: 2026-08-24 */
 .gallery-header {
