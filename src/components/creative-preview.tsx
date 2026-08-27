@@ -10,6 +10,7 @@ type CreativePreviewProps = {
   ad: Ad;
   compact?: boolean;
   priority?: boolean;
+  onUnavailable?: () => void;
 };
 
 function isVideoCreative(ad: Ad) {
@@ -21,7 +22,7 @@ function isUsablePoster(url: string | null) {
   return Boolean(url && !/[?/_-]s?\d{1,3}x\d{1,3}(?:[?/_&.-]|$)/i.test(url));
 }
 
-export function CreativePreview({ ad, compact = false, priority = false }: CreativePreviewProps) {
+export function CreativePreview({ ad, compact = false, priority = false, onUnavailable }: CreativePreviewProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const theme = themes.has(ad.creative_theme ?? "") ? ad.creative_theme : "oat";
   const video = isVideoCreative(ad) && Boolean(ad.creative_url);
@@ -43,7 +44,10 @@ export function CreativePreview({ ad, compact = false, priority = false }: Creat
           controls
           playsInline
           preload={priority ? "auto" : "metadata"}
-          onError={() => setFailedUrl(ad.creative_url!)}
+          onError={() => {
+            setFailedUrl(ad.creative_url!);
+            onUnavailable?.();
+          }}
         >
           Your browser does not support embedded video.
         </video>
@@ -63,7 +67,10 @@ export function CreativePreview({ ad, compact = false, priority = false }: Creat
           alt={`${ad.brand.name} advertising creative`}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
-          onError={() => setFailedUrl(imageUrl)}
+          onError={() => {
+            setFailedUrl(imageUrl);
+            onUnavailable?.();
+          }}
         />
         <figcaption className="creative__format">Image</figcaption>
       </figure>

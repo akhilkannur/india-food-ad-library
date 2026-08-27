@@ -15,6 +15,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
   const [category, setCategory] = useState("All");
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+  const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(ads.map((ad) => ad.category))).sort()],
     [ads],
@@ -23,6 +24,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
   const visibleAds = useMemo(() => {
     const query = search.trim().toLowerCase();
     return ads
+      .filter((ad) => !unavailableIds.has(ad.id))
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => {
         if (!query) return true;
@@ -34,7 +36,16 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
         const delta = new Date(right.first_seen_at).getTime() - new Date(left.first_seen_at).getTime();
         return sortOrder === "newest" ? delta : -delta;
       });
-  }, [ads, category, search, sortOrder]);
+  }, [ads, category, search, sortOrder, unavailableIds]);
+
+  function hideUnavailable(ad: Ad) {
+    setUnavailableIds((ids) => {
+      const next = new Set(ids);
+      next.add(ad.id);
+      return next;
+    });
+    if (selectedAd?.id === ad.id) setSelectedAd(null);
+  }
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -109,7 +120,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
             <div className="gallery-wall ad-library-grid">
               {visibleAds.map((ad, index) => (
                 <button className="gallery-item" key={ad.id} type="button" onClick={() => setSelectedAd(ad)} aria-label={`View ${ad.brand.name} creative`}>
-                  <CreativePreview ad={ad} compact priority={index < 4} />
+                  <CreativePreview ad={ad} compact priority={index < 4} onUnavailable={() => hideUnavailable(ad)} />
                   <span className="gallery-item__caption">
                     <strong>{ad.brand.name}</strong>
                     <small>{ad.format} · {ad.language}</small>
@@ -129,7 +140,11 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
         )}
       </main>
       <SiteFooter />
-      <AdDetailDialog ad={selectedAd} onClose={() => setSelectedAd(null)} />
+      <AdDetailDialog
+        ad={selectedAd}
+        onClose={() => setSelectedAd(null)}
+        onUnavailable={() => selectedAd && hideUnavailable(selectedAd)}
+      />
     </>
   );
 }

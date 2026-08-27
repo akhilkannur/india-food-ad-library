@@ -14,7 +14,7 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
-export function AdDetailDialog({ ad, onClose }: { ad: Ad | null; onClose: () => void }) {
+export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; onClose: () => void; onUnavailable?: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function AdDetailDialog({ ad, onClose }: { ad: Ad | null; onClose: () => 
         </header>
         <div className="ad-dialog__body">
           <div className="ad-dialog__creative">
-            <CreativePreview ad={ad} priority />
+            <CreativePreview ad={ad} priority onUnavailable={onUnavailable} />
           </div>
           <div className="detail-copy">
             <div>
