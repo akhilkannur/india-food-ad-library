@@ -1083,6 +1083,49 @@ body { background: #f4f1ec; }
   .ad-library-grid .gallery-item__caption em { font-size: .82rem; }
 }
 
+/* Shell correction: let the creatives provide the colour. */
+:root {
+  --color-paper: #ffffff;
+  --color-paper-2: #f5f5f3;
+  --color-ink: #111111;
+  --color-ink-2: #353535;
+  --color-muted: #777777;
+  --color-rule: #dededb;
+  --color-rule-strong: #b7b7b2;
+  --color-accent: #ff365d;
+  --color-accent-deep: #d51d43;
+  --color-accent-ink: #ffffff;
+  --color-focus: #2457ff;
+}
+body { background: #ffffff; }
+.site-header { background: #ffffff; border-block-end-color: #e2e2df; }
+.gallery-header { min-height: 4.4rem; }
+.gallery-brand__mark { background: #111111; color: #ffffff; }
+.gallery-header .header-search { background: #f5f5f3; border-color: #dededb; }
+.library-hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(15rem, .75fr); align-items: end; gap: 3rem; padding-block: 3.1rem 2.25rem; text-align: left; }
+.library-hero__copy { align-items: start; }
+.library-hero .eyebrow { margin-block-end: .7rem; color: #2457ff; font-family: var(--font-mono); font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; }
+.library-hero .page-intro__heading { max-width: none; font-family: var(--font-display); font-size: clamp(2.7rem, 5vw, 5.3rem); font-weight: 700; letter-spacing: -.085em; line-height: .9; }
+.library-hero .page-intro__description { max-width: 27rem; margin-block-start: 1rem; color: #666666; font-size: .95rem; }
+.library-hero__stats { display: flex; gap: 1.5rem; align-self: end; border: 0; }
+.library-hero__stats div { display: grid; grid-template-columns: 1fr; gap: .2rem; min-width: 4rem; padding: 0; border: 0; }
+.library-hero__stats strong { font-size: 1.3rem; }
+.library-hero__stats span { color: #888888; font-size: .58rem; letter-spacing: .04em; }
+.library-hero .page-intro__meta { grid-column: 1 / -1; border-block-start: 1px solid #e2e2df; padding-block-start: .85rem; }
+.filter-band { background: #ffffff; }
+.filter-chip[aria-pressed="true"] { background: #2457ff; }
+
+@media (max-width: 59.999rem) {
+  .library-hero { grid-template-columns: 1fr; gap: 1.8rem; }
+  .library-hero__stats { display: flex; }
+}
+
+@media (max-width: 39.999rem) {
+  .library-hero { display: flex; align-items: start; padding-block: 2.4rem 1.8rem; }
+  .library-hero .page-intro__heading { font-size: clamp(2.8rem, 14vw, 4.6rem); }
+  .library-hero__stats { display: none; }
+}
+
 /* Dub-style workspace pass: a quiet product shell with dense, inspectable content. */
 /* Deployment trigger: 2026-08-24 */
 .gallery-header {
