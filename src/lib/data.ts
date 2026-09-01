@@ -97,6 +97,51 @@ export async function getBrands(): Promise<Brand[]> {
   return supabaseFetch<Brand[]>("brands?select=*&order=name.asc");
 }
 
+export async function getBrandBySlug(slug: string): Promise<Brand | null> {
+  if (!hasDatabase) return demoBrands.find((b) => b.slug === slug) ?? null;
+  const rows = await supabaseFetch<Brand[]>(`brands?slug=eq.${encodeURIComponent(slug)}&select=*`);
+  return rows[0] ?? null;
+}
+
+export async function getAdsByBrand(brandId: string): Promise<Ad[]> {
+  if (!hasDatabase) return demoAds.filter((ad) => ad.brand_id === brandId && ad.status === "approved");
+  return supabaseFetch<Ad[]>(
+    `ads?brand_id=eq.${encodeURIComponent(brandId)}&status=eq.approved&select=*,brand:brands(*)&order=first_seen_at.desc`,
+  );
+}
+
+export type AdInsights = {
+  total: number;
+  hooks: { label: string; count: number }[];
+  formats: { label: string; count: number }[];
+  funnelStages: { label: string; count: number }[];
+  creativeStyles: { label: string; count: number }[];
+  sellingAngles: { label: string; count: number }[];
+  languages: { label: string; count: number }[];
+};
+
+function countBy(ads: Ad[], key: keyof Ad): { label: string; count: number }[] {
+  const map = new Map<string, number>();
+  for (const ad of ads) {
+    const value = ad[key];
+    const label = typeof value === "string" && value ? value : "Untagged";
+    map.set(label, (map.get(label) ?? 0) + 1);
+  }
+  return Array.from(map, ([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
+}
+
+export function getAdInsights(ads: Ad[]): AdInsights {
+  return {
+    total: ads.length,
+    hooks: countBy(ads, "hook"),
+    formats: countBy(ads, "format"),
+    funnelStages: countBy(ads, "funnel_stage"),
+    creativeStyles: countBy(ads, "creative_style"),
+    sellingAngles: countBy(ads, "selling_angle"),
+    languages: countBy(ads, "language"),
+  };
+}
+
 export async function updateAdStatus(
   id: string,
   status: AdStatus,
