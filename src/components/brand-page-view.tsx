@@ -9,8 +9,8 @@ import {
   Copy,
   FileText,
   Filter,
-  Headline,
   Image as ImageIcon,
+  Type,
   Target,
   X,
 } from "lucide-react";
@@ -22,7 +22,7 @@ type Tab = "creatives" | "hooks" | "copy" | "headlines" | "formats" | "angles";
 
 const tabs: { value: Tab; label: string; icon: typeof BarChart3 }[] = [
   { value: "creatives", label: "Creatives", icon: ImageIcon },
-  { value: "hooks", label: "Hooks", icon: Headline },
+  { value: "hooks", label: "Hooks", icon: Type },
   { value: "copy", label: "Ad copy", icon: Copy },
   { value: "headlines", label: "Headlines", icon: FileText },
   { value: "formats", label: "Formats", icon: BarChart3 },
