@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "./library.css";
+import "./workbench.css";
 
 export const metadata: Metadata = {
   title: "India Food Ad Library — Creative Index",

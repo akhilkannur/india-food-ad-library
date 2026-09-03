@@ -1,7 +1,7 @@
 {
   "scanned_at": "2026-09-03",
   "framework": "Next.js 16 app router with React 19",
-  "font_stack": "Manrope display, Inter body, IBM Plex Mono metadata",
+  "font_stack": "Space Grotesk display, Manrope body, IBM Plex Mono metadata",
   "palette": "OKLCH custom properties in tokens.css",
   "motion": "motion-cut; no animation library installed",
   "spacing": "4-point named scale in tokens.css",
