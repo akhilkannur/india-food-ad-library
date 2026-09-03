@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, Search, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Search } from "lucide-react";
 
 export function SiteHeader({
   search,
@@ -11,24 +11,23 @@ export function SiteHeader({
   admin?: boolean;
 }) {
   return (
-    <header className="site-header">
-      <div className="gallery-header shell">
-        <Link className="gallery-brand" href="/" aria-label="India Food Ad Library home">
-          <span className="gallery-brand__mark">IF</span>
-          <span>India Food Ad Library</span>
+    <header className="site-header app-header">
+      <div className="app-header__inner">
+        <Link className="app-wordmark" href="/" aria-label="India Food Ad Library home">
+          <span className="app-wordmark__mark">IF</span>
+          <span className="app-wordmark__copy">
+            <strong>India Food Ad Library</strong>
+            <small>Creative intelligence</small>
+          </span>
         </Link>
-        <nav className="site-header__nav" aria-label="Primary navigation">
-          <Link className="site-header__nav-link site-header__nav-link--active" href="/"><BookOpen size={15} /> Library</Link>
-          <Link className="site-header__nav-link" href="/admin"><ShieldCheck size={15} /> Review</Link>
-        </nav>
         {onSearch ? (
-          <label className="header-search">
+          <label className="app-header__search">
             <Search aria-hidden="true" size={16} strokeWidth={1.8} />
             <input aria-label="Search ads" type="search" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search the library" />
             <kbd>/</kbd>
           </label>
-        ) : <span />}
-        <Link className="gallery-admin" href={admin ? "/" : "/admin"}>{admin ? "Back to library" : "Open review queue"}<ArrowUpRight size={14} /></Link>
+        ) : <span className="app-header__edition">India · Updated weekly</span>}
+        <Link className="app-header__action" href={admin ? "/" : "/admin"}>{admin ? "Back to library" : "Review queue"}<ArrowUpRight aria-hidden="true" size={14} /></Link>
       </div>
     </header>
   );

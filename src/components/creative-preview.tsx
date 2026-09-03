@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ImageOff } from "lucide-react";
+import { ImageOff, Play } from "lucide-react";
 import type { Ad } from "@/lib/types";
 
 const themes = new Set(["turmeric", "lime", "oat", "sea", "chilli", "cacao"]);
@@ -41,7 +41,8 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
           className="creative__media"
           src={ad.creative_url!}
           poster={poster}
-          controls
+          controls={!compact}
+          muted={compact}
           playsInline
           preload={priority ? "auto" : "metadata"}
           onError={() => {
@@ -51,7 +52,7 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
         >
           Your browser does not support embedded video.
         </video>
-        <figcaption className="creative__format">Video</figcaption>
+        <figcaption className="creative__format"><Play aria-hidden="true" size={12} fill="currentColor" /> Video</figcaption>
       </figure>
     );
   }
@@ -79,9 +80,16 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
 
   return (
     <div className={`creative creative--empty creative--${theme}`} role="img" aria-label={`Creative unavailable for ${ad.brand.name}`}>
-      <ImageOff aria-hidden="true" size={compact ? 22 : 28} strokeWidth={1.6} />
-      <strong>{failed ? "Creative unavailable" : "No media captured"}</strong>
-      {!compact && <span>Open the source from details.</span>}
+      <span className="creative__missing-label">Preview unavailable</span>
+      <span className="creative__empty-copy">
+        <span>{ad.brand.name}</span>
+        <strong>{ad.headline || "Creative not captured"}</strong>
+        <small>{ad.category} · {ad.format}</small>
+      </span>
+      <span className="creative__empty-foot">
+        <ImageOff aria-hidden="true" size={compact ? 16 : 20} strokeWidth={1.6} />
+        {failed ? "Source media unavailable" : "Original media not captured"}
+      </span>
     </div>
   );
 }

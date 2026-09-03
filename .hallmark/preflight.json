@@ -1,0 +1,9 @@
+{
+  "scanned_at": "2026-09-03",
+  "framework": "Next.js 16 app router with React 19",
+  "font_stack": "Manrope display, Inter body, IBM Plex Mono metadata",
+  "palette": "OKLCH custom properties in tokens.css",
+  "motion": "motion-cut; no animation library installed",
+  "spacing": "4-point named scale in tokens.css",
+  "preserved": ["framework", "data model", "moderation routes", "font sources", "spacing scale"]
+}

@@ -19,6 +19,20 @@
   --color-backdrop: oklch(12.9% 0.042 264.695 / 0.5);
   --color-shadow: oklch(20.8% 0.042 265.755 / 0.1);
 
+  --color-library-paper: oklch(98% 0.008 82);
+  --color-library-surface: oklch(95.5% 0.011 82);
+  --color-library-surface-strong: oklch(92% 0.014 82);
+  --color-library-ink: oklch(19% 0.014 67);
+  --color-library-ink-2: oklch(34% 0.016 67);
+  --color-library-muted: oklch(47% 0.018 72);
+  --color-library-rule: oklch(85% 0.015 82);
+  --color-library-rule-strong: oklch(67% 0.018 77);
+  --color-library-accent: oklch(55% 0.19 32);
+  --color-library-accent-ink: oklch(98% 0.008 82);
+  --color-library-focus: oklch(48% 0.17 255);
+  --color-library-scrim: oklch(14% 0.014 67 / 0.76);
+  --color-library-shadow: oklch(19% 0.014 67 / 0.12);
+
   --color-creative-turmeric: oklch(84% 0.14 84);
   --color-creative-turmeric-ink: oklch(25% 0.06 60);
   --color-creative-lime: oklch(86% 0.13 128);
@@ -32,7 +46,7 @@
   --color-creative-cacao: oklch(39% 0.055 48);
   --color-creative-cacao-ink: oklch(94% 0.025 78);
 
-  --font-display: "Inter", sans-serif;
+  --font-display: "Manrope", sans-serif;
   --font-body: "Inter", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
 
@@ -78,4 +92,9 @@
   --z-modal: 400;
   --z-toast: 500;
   --z-tooltip: 600;
+
+  --layout-library-max: 112rem;
+  --size-header: 4.5rem;
+  --size-control: 3rem;
+  --size-touch: 2.75rem;
 }
