@@ -9,7 +9,7 @@ import { AuthGateDialog } from "@/components/auth-gate-dialog";
 import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
 import { SiteHeader } from "@/components/site-header";
-import { collectionDefinitions, diversifyByBrand, getCollectionAds } from "@/lib/collections";
+import { diversifyByBrand, getCollectionAds, getCollectionDefinitions } from "@/lib/collections";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Ad } from "@/lib/types";
 
@@ -102,11 +102,11 @@ export function LibraryExplorer({
   }, [category, format, funnelStage, language, search]);
 
   const collections = useMemo(() => {
-    return collectionDefinitions.map((definition) => {
+    return getCollectionDefinitions(visibleAds).map((definition) => {
       const matches = getCollectionAds(visibleAds, definition);
       const brands = new Set(matches.map((ad) => ad.brand.id));
-      return { ...definition, ads: matches.slice(0, 8), brandCount: brands.size };
-    }).filter((collection) => collection.ads.length >= 4 && collection.brandCount >= 3);
+      return { ...definition, ads: matches.slice(0, 6), brandCount: brands.size };
+    }).filter((collection) => collection.ads.length >= 2);
   }, [visibleAds]);
 
   function clearFilters() {

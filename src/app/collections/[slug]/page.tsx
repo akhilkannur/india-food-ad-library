@@ -12,7 +12,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const definition = getCollectionDefinition((await params).slug);
+  const ads = await getApprovedAds();
+  const definition = getCollectionDefinition((await params).slug, ads);
   if (!definition) return { title: "Collection not found" };
   return {
     title: `${definition.name} — India Food Ad Library`,
@@ -25,13 +26,14 @@ export default async function CollectionPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const definition = getCollectionDefinition((await params).slug);
+  const ads = await getApprovedAds();
+  const definition = getCollectionDefinition((await params).slug, ads);
   if (!definition) notFound();
 
-  const ads = getCollectionAds(await getApprovedAds(), definition);
+  const collectionAds = getCollectionAds(ads, definition);
   return (
     <LibraryExplorer
-      ads={ads}
+      ads={collectionAds}
       demoMode={isDemoMode}
       showCollections={false}
       pageTitle={definition.name}
