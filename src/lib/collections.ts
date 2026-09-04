@@ -3,6 +3,7 @@ import type { Ad } from "@/lib/types";
 export type CollectionDefinition = {
   slug: string;
   name: string;
+  field: "category" | "creative_style" | "selling_angle" | "language";
   match: (ad: Ad) => boolean;
 };
 
@@ -19,25 +20,38 @@ export function slugifyCollectionName(value: string) {
     .replace(/^-|-$/g, "");
 }
 
-/** Build collections from the reviewed category field, not inferred copy keywords. */
+const COLLECTION_FIELDS: Array<{
+  field: CollectionDefinition["field"];
+  label: (value: string) => string;
+}> = [
+  { field: "category", label: (value) => value },
+  { field: "creative_style", label: (value) => `${value} creative` },
+  { field: "selling_angle", label: (value) => `${value} ads` },
+  { field: "language", label: (value) => `${value} ads` },
+];
+
+/** Build collections only from the four controlled classification fields. */
 export function getCollectionDefinitions(ads: Ad[]): CollectionDefinition[] {
-  const categories = new Map<string, { name: string; count: number }>();
+  const collections = new Map<string, { field: CollectionDefinition["field"]; name: string; count: number; value: string }>();
 
   ads.forEach((ad) => {
-    const name = ad.category?.trim();
-    if (!name) return;
-    const key = normalizeCategory(name);
-    const existing = categories.get(key);
-    if (existing) existing.count += 1;
-    else categories.set(key, { name, count: 1 });
+    COLLECTION_FIELDS.forEach(({ field, label }) => {
+      const value = ad[field]?.trim();
+      if (!value) return;
+      const key = `${field}:${normalizeCategory(value)}`;
+      const existing = collections.get(key);
+      if (existing) existing.count += 1;
+      else collections.set(key, { field, name: label(value), count: 1, value });
+    });
   });
 
-  return Array.from(categories.entries())
+  return Array.from(collections.entries())
     .sort(([, left], [, right]) => right.count - left.count || left.name.localeCompare(right.name))
-    .map(([key, { name }]) => ({
-      slug: slugifyCollectionName(name),
+    .map(([, { field, name, value }]) => ({
+      slug: slugifyCollectionName(`${field}-${value}`),
       name,
-      match: (ad: Ad) => normalizeCategory(ad.category) === key,
+      field,
+      match: (ad: Ad) => normalizeCategory(ad[field]) === normalizeCategory(value),
     }));
 }
 

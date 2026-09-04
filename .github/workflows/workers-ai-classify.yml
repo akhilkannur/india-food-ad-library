@@ -1,14 +1,14 @@
-name: Run Workers AI classification pilot
+name: Classify approved ads
 
 on:
   workflow_dispatch:
     inputs:
       limit:
-        description: "Number of ads to classify (maximum 10)"
+        description: "Number of ads to classify (maximum 25)"
         required: true
         default: "10"
       offset:
-        description: "Number of approved ads to skip before this test batch"
+        description: "Number of approved ads to skip before this batch"
         required: true
         default: "0"
 
@@ -16,26 +16,26 @@ permissions:
   contents: read
 
 jobs:
-  pilot:
+  classify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
-      - name: Run read-only pilot
+      - name: Classify and save approved ads
         env:
           SCRAPER_WORKER_URL: ${{ secrets.SCRAPER_WORKER_URL }}
           SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
           LIMIT: ${{ inputs.limit }}
           OFFSET: ${{ inputs.offset }}
         run: |
-          curl --fail-with-body --silent --show-error --max-time 600 \
+          curl --fail-with-body --silent --show-error --max-time 1800 \
             --request POST \
             --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
-            "$SCRAPER_WORKER_URL/pilot?limit=$LIMIT&offset=$OFFSET" | tee pilot-result.json
-      - name: Upload pilot report
+            "$SCRAPER_WORKER_URL/classify?limit=$LIMIT&offset=$OFFSET" | tee classification-result.json
+      - name: Upload classification report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: workers-ai-pilot-${{ github.run_id }}
-          path: pilot-result.json
+          name: workers-ai-classification-${{ github.run_id }}
+          path: classification-result.json
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 30

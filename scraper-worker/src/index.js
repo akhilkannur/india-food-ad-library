@@ -6,8 +6,20 @@ const GEMINI_MODEL = "gemini-3.1-flash-lite";
 const GEMINI_VIDEO_SECONDS = 20;
 const WORKERS_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 const MAX_AI_CLASSIFICATIONS_PER_RUN = 12;
+const MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN = 25;
 const SCHEDULED_BATCH_SIZE = 24;
 const WEEKLY_CRONS = ["30 0 * * SUN", "0 1 * * SUN", "30 1 * * SUN", "0 2 * * SUN", "30 2 * * SUN"];
+
+const CLASSIFICATION_OPTIONS = {
+  category: [
+    "Snacks", "Sweets & chocolate", "Beverages", "Dairy", "Spices & ingredients", "Staples",
+    "Ready-to-eat & instant", "Ready-to-cook & frozen", "Health & nutrition", "Meat & seafood",
+    "Fresh food", "Bakery", "Other",
+  ],
+  creative_style: ["Product shot", "Product demo", "Recipe/how-to", "UGC", "Testimonial", "Lifestyle", "Founder story"],
+  selling_angle: ["Taste/craving", "Health", "Convenience", "Value", "Ingredients", "Tradition/emotion", "Social proof"],
+  language: ["English", "Hindi", "Hinglish", "Other"],
+};
 
 const RUN_MODES = {
   backfill: { rawAds: 80, selectedAds: 60, scrollRounds: 10, maxBrands: 12, concurrency: 2 },
@@ -66,7 +78,6 @@ function creativeStyleFor(record) {
   if (/\b(recipe|ingredients|how to|steps|method|make at home)\b/i.test(text)) return "Recipe/how-to";
   if (/\b(my review|i tried|taste test|unboxing|pov|day in my life)\b/i.test(text)) return "UGC";
   if (/\b(customer|testimonial|review|people love|rated)\b/i.test(text)) return "Testimonial";
-  if (/\b(save|discount|offer|deal|free|% off)\b|₹/i.test(text)) return "Offer";
   if (/\b(family|friends|morning|evening|workout|lunch|party|festival)\b/i.test(text)) return "Lifestyle";
   return record.video ? "Product demo" : "Product shot";
 }
@@ -219,16 +230,20 @@ function toAd(record, brand, timestamp) {
 const classificationSchema = {
   type: "OBJECT",
   properties: {
+    product_category: {
+      type: "STRING",
+      enum: CLASSIFICATION_OPTIONS.category,
+    },
     creative_style: {
       type: "STRING",
-      enum: ["Product demo", "Recipe/how-to", "UGC", "Testimonial", "Product shot", "Lifestyle", "Offer"],
+      enum: CLASSIFICATION_OPTIONS.creative_style,
     },
     selling_angle: {
       type: "STRING",
-      enum: ["Taste/craving", "Health", "Convenience", "Value", "Ingredients", "Tradition/emotion", "Social proof"],
+      enum: CLASSIFICATION_OPTIONS.selling_angle,
     },
   },
-  required: ["creative_style", "selling_angle"],
+  required: ["product_category", "creative_style", "selling_angle"],
 };
 
 async function geminiFileUpload(env, bytes, mimeType, displayName) {
@@ -312,7 +327,11 @@ async function classifyWithGemini(env, ad) {
       if (response.ok) {
         const text = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "{}";
         const result = JSON.parse(text);
-        return { creative_style: result.creative_style || null, selling_angle: result.selling_angle || null };
+        return {
+          category: result.product_category || null,
+          creative_style: result.creative_style || null,
+          selling_angle: result.selling_angle || null,
+        };
       }
       if (![429, 500, 502, 503].includes(response.status) || attempt === 2) {
         throw new Error(payload?.error?.message || `Gemini request failed (${response.status})`);
@@ -352,7 +371,7 @@ async function existingAdsForSourceIds(env, sourceIds) {
     if (!group.length) continue;
     rows.push(...await supabase(
       env,
-      `ads?source_ad_id=in.(${group.join(",")})&select=brand_id,source_ad_id,creative_style,selling_angle`,
+      `ads?source_ad_id=in.(${group.join(",")})&select=brand_id,source_ad_id,category,language,creative_style,selling_angle`,
     ));
   }
   return rows;
@@ -388,75 +407,98 @@ function base64FromBytes(bytes) {
   return btoa(binary);
 }
 
+function validateWorkersLabels(labels) {
+  if (!labels || typeof labels !== "object") throw new Error("Workers AI returned invalid classification JSON");
+  const result = {
+    product_category: labels.product_category || labels.category,
+    creative_style: labels.creative_style,
+    selling_angle: labels.selling_angle,
+    language: labels.language,
+  };
+  const valid = Object.entries(result).every(([field, value]) =>
+    typeof value === "string" && CLASSIFICATION_OPTIONS[field].includes(value),
+  );
+  if (!valid) throw new Error("Workers AI returned a missing or invalid single-label classification");
+  return result;
+}
+
 function parseClassificationJson(value) {
-  if (value && typeof value === "object" && value.creative_style) return value;
-  if (value && typeof value === "object" && value.response && typeof value.response === "object") return value.response;
-  const response = value?.response ?? value?.result?.response ?? value?.result;
-  if (response && typeof response === "object") return response;
+  const direct = value && typeof value === "object" && value.product_category ? value : null;
+  const nested = value && typeof value === "object" && value.response && typeof value.response === "object"
+    ? value.response
+    : null;
+  const response = nested ?? value?.response ?? value?.result?.response ?? value?.result;
+  if (direct) return validateWorkersLabels(direct);
+  if (response && typeof response === "object") return validateWorkersLabels(response);
   const text = typeof value === "string" ? value : response;
   if (!text) throw new Error("Workers AI returned no classification response");
   const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   const start = clean.indexOf("{");
   const end = clean.lastIndexOf("}");
-  if (start >= 0 && end > start) return JSON.parse(clean.slice(start, end + 1));
+  if (start >= 0 && end > start) return validateWorkersLabels(JSON.parse(clean.slice(start, end + 1)));
 
-  const values = {
-    creative_style: ["Product demo", "Recipe/how-to", "UGC", "Testimonial", "Product shot", "Lifestyle", "Offer"],
-    selling_angle: ["Taste/craving", "Health", "Convenience", "Value", "Ingredients", "Tradition/emotion", "Social proof"],
-    hook: ["Offer-led", "Education", "Problem / solution", "Social proof", "Product-first"],
-    funnel_stage: ["Awareness", "Consideration", "Conversion"],
-    language: ["English", "Hindi", "Hinglish", "Other"],
-  };
   const normalized = clean.replace(/[*_]/g, "");
   const extract = (label) => {
     const match = normalized.match(new RegExp(`${label}\\s*:\\s*([^\\n]+)`, "i"));
     return match?.[1]?.trim() || "";
   };
   const choose = (label, options) => {
-    const value = extract(label);
-    return options.find((option) => value.toLocaleLowerCase().includes(option.toLocaleLowerCase())) || null;
+    const value = extract(label).toLocaleLowerCase();
+    return options.find((option) => value.includes(option.toLocaleLowerCase())) || null;
   };
-  const parsed = {
-    creative_style: choose("Creative Style", values.creative_style),
-    selling_angle: choose("Selling Angle", values.selling_angle),
-    hook: choose("Hook", values.hook),
-    funnel_stage: choose("Funnel Stage", values.funnel_stage),
-    language: choose("Language", values.language),
-    offer_present: /(?:Offer Present|Offer)\s*:\s*(true|yes)\b/i.test(normalized),
-  };
-  if (Object.values(parsed).some((entry) => entry === null)) throw new Error("Workers AI returned invalid classification JSON");
-  return parsed;
+  return validateWorkersLabels({
+    product_category: choose("Product Category", CLASSIFICATION_OPTIONS.category),
+    creative_style: choose("Creative Style", CLASSIFICATION_OPTIONS.creative_style),
+    selling_angle: choose("Selling Angle", CLASSIFICATION_OPTIONS.selling_angle),
+    language: choose("Language", CLASSIFICATION_OPTIONS.language),
+  });
 }
 
-function pilotMediaFor(ad) {
+async function getClassificationMedia(env, ad) {
   const isVideo = /video/i.test(ad.format || "");
-  if (isVideo) return ad.thumbnail_url ? { url: ad.thumbnail_url, source: "video-thumbnail" } : null;
+  const headers = { Referer: "https://www.facebook.com/", "User-Agent": "IndiaFoodAdLibrary/1.0" };
+
+  if (isVideo) {
+    if (!env.MEDIA) throw new Error("Cloudflare Media binding is missing for video frame extraction");
+    if (!ad.creative_url) throw new Error("Video has no downloadable creative URL");
+    const videoResponse = await fetch(ad.creative_url, { headers });
+    if (!videoResponse.ok || !videoResponse.body) throw new Error(`Video download failed (${videoResponse.status})`);
+    const spritesheet = await env.MEDIA.input(videoResponse.body)
+      .transform({ width: 720 })
+      .output({ mode: "spritesheet", time: "0s", duration: "8s", imageCount: 4 })
+      .response();
+    if (!spritesheet.ok) throw new Error(`Video frame extraction failed (${spritesheet.status})`);
+    return {
+      bytes: new Uint8Array(await spritesheet.arrayBuffer()),
+      mimeType: "image/jpeg",
+      source: "video-frames-0-8s",
+    };
+  }
+
   const url = ad.creative_url || ad.thumbnail_url;
-  return url ? { url, source: ad.creative_url ? "image" : "thumbnail" } : null;
+  if (!url) throw new Error("No usable image creative");
+  const imageResponse = await fetch(url, { headers });
+  if (!imageResponse.ok) throw new Error(`Creative download failed (${imageResponse.status})`);
+  const bytes = new Uint8Array(await imageResponse.arrayBuffer());
+  if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Creative is larger than the classification limit");
+  return {
+    bytes,
+    mimeType: imageResponse.headers.get("content-type")?.split(";")[0] || "image/jpeg",
+    source: ad.creative_url ? "image" : "thumbnail",
+  };
 }
 
 async function classifyWithWorkersAI(env, ad) {
   if (!env.AI) throw new Error("Workers AI binding is missing");
-  const media = pilotMediaFor(ad);
-  if (!media) throw new Error("No usable image or video thumbnail");
+  const media = await getClassificationMedia(env, ad);
 
-  const mediaResponse = await fetch(media.url, {
-    headers: { Referer: "https://www.facebook.com/", "User-Agent": "IndiaFoodAdLibrary/1.0" },
-  });
-  if (!mediaResponse.ok) throw new Error(`Creative download failed (${mediaResponse.status})`);
-  const mimeType = mediaResponse.headers.get("content-type")?.split(";")[0] || "image/jpeg";
-  const bytes = new Uint8Array(await mediaResponse.arrayBuffer());
-  if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Creative is larger than the pilot limit");
-
-  const prompt = `Classify this Indian food advertisement for a creative research library. Use the image and copy together. Return JSON only with exactly these keys: creative_style, selling_angle, hook, funnel_stage, language, offer_present. Use these values only.
-creative_style: Product demo, Recipe/how-to, UGC, Testimonial, Product shot, Lifestyle, Offer
+  const prompt = `Classify this Indian food advertisement for a creative research library. Use every visible video frame in the contact sheet and the ad copy together. Return JSON only with exactly these four keys. Choose exactly one value for every key. Never return multiple values, alternatives, comma-separated labels, explanations, Markdown, or prose.
+product_category: Snacks, Sweets & chocolate, Beverages, Dairy, Spices & ingredients, Staples, Ready-to-eat & instant, Ready-to-cook & frozen, Health & nutrition, Meat & seafood, Fresh food, Bakery, Other
+creative_style: Product shot, Product demo, Recipe/how-to, UGC, Testimonial, Lifestyle, Founder story
 selling_angle: Taste/craving, Health, Convenience, Value, Ingredients, Tradition/emotion, Social proof
-hook: Offer-led, Education, Problem / solution, Social proof, Product-first
-funnel_stage: Awareness, Consideration, Conversion
 language: English, Hindi, Hinglish, Other
-offer_present: true or false
 Brand: ${ad.brand?.name || "Unknown"}
-Product category: ${ad.category || "Unknown"}
+Existing product category hint: ${ad.category || "Unknown"}
 Headline: ${ad.headline || "None"}
 Copy: ${ad.body_copy || "None"}`;
 
@@ -465,20 +507,18 @@ Copy: ${ad.body_copy || "None"}`;
       { role: "system", content: "You are a precise advertising analyst. Do not invent details that are not visible or stated." },
       { role: "user", content: prompt },
     ],
-    image: `data:${mimeType};base64,${base64FromBytes(bytes)}`,
+    image: `data:${media.mimeType};base64,${base64FromBytes(media.bytes)}`,
     response_format: {
       type: "json_schema",
       json_schema: {
         type: "object",
         properties: {
-          creative_style: { type: "string" },
-          selling_angle: { type: "string" },
-          hook: { type: "string" },
-          funnel_stage: { type: "string" },
-          language: { type: "string" },
-          offer_present: { type: "boolean" },
+          product_category: { type: "string", enum: CLASSIFICATION_OPTIONS.category },
+          creative_style: { type: "string", enum: CLASSIFICATION_OPTIONS.creative_style },
+          selling_angle: { type: "string", enum: CLASSIFICATION_OPTIONS.selling_angle },
+          language: { type: "string", enum: CLASSIFICATION_OPTIONS.language },
         },
-        required: ["creative_style", "selling_angle", "hook", "funnel_stage", "language", "offer_present"],
+        required: ["product_category", "creative_style", "selling_angle", "language"],
       },
     },
     max_tokens: 160,
@@ -493,35 +533,46 @@ Copy: ${ad.body_copy || "None"}`;
   }
   return {
     labels: {
+      category: labels.product_category,
       creative_style: labels.creative_style || null,
       selling_angle: labels.selling_angle || null,
-      hook: labels.hook || null,
-      funnel_stage: labels.funnel_stage || null,
       language: labels.language || null,
-      offer_present: typeof labels.offer_present === "boolean" ? labels.offer_present : null,
     },
     media_source: media.source,
     usage: result.usage || null,
   };
 }
 
-async function pilotClassify(env, limit) {
+function hasClassificationMedia(ad) {
+  return /video/i.test(ad.format || "") ? Boolean(ad.creative_url) : Boolean(ad.creative_url || ad.thumbnail_url);
+}
+
+async function classifyApprovedAds(env, limit, offset, write) {
   const rows = await supabase(
     env,
-    "ads?status=eq.approved&select=id,source_ad_id,format,language,category,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc&limit=50",
+    `ads?status=eq.approved&select=id,source_ad_id,format,language,category,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc,id.asc&offset=${offset}&limit=${Math.min(limit * 2, 100)}`,
   );
-  const imageAds = rows.filter((ad) => !/video/i.test(ad.format || "") && pilotMediaFor(ad)).slice(0, Math.ceil(limit * 0.6));
-  const videoAds = rows.filter((ad) => /video/i.test(ad.format || "") && pilotMediaFor(ad)).slice(0, Math.floor(limit * 0.4));
-  const selected = [...imageAds, ...videoAds];
-  for (const ad of rows) {
-    if (selected.length >= limit) break;
-    if (!selected.includes(ad) && pilotMediaFor(ad)) selected.push(ad);
-  }
+  const selected = rows.filter(hasClassificationMedia).slice(0, limit);
 
   const results = [];
+  let writes = 0;
   for (const ad of selected.slice(0, limit)) {
     try {
       const classification = await classifyWithWorkersAI(env, ad);
+      if (write) {
+        await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
+          method: "PATCH",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify({
+            category: classification.labels.category,
+            creative_style: classification.labels.creative_style,
+            selling_angle: classification.labels.selling_angle,
+            language: classification.labels.language,
+            updated_at: new Date().toISOString(),
+          }),
+        });
+        writes += 1;
+      }
       results.push({
         id: ad.id,
         source_ad_id: ad.source_ad_id,
@@ -547,9 +598,14 @@ async function pilotClassify(env, limit) {
     requested: limit,
     attempted: results.length,
     classified: results.filter((item) => !item.error).length,
-    writes: 0,
+    offset,
+    writes,
     results,
   };
+}
+
+async function pilotClassify(env, limit, offset) {
+  return classifyApprovedAds(env, limit, offset, false);
 }
 
 async function publishPendingAds(env) {
@@ -651,6 +707,8 @@ async function queueAds(env, discoveries, options) {
       if (prior) {
         refreshRows.push({
           ...ad,
+          category: prior.category || ad.category,
+          language: prior.language || ad.language,
           creative_style: prior.creative_style || ad.creative_style,
           selling_angle: prior.selling_angle || ad.selling_angle,
         });
@@ -809,8 +867,19 @@ const worker = {
     if (request.method === "POST" && url.pathname === "/pilot") {
       if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
       const limit = boundedInteger(url.searchParams.get("limit"), 10, 1, 10);
+      const offset = boundedInteger(url.searchParams.get("offset"), 0, 0, 10_000);
       try {
-        return Response.json(await pilotClassify(env, limit));
+        return Response.json(await pilotClassify(env, limit, offset));
+      } catch (error) {
+        return Response.json({ error: error instanceof Error ? error.message : String(error), writes: 0 }, { status: 500 });
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/classify") {
+      if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
+      const limit = boundedInteger(url.searchParams.get("limit"), 10, 1, MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN);
+      const offset = boundedInteger(url.searchParams.get("offset"), 0, 0, 10_000);
+      try {
+        return Response.json(await classifyApprovedAds(env, limit, offset, true));
       } catch (error) {
         return Response.json({ error: error instanceof Error ? error.message : String(error), writes: 0 }, { status: 500 });
       }

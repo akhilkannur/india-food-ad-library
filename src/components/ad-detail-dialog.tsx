@@ -55,8 +55,6 @@ export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; 
             <dl className="detail-list">
               <div><dt>Creative style</dt><dd>{ad.creative_style || ad.format || "Not tagged"}</dd></div>
               <div><dt>Message angle</dt><dd>{ad.selling_angle || "Not tagged"}</dd></div>
-              <div><dt>Hook</dt><dd>{ad.hook || "Not tagged"}</dd></div>
-              <div><dt>Funnel stage</dt><dd>{ad.funnel_stage || "Not tagged"}</dd></div>
               <div><dt>Language</dt><dd>{ad.language}</dd></div>
               <div><dt>CTA</dt><dd>{ad.cta || "Not captured"}</dd></div>
               <div><dt>First seen</dt><dd>{formatDate(ad.first_seen_at)}</dd></div>

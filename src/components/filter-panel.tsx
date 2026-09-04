@@ -5,18 +5,18 @@ import { ChevronDown, RotateCcw, X } from "lucide-react";
 type FilterPanelProps = {
   categories: string[];
   formats: string[];
-  funnelStages: string[];
+  sellingAngles: string[];
   languages: string[];
   category: string;
   format: string;
-  funnelStage: string;
+  sellingAngle: string;
   language: string;
   activeCount: number;
   resultCount: number;
   mobile?: boolean;
   onCategoryChange: (value: string) => void;
   onFormatChange: (value: string) => void;
-  onFunnelStageChange: (value: string) => void;
+  onSellingAngleChange: (value: string) => void;
   onLanguageChange: (value: string) => void;
   onClear: () => void;
   onClose?: () => void;
@@ -64,7 +64,7 @@ export function FilterPanel(props: FilterPanelProps) {
       <div className="filter-panel__fields">
         <FilterSelect label="Category" value={props.category} values={props.categories} onChange={props.onCategoryChange} />
         <FilterSelect label="Creative format" value={props.format} values={props.formats} onChange={props.onFormatChange} />
-        <FilterSelect label="Funnel stage" value={props.funnelStage} values={props.funnelStages} onChange={props.onFunnelStageChange} />
+        <FilterSelect label="Message angle" value={props.sellingAngle} values={props.sellingAngles} onChange={props.onSellingAngleChange} />
         <FilterSelect label="Language" value={props.language} values={props.languages} onChange={props.onLanguageChange} />
       </div>
 

@@ -4,7 +4,7 @@ A media-first catalogue of approved ads from Indian food and beverage brands, wi
 
 ## Included
 
-- Public ad discovery with search, category filters, sorting and an ad-detail drawer
+- Public ad discovery with search, controlled product-category, creative-style, message-angle and language filters, sorting and an ad-detail drawer
 - Private `/admin` review queue with pending, approved and rejected states
 - Single-admin, signed HTTP-only session authentication
 - Supabase Postgres schema with public read access limited to approved ads
@@ -60,9 +60,15 @@ For each discovery it:
 
 Meta changes its public UI regularly, so every candidate is brand-page matched and still requires approval in `/admin`. The public library never exposes pending records.
 
-The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RUN_TOKEN`, and optionally `GEMINI_API_KEY` as encrypted runtime secrets. Fast heuristic labels are applied during normal collection. Gemini image classification is opt-in for manual runs with `ai=1` through `ai=12`, is spread across brands in the batch and runs before the final diversity ordering. Video creatives use heuristic labels so AI usage stays small and predictable. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
+The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RUN_TOKEN`, and optionally `GEMINI_API_KEY` as encrypted runtime secrets. Fast heuristic labels are applied during normal collection. Gemini image classification is opt-in for manual runs with `ai=1` through `ai=12`, is spread across brands in the batch and runs before the final diversity ordering. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
 
 Run `supabase/migrations/002_ai_classifications.sql` after the initial schema migration. It adds the reviewed `creative_style` and `selling_angle` fields used by the public catalogue and moderation queue.
+
+### Workers AI classification
+
+The manual `Classify approved ads` workflow classifies each selected approved ad with exactly one value for each of four fields: product category, creative style, selling angle and language. Image ads use their creative; video ads use a Cloudflare-generated four-frame contact sheet from the first eight seconds. Results are saved to the existing `category`, `creative_style`, `selling_angle` and `language` columns. Offers are not used as a collection.
+
+Run the workflow in batches of 10–25 ads. Increase `offset` by the previous batch size for the next run. The read-only `Run Workers AI classification pilot` workflow remains available for testing without database writes.
 
 Cloudflare Cron runs the weekly refresh. The GitHub Actions workflow is the bulk-backfill control and manual fallback; it needs:
 

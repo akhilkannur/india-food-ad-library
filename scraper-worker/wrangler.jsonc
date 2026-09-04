@@ -11,6 +11,9 @@
   "ai": {
     "binding": "AI"
   },
+  "media": {
+    "binding": "MEDIA"
+  },
   "triggers": {
     "crons": [
       "30 0 * * SUN",

@@ -47,7 +47,7 @@ export function LibraryExplorer({
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [format, setFormat] = useState("All");
-  const [funnelStage, setFunnelStage] = useState("All");
+  const [sellingAngle, setSellingAngle] = useState("All");
   const [language, setLanguage] = useState("All");
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
@@ -62,7 +62,7 @@ export function LibraryExplorer({
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
   const categories = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.category))], [ads]);
   const formats = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.creative_style || ad.format))], [ads]);
-  const funnelStages = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.funnel_stage))], [ads]);
+  const sellingAngles = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.selling_angle))], [ads]);
   const languages = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.language))], [ads]);
   const brandCount = useMemo(() => new Set(ads.map((ad) => ad.brand.id)).size, [ads]);
 
@@ -72,7 +72,7 @@ export function LibraryExplorer({
       .filter((ad) => !unavailableIds.has(ad.id))
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => format === "All" || (ad.creative_style || ad.format) === format)
-      .filter((ad) => funnelStage === "All" || ad.funnel_stage === funnelStage)
+      .filter((ad) => sellingAngle === "All" || ad.selling_angle === sellingAngle)
       .filter((ad) => language === "All" || ad.language === language)
       .filter((ad) => {
         if (!query) return true;
@@ -84,9 +84,9 @@ export function LibraryExplorer({
         const delta = new Date(right.first_seen_at).getTime() - new Date(left.first_seen_at).getTime();
         return sortOrder === "newest" ? delta : -delta;
       }));
-  }, [ads, category, format, funnelStage, language, search, sortOrder, unavailableIds]);
+  }, [ads, category, format, sellingAngle, language, search, sortOrder, unavailableIds]);
 
-  const activeFilterCount = [category, format, funnelStage, language].filter((value) => value !== "All").length
+  const activeFilterCount = [category, format, sellingAngle, language].filter((value) => value !== "All").length
     + (search.trim() ? 1 : 0);
 
   const renderedAds = visibleAds.slice(0, visibleCount);
@@ -95,11 +95,11 @@ export function LibraryExplorer({
     const filters: ActiveFilter[] = [];
     if (category !== "All") filters.push({ id: "category", label: category, onRemove: () => setCategory("All") });
     if (format !== "All") filters.push({ id: "format", label: format, onRemove: () => setFormat("All") });
-    if (funnelStage !== "All") filters.push({ id: "funnel", label: funnelStage, onRemove: () => setFunnelStage("All") });
+    if (sellingAngle !== "All") filters.push({ id: "angle", label: sellingAngle, onRemove: () => setSellingAngle("All") });
     if (language !== "All") filters.push({ id: "language", label: language, onRemove: () => setLanguage("All") });
     if (search.trim()) filters.push({ id: "search", label: `“${search.trim()}”`, onRemove: () => setSearch("") });
     return filters;
-  }, [category, format, funnelStage, language, search]);
+  }, [category, format, sellingAngle, language, search]);
 
   const collections = useMemo(() => {
     return getCollectionDefinitions(visibleAds).map((definition) => {
@@ -113,7 +113,7 @@ export function LibraryExplorer({
     setSearch("");
     setCategory("All");
     setFormat("All");
-    setFunnelStage("All");
+    setSellingAngle("All");
     setLanguage("All");
   }
 
@@ -201,7 +201,7 @@ export function LibraryExplorer({
 
   useEffect(() => {
     setVisibleCount(AD_BATCH_SIZE);
-  }, [category, format, funnelStage, language, search, sortOrder]);
+  }, [category, format, sellingAngle, language, search, sortOrder]);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -235,7 +235,7 @@ export function LibraryExplorer({
               <div className="library-intro__copy">
                 <p>Creative reference for DTC teams</p>
                 <h1>Indian food advertising, indexed.</h1>
-                <span>Search 1000s of ads from 100s of brands by format, funnel stage, and language.</span>
+                <span>Search 1000s of ads from 100s of brands by product category, creative style, message angle, and language.</span>
               </div>
               <div className="library-intro__utility">
                 <nav aria-label="Library sections">
@@ -269,17 +269,17 @@ export function LibraryExplorer({
             <FilterPanel
               categories={categories}
               formats={formats}
-              funnelStages={funnelStages}
+              sellingAngles={sellingAngles}
               languages={languages}
               category={category}
               format={format}
-              funnelStage={funnelStage}
+              sellingAngle={sellingAngle}
               language={language}
               activeCount={activeFilterCount}
               resultCount={visibleAds.length}
               onCategoryChange={setCategory}
               onFormatChange={setFormat}
-              onFunnelStageChange={setFunnelStage}
+              onSellingAngleChange={setSellingAngle}
               onLanguageChange={setLanguage}
               onClear={clearFilters}
             />
@@ -343,17 +343,17 @@ export function LibraryExplorer({
             mobile
             categories={categories}
             formats={formats}
-            funnelStages={funnelStages}
+            sellingAngles={sellingAngles}
             languages={languages}
             category={category}
             format={format}
-            funnelStage={funnelStage}
+            sellingAngle={sellingAngle}
             language={language}
             activeCount={activeFilterCount}
             resultCount={visibleAds.length}
             onCategoryChange={setCategory}
             onFormatChange={setFormat}
-            onFunnelStageChange={setFunnelStage}
+            onSellingAngleChange={setSellingAngle}
             onLanguageChange={setLanguage}
             onClear={clearFilters}
             onClose={() => setFiltersOpen(false)}

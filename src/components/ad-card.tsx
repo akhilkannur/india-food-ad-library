@@ -25,7 +25,7 @@ export function AdCard({
   onUnavailable: () => void;
 }) {
   const format = ad.creative_style || ad.format;
-  const secondaryTag = ad.selling_angle || ad.funnel_stage;
+  const secondaryTag = ad.selling_angle;
 
   return (
     <article className="ad-card">
