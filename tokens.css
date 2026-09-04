@@ -36,7 +36,7 @@
   --color-library-scrim: oklch(18% 0.012 55 / 0.62);
   --color-library-shadow: oklch(20% 0.01 55 / 0.1);
 
-  --archive-paper: oklch(96.5% 0.006 285);
+  --archive-paper: #f4f3ef;
   --archive-card: oklch(99% 0.003 285);
   --archive-ink: oklch(20% 0.012 285);
   --archive-muted: oklch(52% 0.012 285);

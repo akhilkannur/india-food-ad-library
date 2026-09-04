@@ -20,7 +20,7 @@ export function AdCard({
 }: {
   ad: Ad;
   priority: boolean;
-  onOpen: () => void;
+  onOpen?: () => void;
   onUnavailable: () => void;
 }) {
   const format = ad.creative_style || ad.format;
@@ -55,15 +55,17 @@ export function AdCard({
         </div>
       </div>
 
-      <button
-        className="ad-card__trigger"
-        type="button"
-        onClick={onOpen}
-        aria-haspopup="dialog"
-        aria-label={`Inspect ${ad.brand.name} ad: ${ad.headline || ad.format}`}
-      >
-        <span className="visually-hidden">View ad details</span>
-      </button>
+      {onOpen && (
+        <button
+          className="ad-card__trigger"
+          type="button"
+          onClick={onOpen}
+          aria-haspopup="dialog"
+          aria-label={`Inspect ${ad.brand.name} ad: ${ad.headline || ad.format}`}
+        >
+          <span className="visually-hidden">View ad details</span>
+        </button>
+      )}
     </article>
   );
 }

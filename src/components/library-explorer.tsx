@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
 import { SiteHeader } from "@/components/site-header";
+import { collectionDefinitions, diversifyByBrand, getCollectionAds } from "@/lib/collections";
 import type { Ad } from "@/lib/types";
 
 type SortOrder = "newest" | "oldest";
@@ -15,29 +17,17 @@ function uniqueValues(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter((value): value is string => Boolean(value)))).sort();
 }
 
-function diversifyByBrand(items: Ad[]) {
-  const queues = new Map<string, Ad[]>();
-  const brandOrder: string[] = [];
-  items.forEach((ad) => {
-    const key = ad.brand.id;
-    if (!queues.has(key)) {
-      queues.set(key, []);
-      brandOrder.push(key);
-    }
-    queues.get(key)!.push(ad);
-  });
-
-  const result: Ad[] = [];
-  while (brandOrder.some((key) => queues.get(key)!.length)) {
-    brandOrder.forEach((key) => {
-      const ad = queues.get(key)!.shift();
-      if (ad) result.push(ad);
-    });
-  }
-  return result;
-}
-
-export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolean }) {
+export function LibraryExplorer({
+  ads,
+  demoMode,
+  showCollections = true,
+  collectionTitle,
+}: {
+  ads: Ad[];
+  demoMode: boolean;
+  showCollections?: boolean;
+  collectionTitle?: string;
+}) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [format, setFormat] = useState("All");
@@ -88,16 +78,10 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
   }, [category, format, funnelStage, language, search]);
 
   const collections = useMemo(() => {
-    const definitions = [
-      { name: "Ingredient-led", match: (ad: Ad) => /ingredient/i.test(`${ad.hook} ${ad.selling_angle} ${ad.headline}`) },
-      { name: "Founder-led stories", match: (ad: Ad) => /founder|origin|story/i.test(`${ad.format} ${ad.hook} ${ad.selling_angle}`) },
-      { name: "Offers & bundles", match: (ad: Ad) => /offer|discount|value|bundle/i.test(`${ad.format} ${ad.selling_angle} ${ad.offer} ${ad.headline}`) },
-      { name: "Hindi & Hinglish", match: (ad: Ad) => /hindi|hinglish/i.test(ad.language || "") },
-    ];
-    return definitions.map((definition) => {
-      const matches = visibleAds.filter(definition.match);
+    return collectionDefinitions.map((definition) => {
+      const matches = getCollectionAds(visibleAds, definition);
       const brands = new Set(matches.map((ad) => ad.brand.id));
-      return { name: definition.name, ads: diversifyByBrand(matches).slice(0, 8), brandCount: brands.size };
+      return { ...definition, ads: matches.slice(0, 8), brandCount: brands.size };
     }).filter((collection) => collection.ads.length >= 4 && collection.brandCount >= 3);
   }, [visibleAds]);
 
@@ -142,20 +126,24 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
       <SiteHeader search={search} onSearch={setSearch} />
       <main className="library-shell library-shell--collections">
         <div className="collection-main">
-          <header className="collection-topline">
-            <div><span className="collection-topline__dot" /> Your creative library</div>
-            <div className="collection-topline__meta">{ads.length} approved <span>·</span> {brandCount} brands</div>
-          </header>
+          {collectionTitle && (
+            <header className="collection-page-heading">
+              <Link href="/">← All collections</Link>
+              <h1>{collectionTitle}</h1>
+              <p>{ads.length} creatives · {brandCount} brands</p>
+            </header>
+          )}
 
-          {collections.length > 0 && (
+          {showCollections && collections.length > 0 && (
             <section id="collections" className="collections-area" aria-label="Curated collections">
               <div className="collections-heading"><h2>Collections</h2><span>Curated by creative pattern</span></div>
-              {collections.map((collection, index) => (
+              {collections.map((collection) => (
                 <div className="collection-row" key={collection.name}>
-                  <div className="collection-row__heading"><h3>{collection.name}</h3><span>{String(index + 1).padStart(2, "0")} / {collection.ads.length} ads · {collection.brandCount} brands</span></div>
+                  <div className="collection-row__heading"><h3>{collection.name}</h3><span>{collection.ads.length} ads · {collection.brandCount} brands</span></div>
                   <div className="collection-row__cards">
-                    {collection.ads.map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onOpen={() => setSelectedAd(ad)} onUnavailable={() => hideUnavailable(ad)} />)}
+                    {collection.ads.map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onUnavailable={() => hideUnavailable(ad)} />)}
                   </div>
+                  <Link className="collection-row__link" href={`/collections/${collection.slug}`} aria-label={`View ${collection.name} collection`} />
                 </div>
               ))}
             </section>
