@@ -389,6 +389,7 @@ function base64FromBytes(bytes) {
 }
 
 function parseClassificationJson(value) {
+  if (value && typeof value === "object" && value.response && typeof value.response === "object") return value.response;
   const text = typeof value === "string" ? value : value?.response;
   if (!text) throw new Error("Workers AI returned no classification response");
   const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
@@ -436,6 +437,21 @@ Copy: ${ad.body_copy || "None"}`;
       { role: "user", content: prompt },
     ],
     image: `data:${mimeType};base64,${base64FromBytes(bytes)}`,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        type: "object",
+        properties: {
+          creative_style: { type: "string" },
+          selling_angle: { type: "string" },
+          hook: { type: "string" },
+          funnel_stage: { type: "string" },
+          language: { type: "string" },
+          offer_present: { type: "boolean" },
+        },
+        required: ["creative_style", "selling_angle", "hook", "funnel_stage", "language", "offer_present"],
+      },
+    },
     max_tokens: 160,
     temperature: 0,
   });
