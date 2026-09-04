@@ -44,7 +44,7 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
           controls={!compact}
           muted={compact}
           playsInline
-          preload={priority ? "auto" : "metadata"}
+          preload={compact ? "none" : "metadata"}
           onError={() => {
             setFailedUrl(ad.creative_url!);
             onUnavailable?.();
