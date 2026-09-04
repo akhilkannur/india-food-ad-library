@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
-import { CreativePreview } from "@/components/creative-preview";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
@@ -67,13 +66,18 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
   }, [category, format, funnelStage, language, search]);
 
   const collections = useMemo(() => {
-    const groups = Array.from(new Set(visibleAds.map((ad) => ad.category).filter(Boolean)));
-    return groups.slice(0, 4).map((name) => ({
-      name,
-      ads: visibleAds.filter((ad) => ad.category === name).slice(0, 6),
-    })).filter((collection) => collection.ads.length > 1);
+    const definitions = [
+      { name: "Ingredient-led", match: (ad: Ad) => /ingredient/i.test(`${ad.hook} ${ad.selling_angle} ${ad.headline}`) },
+      { name: "Founder-led stories", match: (ad: Ad) => /founder|origin|story/i.test(`${ad.format} ${ad.hook} ${ad.selling_angle}`) },
+      { name: "Offers & bundles", match: (ad: Ad) => /offer|discount|value|bundle/i.test(`${ad.format} ${ad.selling_angle} ${ad.offer} ${ad.headline}`) },
+      { name: "Hindi & Hinglish", match: (ad: Ad) => /hindi|hinglish/i.test(ad.language || "") },
+    ];
+    return definitions.map((definition) => {
+      const matches = visibleAds.filter(definition.match);
+      const brands = new Set(matches.map((ad) => ad.brand.id));
+      return { name: definition.name, ads: matches.slice(0, 8), brandCount: brands.size };
+    }).filter((collection) => collection.ads.length >= 4 && collection.brandCount >= 3);
   }, [visibleAds]);
-  const featuredAd = visibleAds[0];
 
   function clearFilters() {
     setSearch("");
@@ -134,24 +138,11 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
             <div className="collection-topline__meta">{ads.length} approved creatives <span>·</span> India</div>
           </header>
 
-          {featuredAd && <section id="featured" className="featured-collection" aria-labelledby="featured-title">
-            <div className="featured-collection__copy">
-              <span className="collection-eyebrow">Featured collection · 01</span>
-              <h1 id="featured-title">The new<br /><em>Indian</em> pantry</h1>
-              <p>A rotating shelf of the food and beverage work shaping how India eats, drinks, and shops now.</p>
-              <button type="button" onClick={() => setSelectedAd(featuredAd)}>Open featured ad ↗</button>
-            </div>
-            <div className="featured-collection__media">
-              <CreativePreview ad={featuredAd} priority onUnavailable={() => hideUnavailable(featuredAd)} />
-              <span className="featured-collection__label">{featuredAd.brand.name}</span>
-            </div>
-          </section>}
-
           <section id="collections" className="collections-area" aria-label="Curated collections">
-            <div className="collections-heading"><h2>Browse collections</h2><span>Curated by category</span></div>
+            <div className="collections-heading"><h2>Patterns worth saving</h2><span>Cross-brand collections</span></div>
             {collections.map((collection, index) => (
               <div className="collection-row" key={collection.name}>
-                <div className="collection-row__heading"><h3>{collection.name}</h3><span>{String(index + 2).padStart(2, "0")} / {collection.ads.length} ads</span></div>
+                <div className="collection-row__heading"><h3>{collection.name}</h3><span>{String(index + 1).padStart(2, "0")} / {collection.ads.length} ads · {collection.brandCount} brands</span></div>
                 <div className="collection-row__cards">
                   {collection.ads.map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onOpen={() => setSelectedAd(ad)} onUnavailable={() => hideUnavailable(ad)} />)}
                 </div>

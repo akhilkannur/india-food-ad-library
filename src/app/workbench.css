@@ -97,6 +97,13 @@ body { background: var(--collections-black); color: var(--collections-white); }
   .collection-row__cards { grid-auto-columns: minmax(9.5rem, 42vw); }
 }
 
+/* Browse-first hierarchy: the library is the homepage, collections are a layer below it. */
+.collection-main { display: flex; flex-direction: column; }
+.collection-topline { order: 0; }
+.library-layout { order: 1; }
+.collections-area { order: 2; padding-block-start: 1.5rem; }
+.featured-collection { display: none; }
+
 @media (max-width: 30rem) {
   .app-header__inner { grid-template-columns: auto auto; padding-inline: .8rem; }
   .app-header__search { grid-column: 1 / -1; grid-row: 2; width: 100%; }
