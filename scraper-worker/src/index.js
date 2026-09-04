@@ -398,8 +398,34 @@ function parseClassificationJson(value) {
   const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   const start = clean.indexOf("{");
   const end = clean.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("Workers AI returned invalid classification JSON");
-  return JSON.parse(clean.slice(start, end + 1));
+  if (start >= 0 && end > start) return JSON.parse(clean.slice(start, end + 1));
+
+  const values = {
+    creative_style: ["Product demo", "Recipe/how-to", "UGC", "Testimonial", "Product shot", "Lifestyle", "Offer"],
+    selling_angle: ["Taste/craving", "Health", "Convenience", "Value", "Ingredients", "Tradition/emotion", "Social proof"],
+    hook: ["Offer-led", "Education", "Problem / solution", "Social proof", "Product-first"],
+    funnel_stage: ["Awareness", "Consideration", "Conversion"],
+    language: ["English", "Hindi", "Hinglish", "Other"],
+  };
+  const normalized = clean.replace(/[*_]/g, "");
+  const extract = (label) => {
+    const match = normalized.match(new RegExp(`${label}\\s*:\\s*([^\\n]+)`, "i"));
+    return match?.[1]?.trim() || "";
+  };
+  const choose = (label, options) => {
+    const value = extract(label);
+    return options.find((option) => value.toLocaleLowerCase().includes(option.toLocaleLowerCase())) || null;
+  };
+  const parsed = {
+    creative_style: choose("Creative Style", values.creative_style),
+    selling_angle: choose("Selling Angle", values.selling_angle),
+    hook: choose("Hook", values.hook),
+    funnel_stage: choose("Funnel Stage", values.funnel_stage),
+    language: choose("Language", values.language),
+    offer_present: /(?:Offer Present|Offer)\s*:\s*(true|yes)\b/i.test(normalized),
+  };
+  if (Object.values(parsed).some((entry) => entry === null)) throw new Error("Workers AI returned invalid classification JSON");
+  return parsed;
 }
 
 function pilotMediaFor(ad) {
