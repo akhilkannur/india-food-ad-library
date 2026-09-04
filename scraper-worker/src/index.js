@@ -381,7 +381,7 @@ async function upsertAds(env, rows) {
 
 function balancedCandidateSample(groups, limit) {
   const eligible = groups.map((group) => group.candidates.filter((ad) =>
-    ad.creative_url && ["Image", "Video"].includes(ad.format)
+    ad.creative_url && ad.format === "Image"
   ));
   const selected = [];
   let depth = 0;

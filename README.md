@@ -60,7 +60,7 @@ For each discovery it:
 
 Meta changes its public UI regularly, so every candidate is brand-page matched and still requires approval in `/admin`. The public library never exposes pending records.
 
-The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RUN_TOKEN`, and optionally `GEMINI_API_KEY` as encrypted runtime secrets. Fast heuristic labels are applied during normal collection. Gemini classification is opt-in for manual runs with `ai=1` through `ai=12`, is spread across brands in the batch and runs before the final diversity ordering. Videos are limited to the first 20 seconds at low media resolution and are deleted after analysis. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
+The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RUN_TOKEN`, and optionally `GEMINI_API_KEY` as encrypted runtime secrets. Fast heuristic labels are applied during normal collection. Gemini image classification is opt-in for manual runs with `ai=1` through `ai=12`, is spread across brands in the batch and runs before the final diversity ordering. Video creatives use heuristic labels so AI usage stays small and predictable. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
 
 Run `supabase/migrations/002_ai_classifications.sql` after the initial schema migration. It adds the reviewed `creative_style` and `selling_angle` fields used by the public catalogue and moderation queue.
 
