@@ -214,6 +214,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
             )}
           </section>
         </div>
+        </div>
       </main>
 
       <dialog
