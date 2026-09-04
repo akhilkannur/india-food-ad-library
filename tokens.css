@@ -36,6 +36,14 @@
   --color-library-scrim: oklch(18% 0.012 55 / 0.62);
   --color-library-shadow: oklch(20% 0.01 55 / 0.1);
 
+  --archive-paper: oklch(96.5% 0.006 285);
+  --archive-card: oklch(99% 0.003 285);
+  --archive-ink: oklch(20% 0.012 285);
+  --archive-muted: oklch(52% 0.012 285);
+  --archive-line: oklch(89% 0.008 285);
+  --archive-accent: oklch(63% 0.18 35);
+  --archive-shadow: oklch(30% 0.012 285 / 0.1);
+
   --color-creative-turmeric: oklch(84% 0.14 84);
   --color-creative-turmeric-ink: oklch(25% 0.06 60);
   --color-creative-lime: oklch(86% 0.13 128);
@@ -52,6 +60,7 @@
   --font-display: "Space Grotesk", sans-serif;
   --font-body: "Manrope", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
+  --font-mind-display: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
 
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
@@ -89,6 +98,9 @@
   --dur-long: 420ms;
 
   --z-base: 1;
+  --z-stack-back: 1;
+  --z-stack-middle: 2;
+  --z-stack-front: 3;
   --z-raised: 10;
   --z-dropdown: 100;
   --z-sticky: 200;

@@ -143,21 +143,23 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
       <main className="library-shell library-shell--collections">
         <div className="collection-main">
           <header className="collection-topline">
-            <div><span className="collection-topline__dot" /> Latest creative</div>
+            <div><span className="collection-topline__dot" /> Your creative library</div>
             <div className="collection-topline__meta">{ads.length} approved <span>·</span> {brandCount} brands</div>
           </header>
 
-          <section id="collections" className="collections-area" aria-label="Curated collections">
-            <div className="collections-heading"><h2>Patterns worth saving</h2><span>Cross-brand collections</span></div>
-            {collections.map((collection, index) => (
-              <div className="collection-row" key={collection.name}>
-                <div className="collection-row__heading"><h3>{collection.name}</h3><span>{String(index + 1).padStart(2, "0")} / {collection.ads.length} ads · {collection.brandCount} brands</span></div>
-                <div className="collection-row__cards">
-                  {collection.ads.map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onOpen={() => setSelectedAd(ad)} onUnavailable={() => hideUnavailable(ad)} />)}
+          {collections.length > 0 && (
+            <section id="collections" className="collections-area" aria-label="Curated collections">
+              <div className="collections-heading"><h2>Collections</h2><span>Curated by creative pattern</span></div>
+              {collections.map((collection, index) => (
+                <div className="collection-row" key={collection.name}>
+                  <div className="collection-row__heading"><h3>{collection.name}</h3><span>{String(index + 1).padStart(2, "0")} / {collection.ads.length} ads · {collection.brandCount} brands</span></div>
+                  <div className="collection-row__cards">
+                    {collection.ads.map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onOpen={() => setSelectedAd(ad)} onUnavailable={() => hideUnavailable(ad)} />)}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </section>
+              ))}
+            </section>
+          )}
 
         <div id="all-ads" className="library-layout">
           <aside className="library-sidebar" aria-label="Filter ads">

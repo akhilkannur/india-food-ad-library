@@ -37,7 +37,7 @@ export function ResultsToolbar({
             type="search"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search brand, hook, headline or angle"
+            placeholder="Search your ad library"
             aria-label="Search ads"
           />
           <kbd>/</kbd>
