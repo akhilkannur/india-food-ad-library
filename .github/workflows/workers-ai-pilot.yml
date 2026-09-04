@@ -1,0 +1,37 @@
+name: Run Workers AI classification pilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Number of ads to classify (maximum 10)"
+        required: true
+        default: "10"
+
+permissions:
+  contents: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Run read-only pilot
+        env:
+          SCRAPER_WORKER_URL: ${{ secrets.SCRAPER_WORKER_URL }}
+          SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
+          LIMIT: ${{ inputs.limit }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 600 \
+            --request POST \
+            --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
+            "$SCRAPER_WORKER_URL/pilot?limit=$LIMIT" | tee pilot-result.json
+      - name: Upload pilot report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workers-ai-pilot-${{ github.run_id }}
+          path: pilot-result.json
+          if-no-files-found: warn
+          retention-days: 14
+

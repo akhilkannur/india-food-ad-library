@@ -4,6 +4,7 @@ import { selectDiverseCandidates } from "./diversity.js";
 
 const GEMINI_MODEL = "gemini-3.1-flash-lite";
 const GEMINI_VIDEO_SECONDS = 20;
+const WORKERS_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 const MAX_AI_CLASSIFICATIONS_PER_RUN = 12;
 const SCHEDULED_BATCH_SIZE = 24;
 const WEEKLY_CRONS = ["30 0 * * SUN", "0 1 * * SUN", "30 1 * * SUN", "0 2 * * SUN", "30 2 * * SUN"];
@@ -379,6 +380,127 @@ async function upsertAds(env, rows) {
   }
 }
 
+function base64FromBytes(bytes) {
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+  }
+  return btoa(binary);
+}
+
+function parseClassificationJson(value) {
+  const text = typeof value === "string" ? value : value?.response;
+  if (!text) throw new Error("Workers AI returned no classification response");
+  const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  const start = clean.indexOf("{");
+  const end = clean.lastIndexOf("}");
+  if (start < 0 || end <= start) throw new Error("Workers AI returned invalid classification JSON");
+  return JSON.parse(clean.slice(start, end + 1));
+}
+
+function pilotMediaFor(ad) {
+  const isVideo = /video/i.test(ad.format || "");
+  if (isVideo) return ad.thumbnail_url ? { url: ad.thumbnail_url, source: "video-thumbnail" } : null;
+  const url = ad.creative_url || ad.thumbnail_url;
+  return url ? { url, source: ad.creative_url ? "image" : "thumbnail" } : null;
+}
+
+async function classifyWithWorkersAI(env, ad) {
+  if (!env.AI) throw new Error("Workers AI binding is missing");
+  const media = pilotMediaFor(ad);
+  if (!media) throw new Error("No usable image or video thumbnail");
+
+  const mediaResponse = await fetch(media.url, {
+    headers: { Referer: "https://www.facebook.com/", "User-Agent": "IndiaFoodAdLibrary/1.0" },
+  });
+  if (!mediaResponse.ok) throw new Error(`Creative download failed (${mediaResponse.status})`);
+  const mimeType = mediaResponse.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+  const bytes = new Uint8Array(await mediaResponse.arrayBuffer());
+  if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Creative is larger than the pilot limit");
+
+  const prompt = `Classify this Indian food advertisement for a creative research library. Use the image and copy together. Return JSON only with exactly these keys: creative_style, selling_angle, hook, funnel_stage, language, offer_present. Use these values only.
+creative_style: Product demo, Recipe/how-to, UGC, Testimonial, Product shot, Lifestyle, Offer
+selling_angle: Taste/craving, Health, Convenience, Value, Ingredients, Tradition/emotion, Social proof
+hook: Offer-led, Education, Problem / solution, Social proof, Product-first
+funnel_stage: Awareness, Consideration, Conversion
+language: English, Hindi, Hinglish, Other
+offer_present: true or false
+Brand: ${ad.brand?.name || "Unknown"}
+Product category: ${ad.category || "Unknown"}
+Headline: ${ad.headline || "None"}
+Copy: ${ad.body_copy || "None"}`;
+
+  const result = await env.AI.run(WORKERS_AI_MODEL, {
+    messages: [
+      { role: "system", content: "You are a precise advertising analyst. Do not invent details that are not visible or stated." },
+      { role: "user", content: prompt },
+    ],
+    image: `data:${mimeType};base64,${base64FromBytes(bytes)}`,
+    max_tokens: 160,
+    temperature: 0,
+  });
+  const labels = parseClassificationJson(result);
+  return {
+    labels: {
+      creative_style: labels.creative_style || null,
+      selling_angle: labels.selling_angle || null,
+      hook: labels.hook || null,
+      funnel_stage: labels.funnel_stage || null,
+      language: labels.language || null,
+      offer_present: typeof labels.offer_present === "boolean" ? labels.offer_present : null,
+    },
+    media_source: media.source,
+    usage: result.usage || null,
+  };
+}
+
+async function pilotClassify(env, limit) {
+  const rows = await supabase(
+    env,
+    "ads?status=eq.approved&select=id,source_ad_id,format,language,category,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc&limit=50",
+  );
+  const imageAds = rows.filter((ad) => !/video/i.test(ad.format || "") && pilotMediaFor(ad)).slice(0, Math.ceil(limit * 0.6));
+  const videoAds = rows.filter((ad) => /video/i.test(ad.format || "") && pilotMediaFor(ad)).slice(0, Math.floor(limit * 0.4));
+  const selected = [...imageAds, ...videoAds];
+  for (const ad of rows) {
+    if (selected.length >= limit) break;
+    if (!selected.includes(ad) && pilotMediaFor(ad)) selected.push(ad);
+  }
+
+  const results = [];
+  for (const ad of selected.slice(0, limit)) {
+    try {
+      const classification = await classifyWithWorkersAI(env, ad);
+      results.push({
+        id: ad.id,
+        source_ad_id: ad.source_ad_id,
+        brand: ad.brand?.name || "Unknown",
+        format: ad.format,
+        labels: classification.labels,
+        media_source: classification.media_source,
+        usage: classification.usage,
+      });
+    } catch (error) {
+      results.push({
+        id: ad.id,
+        source_ad_id: ad.source_ad_id,
+        brand: ad.brand?.name || "Unknown",
+        format: ad.format,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return {
+    ok: results.length > 0 && results.every((item) => !item.error),
+    model: WORKERS_AI_MODEL,
+    requested: limit,
+    attempted: results.length,
+    classified: results.filter((item) => !item.error).length,
+    writes: 0,
+    results,
+  };
+}
+
 async function publishPendingAds(env) {
   const now = new Date().toISOString();
   const rows = await supabase(
@@ -632,6 +754,15 @@ const worker = {
         modes: Object.keys(RUN_MODES),
         schedule: "weekly",
       });
+    }
+    if (request.method === "POST" && url.pathname === "/pilot") {
+      if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
+      const limit = boundedInteger(url.searchParams.get("limit"), 10, 1, 10);
+      try {
+        return Response.json(await pilotClassify(env, limit));
+      } catch (error) {
+        return Response.json({ error: error instanceof Error ? error.message : String(error), writes: 0 }, { status: 500 });
+      }
     }
     if (request.method !== "POST" || url.pathname !== "/run") return new Response("Not found", { status: 404 });
     if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
