@@ -5,17 +5,30 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
+import { AuthGateDialog } from "@/components/auth-gate-dialog";
 import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
 import { SiteHeader } from "@/components/site-header";
 import { collectionDefinitions, diversifyByBrand, getCollectionAds } from "@/lib/collections";
+import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Ad } from "@/lib/types";
 
 type SortOrder = "newest" | "oldest";
 const AD_BATCH_SIZE = 100;
+const FREE_AD_OPEN_LIMIT = 10;
+const OPENED_ADS_KEY = "ifal-opened-ads";
 
 function uniqueValues(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter((value): value is string => Boolean(value)))).sort();
+}
+
+function getOpenedAdIds() {
+  try {
+    const value = JSON.parse(localStorage.getItem(OPENED_ADS_KEY) || "[]");
+    return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
 }
 
 export function LibraryExplorer({
@@ -39,6 +52,10 @@ export function LibraryExplorer({
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(AD_BATCH_SIZE);
   const filterDialogRef = useRef<HTMLDialogElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -109,6 +126,60 @@ export function LibraryExplorer({
     if (selectedAd?.id === ad.id) setSelectedAd(null);
   }
 
+  function openAd(ad: Ad) {
+    if (authenticated) {
+      setSelectedAd(ad);
+      return;
+    }
+
+    const openedIds = getOpenedAdIds();
+    if (!openedIds.includes(ad.id) && openedIds.length >= FREE_AD_OPEN_LIMIT) {
+      setAuthOpen(true);
+      return;
+    }
+
+    if (!openedIds.includes(ad.id)) {
+      localStorage.setItem(OPENED_ADS_KEY, JSON.stringify([...openedIds, ad.id]));
+    }
+    setSelectedAd(ad);
+  }
+
+  async function signIn() {
+    setAuthBusy(true);
+    setAuthError(null);
+    const { error } = await supabaseBrowser.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) {
+      setAuthError("Google sign-in could not start. Please try again.");
+      setAuthBusy(false);
+    }
+  }
+
+  async function authAction() {
+    if (!authenticated) {
+      setAuthOpen(true);
+      return;
+    }
+    await supabaseBrowser.auth.signOut();
+  }
+
+  useEffect(() => {
+    let active = true;
+    supabaseBrowser.auth.getSession().then(({ data }) => {
+      if (active) setAuthenticated(Boolean(data.session));
+    });
+    const { data } = supabaseBrowser.auth.onAuthStateChange((_event, session) => {
+      setAuthenticated(Boolean(session));
+      if (session) setAuthOpen(false);
+    });
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "/" && !(event.target instanceof HTMLInputElement)) {
@@ -148,7 +219,7 @@ export function LibraryExplorer({
 
   return (
     <>
-      <SiteHeader search={search} onSearch={setSearch} />
+      <SiteHeader search={search} onSearch={setSearch} authenticated={authenticated} onAuthAction={authAction} />
       <main className="library-shell library-shell--collections">
         <div className="collection-main">
           {pageTitle && (
@@ -161,15 +232,26 @@ export function LibraryExplorer({
 
           {showCollections && collections.length > 0 && (
             <header className="library-intro">
-              <p>Creative inspiration for DTC teams</p>
-              <h1>See what India’s food and beverage brands are advertising.</h1>
-              <span>Search {ads.length} creatives from {brandCount} brands by format, funnel stage, and language.</span>
+              <div className="library-intro__copy">
+                <p>Creative reference for DTC teams</p>
+                <h1>Indian food advertising, indexed.</h1>
+                <span>Search 1000s of ads from 100s of brands by format, funnel stage, and language.</span>
+              </div>
+              <div className="library-intro__utility">
+                <nav aria-label="Library sections">
+                  <a href="#collections">Collections</a>
+                  <a href="#all-ads">All ads</a>
+                </nav>
+              </div>
             </header>
           )}
 
           {showCollections && collections.length > 0 && (
             <section id="collections" className="collections-area" aria-label="Curated collections">
-              <div className="collections-heading"><h2>Collections</h2><span>Curated by creative pattern</span></div>
+              <div className="collections-heading">
+                <h2>Collections</h2>
+                <span>Curated by <a href="https://lisn.agency" target="_blank" rel="noreferrer">LISN</a></span>
+              </div>
               {collections.map((collection) => (
                 <div className="collection-row" key={collection.name}>
                   <div className="collection-row__heading"><h3>{collection.name}</h3><span>{collection.ads.length} ads · {collection.brandCount} brands</span></div>
@@ -223,7 +305,7 @@ export function LibraryExplorer({
                       ad={ad}
                       key={ad.id}
                       priority={index < 4}
-                      onOpen={() => setSelectedAd(ad)}
+                      onOpen={() => openAd(ad)}
                       onUnavailable={() => hideUnavailable(ad)}
                     />
                   ))}
@@ -282,6 +364,13 @@ export function LibraryExplorer({
         ad={selectedAd}
         onClose={() => setSelectedAd(null)}
         onUnavailable={() => selectedAd && hideUnavailable(selectedAd)}
+      />
+      <AuthGateDialog
+        open={authOpen}
+        busy={authBusy}
+        error={authError}
+        onClose={() => setAuthOpen(false)}
+        onSignIn={signIn}
       />
     </>
   );

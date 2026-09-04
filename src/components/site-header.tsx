@@ -1,14 +1,18 @@
 import Link from "next/link";
-import { ArrowUpRight, Search } from "lucide-react";
+import { ArrowUpRight, LogIn, LogOut, Search } from "lucide-react";
 
 export function SiteHeader({
   search,
   onSearch,
   admin = false,
+  authenticated = false,
+  onAuthAction,
 }: {
   search?: string;
   onSearch?: (value: string) => void;
   admin?: boolean;
+  authenticated?: boolean;
+  onAuthAction?: () => void;
 }) {
   return (
     <header className="site-header app-header">
@@ -28,6 +32,17 @@ export function SiteHeader({
           <Link className="app-header__action" href="/">
             Back to library<ArrowUpRight aria-hidden="true" size={14} />
           </Link>
+        )}
+        {!admin && onAuthAction && (
+          <button
+            className="app-header__action"
+            type="button"
+            onClick={onAuthAction}
+            aria-label={authenticated ? "Sign out" : "Sign in"}
+            title={authenticated ? "Sign out" : "Sign in"}
+          >
+            {authenticated ? <LogOut aria-hidden="true" size={16} /> : <LogIn aria-hidden="true" size={16} />}
+          </button>
         )}
       </div>
     </header>
