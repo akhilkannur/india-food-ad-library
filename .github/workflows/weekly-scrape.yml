@@ -3,16 +3,28 @@ name: Run Indian food ad scraper
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: "Collection mode"
+        required: true
+        default: "backfill"
+        type: choice
+        options:
+          - backfill
+          - refresh
       brand:
         description: "Brand slug (blank runs a batch)"
         required: false
         default: ""
       limit:
-        description: "Batch size when brand is blank (maximum 4)"
+        description: "Batch size: backfill max 12, refresh max 24"
         required: false
-        default: "4"
+        default: "12"
       offset:
         description: "Start position in the brand list when brand is blank"
+        required: false
+        default: "0"
+      ai:
+        description: "Optional Gemini classifications (0–12; zero is fastest)"
         required: false
         default: "0"
 
@@ -32,15 +44,17 @@ jobs:
         env:
           SCRAPER_WORKER_URL: ${{ secrets.SCRAPER_WORKER_URL }}
           SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
+          MODE: ${{ inputs.mode }}
           BRAND: ${{ inputs.brand }}
           LIMIT: ${{ inputs.limit }}
           OFFSET: ${{ inputs.offset }}
+          AI: ${{ inputs.ai }}
         run: |
-          query=""
+          query="?mode=$MODE&ai=$AI"
           if [ -n "$BRAND" ]; then
-            query="?brand=$BRAND"
+            query="$query&brand=$BRAND"
           else
-            query="?limit=$LIMIT&offset=$OFFSET"
+            query="$query&limit=$LIMIT&offset=$OFFSET"
           fi
           curl --fail-with-body --silent --show-error --max-time 600 \
             --request POST \

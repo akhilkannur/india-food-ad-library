@@ -1,10 +1,34 @@
 import { launch } from "@cloudflare/playwright";
 import { BRANDS } from "./brands.js";
+import { selectDiverseCandidates } from "./diversity.js";
 
-const MAX_ADS_PER_BRAND = 16;
-const MAX_MANUAL_BRANDS = 4;
 const GEMINI_MODEL = "gemini-3.1-flash-lite";
 const GEMINI_VIDEO_SECONDS = 20;
+const MAX_AI_CLASSIFICATIONS_PER_RUN = 12;
+const SCHEDULED_BATCH_SIZE = 24;
+const WEEKLY_CRONS = ["30 0 * * 0", "0 1 * * 0", "30 1 * * 0", "0 2 * * 0", "30 2 * * 0"];
+
+const RUN_MODES = {
+  backfill: { rawAds: 60, selectedAds: 24, scrollRounds: 8, maxBrands: 12, concurrency: 2 },
+  refresh: { rawAds: 30, selectedAds: 8, scrollRounds: 4, maxBrands: 24, concurrency: 3 },
+};
+
+const HIGH_VOLUME_BRANDS = new Set([
+  "amul", "haldirams", "bikaji", "paper-boat", "epigamia", "the-whole-truth", "yoga-bar", "slurrp-farm",
+  "country-delight", "licious", "freshtohome", "wellbeing-nutrition", "oziva", "britannia", "parle-products",
+  "maggi", "sunfeast", "lays-india", "kurkure", "cadbury-dairy-milk", "coca-cola-india", "pepsi-india",
+  "mother-dairy", "mccain-india", "pintola", "aashirvaad", "tata-tea", "nescafe-india",
+]);
+
+function limitsForBrand(mode, brand) {
+  const base = RUN_MODES[mode];
+  if (HIGH_VOLUME_BRANDS.has(brand.slug)) return base;
+  return {
+    ...base,
+    rawAds: Math.ceil(base.rawAds * 0.7),
+    selectedAds: Math.ceil(base.selectedAds * 0.7),
+  };
+}
 
 function normalize(value) {
   return String(value || "")
@@ -36,6 +60,26 @@ function hookFor(text) {
   return "Product-first";
 }
 
+function creativeStyleFor(record) {
+  const text = [record.headline, record.body].filter(Boolean).join(" ");
+  if (/\b(recipe|ingredients|how to|steps|method|make at home)\b/i.test(text)) return "Recipe/how-to";
+  if (/\b(my review|i tried|taste test|unboxing|pov|day in my life)\b/i.test(text)) return "UGC";
+  if (/\b(customer|testimonial|review|people love|rated)\b/i.test(text)) return "Testimonial";
+  if (/\b(save|discount|offer|deal|free|% off)\b|₹/i.test(text)) return "Offer";
+  if (/\b(family|friends|morning|evening|workout|lunch|party|festival)\b/i.test(text)) return "Lifestyle";
+  return record.video ? "Product demo" : "Product shot";
+}
+
+function sellingAngleFor(text) {
+  if (/\b(protein|healthy|health|nutrition|calorie|sugar free|gluten free|organic)\b/i.test(text)) return "Health";
+  if (/\b(quick|easy|instant|ready|minutes|on the go|convenient)\b/i.test(text)) return "Convenience";
+  if (/\b(save|discount|offer|deal|free|value|% off)\b|₹/i.test(text)) return "Value";
+  if (/\b(ingredient|natural|clean label|no preservative|whole grain)\b/i.test(text)) return "Ingredients";
+  if (/\b(tradition|traditional|homemade|ghar|maa|nostalgia|heritage)\b/i.test(text)) return "Tradition/emotion";
+  if (/\b(review|rated|loved by|customer|testimonial)\b/i.test(text)) return "Social proof";
+  return "Taste/craving";
+}
+
 function parseStartedAt(value) {
   const match = value?.match(/^Started running on (\d{1,2} [A-Z][a-z]{2} \d{4})/);
   if (!match) return null;
@@ -54,12 +98,23 @@ function targetUrl(brand) {
   return target.toString();
 }
 
-async function extractPage(page, brand) {
+async function extractPage(page, brand, limits) {
   await page.goto(targetUrl(brand), { waitUntil: "domcontentloaded", timeout: 60_000 });
-  await page.waitForTimeout(9_000);
-  for (let round = 0; round < 2; round += 1) {
+  try {
+    await page.waitForFunction(() => document.body?.innerText.includes("Library ID:"), null, { timeout: 12_000 });
+  } catch {
+    await page.waitForTimeout(2_500);
+  }
+
+  let previousCount = 0;
+  let stagnantRounds = 0;
+  for (let round = 0; round < limits.scrollRounds; round += 1) {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(1_500);
+    await page.waitForTimeout(1_200);
+    const count = await page.evaluate(() => (document.body?.innerText.match(/Library ID:/g) || []).length);
+    stagnantRounds = count <= previousCount ? stagnantRounds + 1 : 0;
+    previousCount = count;
+    if (count >= limits.rawAds * 2 || stagnantRounds >= 2) break;
   }
 
   const records = await page.evaluate((limit) => {
@@ -130,9 +185,9 @@ async function extractPage(page, brand) {
       });
     }
     return output;
-  }, MAX_ADS_PER_BRAND * 3);
+  }, limits.rawAds * 3);
 
-  return records.filter((record) => pageMatchesBrand(record.page_name, brand)).slice(0, MAX_ADS_PER_BRAND);
+  return records.filter((record) => pageMatchesBrand(record.page_name, brand)).slice(0, limits.rawAds);
 }
 
 function toAd(record, brand, timestamp) {
@@ -153,6 +208,8 @@ function toAd(record, brand, timestamp) {
     creative_url: creative,
     thumbnail_url: record.image,
     creative_theme: "auto-imported",
+    creative_style: creativeStyleFor(record),
+    selling_angle: sellingAngleFor(text),
     started_at: parseStartedAt(record.started),
     last_seen_at: timestamp,
   };
@@ -282,77 +339,190 @@ async function supabase(env, path, options = {}) {
   return body ? JSON.parse(body) : null;
 }
 
-async function queueAds(env, discoveries) {
+function chunks(items, size) {
+  const output = [];
+  for (let index = 0; index < items.length; index += size) output.push(items.slice(index, index + size));
+  return output;
+}
+
+async function existingAdsForSourceIds(env, sourceIds) {
+  const rows = [];
+  for (const group of chunks([...new Set(sourceIds)], 150)) {
+    if (!group.length) continue;
+    rows.push(...await supabase(
+      env,
+      `ads?source_ad_id=in.(${group.join(",")})&select=brand_id,source_ad_id,creative_style,selling_angle`,
+    ));
+  }
+  return rows;
+}
+
+async function inventoryForBrandIds(env, brandIds) {
+  const rows = [];
+  for (const group of chunks([...new Set(brandIds)], 20)) {
+    if (!group.length) continue;
+    rows.push(...await supabase(
+      env,
+      `ads?brand_id=in.(${group.join(",")})&select=brand_id,source_ad_id,format,hook,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url&limit=5000`,
+    ));
+  }
+  return rows;
+}
+
+async function upsertAds(env, rows) {
+  for (const group of chunks(rows, 150)) {
+    await supabase(env, "ads?on_conflict=platform,source_ad_id", {
+      method: "POST",
+      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify(group),
+    });
+  }
+}
+
+async function queueAds(env, discoveries, options) {
   const recordsFound = discoveries.reduce((total, item) => total + item.records.length, 0);
-  if (!recordsFound) return 0;
-  const configuredBrands = [...new Map(discoveries.filter((item) => item.records.length).map(({ brand }) => [brand.slug, brand])).values()];
+  if (!recordsFound) return { queued: 0, refreshed: 0, skippedSimilar: 0, skippedCluster: 0, classified: 0, results: [] };
+
+  const configuredBrands = [...new Map(discoveries.map(({ brand }) => [brand.slug, brand])).values()];
   const brandRows = await supabase(env, "brands?on_conflict=slug&select=id,slug", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=representation" },
     body: JSON.stringify(configuredBrands.map(({ name, slug, category }) => ({ name, slug, category }))),
   });
   const brandIds = new Map(brandRows.map((row) => [row.slug, row.id]));
+  const brandNamesById = new Map(configuredBrands.map((brand) => [brandIds.get(brand.slug), brand.name]));
   const sourceIds = discoveries.flatMap(({ records }) => records.map((record) => record.id));
-  const existingRows = sourceIds.length
-    ? await supabase(env, `ads?source_ad_id=in.(${sourceIds.join(",")})&select=source_ad_id,creative_style,selling_angle`)
-    : [];
-  const existing = new Map(existingRows.map((row) => [row.source_ad_id, row]));
+  const existingRows = await existingAdsForSourceIds(env, sourceIds);
+  const existingBySource = new Map(existingRows.map((row) => [row.source_ad_id, row]));
+  const inventoryRows = await inventoryForBrandIds(env, [...brandIds.values()]);
+  const inventoryByBrand = new Map();
+  for (const row of inventoryRows) {
+    const current = inventoryByBrand.get(row.brand_id) || [];
+    current.push(row);
+    inventoryByBrand.set(row.brand_id, current);
+  }
+
   const timestamp = new Date().toISOString();
-  const rows = [];
-  for (const { brand, records } of discoveries) {
+  const refreshRows = [];
+  const newRows = [];
+  const results = [];
+  let skippedSimilar = 0;
+  let skippedCluster = 0;
+
+  for (const { brand, records, limits } of discoveries) {
+    const brandId = brandIds.get(brand.slug);
+    const candidates = [];
+    let refreshed = 0;
     for (const record of records) {
-      const ad = toAd(record, brand, timestamp);
-      const prior = existing.get(record.id);
-      let labels = prior || {};
-      if ((!prior || (!prior.creative_style && !prior.selling_angle)) && env.GEMINI_API_KEY) {
-        try {
-          labels = await classifyWithGemini(env, { ...ad, brand_name: brand.name });
-        } catch (error) {
-          console.log(JSON.stringify({ event: "gemini_classification_failed", source_ad_id: record.id, error: error instanceof Error ? error.message : String(error) }));
-        }
+      const ad = { ...toAd(record, brand, timestamp), brand_id: brandId };
+      const prior = existingBySource.get(record.id);
+      if (prior) {
+        refreshRows.push({
+          ...ad,
+          creative_style: prior.creative_style || ad.creative_style,
+          selling_angle: prior.selling_angle || ad.selling_angle,
+        });
+        refreshed += 1;
+      } else {
+        candidates.push(ad);
       }
-      rows.push({ ...ad, ...labels, brand_id: brandIds.get(brand.slug) });
+    }
+
+    const selection = selectDiverseCandidates(candidates, inventoryByBrand.get(brandId) || [], {
+      maxSelected: limits.selectedAds,
+      maxPerCluster: 2,
+    });
+    newRows.push(...selection.selected);
+    skippedSimilar += selection.skippedSimilar;
+    skippedCluster += selection.skippedCluster;
+    results.push({
+      brand: brand.slug,
+      found: records.length,
+      new_candidates: candidates.length,
+      queued: selection.selected.length,
+      refreshed,
+      skipped_similar: selection.skippedSimilar,
+      skipped_cluster: selection.skippedCluster,
+    });
+  }
+
+  let classified = 0;
+  const aiLimit = Math.min(options.aiLimit || 0, MAX_AI_CLASSIFICATIONS_PER_RUN);
+  for (const ad of newRows.slice(0, aiLimit)) {
+    if (!env.GEMINI_API_KEY) break;
+    try {
+      const labels = await classifyWithGemini(env, { ...ad, brand_name: brandNamesById.get(ad.brand_id) });
+      if (labels) Object.assign(ad, labels);
+      classified += 1;
+    } catch (error) {
+      console.log(JSON.stringify({ event: "gemini_classification_failed", source_ad_id: ad.source_ad_id, error: error instanceof Error ? error.message : String(error) }));
     }
   }
-  const inserted = await supabase(env, "ads?on_conflict=platform,source_ad_id&select=id", {
-    method: "POST",
-    headers: { Prefer: "resolution=merge-duplicates,return=representation" },
-    body: JSON.stringify(rows),
-  });
-  return inserted.length;
+
+  const rowsBySource = new Map([...refreshRows, ...newRows].map((row) => [row.source_ad_id, row]));
+  await upsertAds(env, [...rowsBySource.values()]);
+  return {
+    queued: newRows.length,
+    refreshed: refreshRows.length,
+    skippedSimilar,
+    skippedCluster,
+    classified,
+    results,
+  };
 }
 
-async function run(env, selectedBrands) {
+async function run(env, selectedBrands, options) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase secrets are missing");
+  const startedAt = Date.now();
+  const mode = options.mode;
+  const config = RUN_MODES[mode];
   const browser = await launch(env.BROWSER, { keep_alive: 600_000 });
-  const discoveries = [];
+  const discoveries = new Array(selectedBrands.length);
   const failures = [];
-  try {
+  let cursor = 0;
+
+  async function collect() {
     const context = await browser.newContext({
       locale: "en-IN",
       timezoneId: "Asia/Kolkata",
       viewport: { width: 1440, height: 1100 },
     });
     const page = await context.newPage();
-    for (const brand of selectedBrands) {
-      try {
-        const records = await extractPage(page, brand);
-        discoveries.push({ brand, records });
-      } catch (error) {
-        failures.push({ brand: brand.slug, error: error instanceof Error ? error.message : String(error) });
+    try {
+      while (cursor < selectedBrands.length) {
+        const index = cursor;
+        cursor += 1;
+        const brand = selectedBrands[index];
+        const limits = limitsForBrand(mode, brand);
+        try {
+          const records = await extractPage(page, brand, limits);
+          discoveries[index] = { brand, records, limits };
+        } catch (error) {
+          failures.push({ brand: brand.slug, error: error instanceof Error ? error.message : String(error) });
+        }
       }
+    } finally {
+      await context.close();
     }
+  }
+
+  try {
+    const concurrency = Math.min(config.concurrency, selectedBrands.length);
+    await Promise.all(Array.from({ length: concurrency }, () => collect()));
   } finally {
     await browser.close();
   }
-  const discovered = discoveries.reduce((total, item) => total + item.records.length, 0);
-  const queued = await queueAds(env, discoveries);
+
+  const completedDiscoveries = discoveries.filter(Boolean);
+  const discovered = completedDiscoveries.reduce((total, item) => total + item.records.length, 0);
+  const queueReport = await queueAds(env, completedDiscoveries, options);
   return {
     ok: failures.length === 0,
+    mode,
     brands: selectedBrands.length,
     discovered,
-    queued,
-    results: discoveries.map(({ brand, records }) => ({ brand: brand.slug, found: records.length })),
+    ...queueReport,
+    duration_ms: Date.now() - startedAt,
     failures,
   };
 }
@@ -371,31 +541,40 @@ const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/health") {
-      return Response.json({ ok: true, service: "india-food-ad-scraper", brands: BRANDS.length });
+      return Response.json({
+        ok: true,
+        service: "india-food-ad-scraper",
+        brands: BRANDS.length,
+        modes: Object.keys(RUN_MODES),
+        schedule: "weekly",
+      });
     }
     if (request.method !== "POST" || url.pathname !== "/run") return new Response("Not found", { status: 404 });
     if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
 
+    const mode = url.searchParams.get("mode") === "refresh" ? "refresh" : "backfill";
+    const config = RUN_MODES[mode];
     const slug = url.searchParams.get("brand");
-    const limit = boundedInteger(url.searchParams.get("limit"), MAX_MANUAL_BRANDS, 1, MAX_MANUAL_BRANDS);
+    const limit = boundedInteger(url.searchParams.get("limit"), config.maxBrands, 1, config.maxBrands);
     const offset = boundedInteger(url.searchParams.get("offset"), 0, 0, Math.max(BRANDS.length - 1, 0));
+    const aiLimit = boundedInteger(url.searchParams.get("ai"), 0, 0, MAX_AI_CLASSIFICATIONS_PER_RUN);
     const selected = slug
       ? BRANDS.filter((brand) => brand.slug === slug)
       : BRANDS.slice(offset, offset + limit);
     if (!selected.length) return Response.json({ error: "Unknown brand" }, { status: 400 });
 
     try {
-      return Response.json(await run(env, selected));
+      return Response.json(await run(env, selected, { mode, aiLimit }));
     } catch (error) {
       return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
   },
 
   async scheduled(controller, env, ctx) {
-    const batchCount = Math.ceil(BRANDS.length / MAX_MANUAL_BRANDS);
-    const scheduledDay = Math.floor(controller.scheduledTime / 86_400_000);
-    const batchOffset = (scheduledDay % batchCount) * MAX_MANUAL_BRANDS;
-    ctx.waitUntil(run(env, BRANDS.slice(batchOffset, batchOffset + MAX_MANUAL_BRANDS)));
+    const slot = Math.max(WEEKLY_CRONS.indexOf(controller.cron), 0);
+    const offset = slot * SCHEDULED_BATCH_SIZE;
+    const selected = BRANDS.slice(offset, offset + SCHEDULED_BATCH_SIZE);
+    if (selected.length) ctx.waitUntil(run(env, selected, { mode: "refresh", aiLimit: 0 }));
   },
 };
 

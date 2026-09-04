@@ -9,7 +9,7 @@ A media-first catalogue of approved ads from Indian food and beverage brands, wi
 - Single-admin, signed HTTP-only session authentication
 - Supabase Postgres schema with public read access limited to approved ads
 - Demo mode when Supabase is not configured
-- Weekly Cloudflare Browser Run collector that queues new Meta Ad Library records as `pending`
+- Weekly Cloudflare Browser Run collector with separate bulk-backfill and refresh modes
 - Responsive layouts for 320, 375, 414 and 768 px viewports
 
 The public library only shows approved records. Automated discoveries remain private until reviewed.
@@ -42,30 +42,36 @@ Generate `AUTH_SECRET` with a password manager or `openssl rand -base64 32`. Kee
 
 ## Automated collection and approval
 
-The `india-food-ad-scraper` Worker runs every day at 05:17 Asia/Kolkata. It rotates through four-brand batches, so the full list is refreshed every six days without exceeding Browser Run's free-plan launch and request limits. It renders Meta's public Ad Library for the Indian brands in `scraper-worker/src/brands.js`. The earlier MIT-licensed `meta-ads-collector` implementation remains in `scraper/` as a local or self-hosted fallback.
+The `india-food-ad-scraper` Worker covers 112 Indian food and beverage brands from `scraper-worker/src/brands.js`. Its normal refresh runs once a week on Sunday morning in five 24-brand batches between 06:00 and 08:00 Asia/Kolkata. The batches use one Browser Run session with up to three isolated pages, so the collector finishes in a bounded window instead of running continuously. The earlier MIT-licensed `meta-ads-collector` implementation remains in `scraper/` as a local or self-hosted fallback.
+
+The Worker has two collection modes:
+
+- `backfill` scans deeper history, considers up to 60 raw ads for high-volume brands and queues up to 24 diverse ads per brand. Manual batches are capped at 12 brands.
+- `refresh` scans the latest inventory, considers up to 30 raw ads and queues up to eight diverse ads per high-volume brand. Scheduled batches are capped at 24 brands.
 
 For each discovery it:
 
 1. Extracts the Meta Library ID, source link, copy and available creative URLs.
 2. Upserts the real brand record.
-3. Deduplicates by `platform + source_ad_id`.
-4. Inserts new ads with `status = pending`, while refreshing media URLs without changing existing approval decisions.
-5. Returns a compact run report with per-brand discovery counts.
+3. Deduplicates exact Meta IDs, identical media URLs and near-identical copy variants.
+4. Groups candidates by format, creative style, selling angle and hook; it caps repetitive clusters and selects across clusters in rounds.
+5. Inserts selected ads with `status = pending`, while refreshing existing media URLs without changing approval decisions.
+6. Returns per-brand counts for discovered, queued, refreshed and similarity-filtered ads.
 
 Meta changes its public UI regularly, so every candidate is brand-page matched and still requires approval in `/admin`. The public library never exposes pending records.
 
-The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RUN_TOKEN`, and `GEMINI_API_KEY` as encrypted runtime secrets. `GEMINI_API_KEY` is used only for new or unclassified creatives; videos are limited to the first 20 seconds at low media resolution and are deleted from Gemini after analysis. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
+The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RUN_TOKEN`, and optionally `GEMINI_API_KEY` as encrypted runtime secrets. Fast heuristic labels are applied during normal collection. Gemini classification is opt-in for manual runs with `ai=1` through `ai=12`; videos are limited to the first 20 seconds at low media resolution and are deleted after analysis. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
 
 Run `supabase/migrations/002_ai_classifications.sql` after the initial schema migration. It adds the reviewed `creative_style` and `selling_angle` fields used by the public catalogue and moderation queue.
 
-Cloudflare Cron is the rotating daily scheduler. The GitHub Actions workflow is a manual fallback and run-report UI; it needs:
+Cloudflare Cron runs the weekly refresh. The GitHub Actions workflow is the bulk-backfill control and manual fallback; it needs:
 
 ```text
 SCRAPER_WORKER_URL
 SCRAPER_RUN_TOKEN
 ```
 
-You can run one brand or a four-brand batch from any offset in the GitHub Actions form.
+For the initial backfill, run 12-brand batches at offsets `0`, `12`, `24`, and so on through `108`. Use `mode=refresh` for a lighter manual update. Every run remains finite; there is no persistent browser process.
 
 ## Manual queue import
 

@@ -5,8 +5,17 @@
   "workers_dev": true,
   "compatibility_date": "2026-08-18",
   "compatibility_flags": ["nodejs_compat"],
+  "limits": {
+    "cpu_ms": 300000
+  },
   "triggers": {
-    "crons": ["47 23 * * *"]
+    "crons": [
+      "30 0 * * 0",
+      "0 1 * * 0",
+      "30 1 * * 0",
+      "0 2 * * 0",
+      "30 2 * * 0"
+    ]
   },
   "browser": {
     "binding": "BROWSER"

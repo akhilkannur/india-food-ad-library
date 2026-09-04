@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test": "node --test src/*.test.mjs"
   },
   "dependencies": {
     "@cloudflare/playwright": "1.3.5"
