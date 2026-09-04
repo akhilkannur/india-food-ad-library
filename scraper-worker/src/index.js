@@ -6,7 +6,7 @@ const GEMINI_MODEL = "gemini-3.1-flash-lite";
 const GEMINI_VIDEO_SECONDS = 20;
 const MAX_AI_CLASSIFICATIONS_PER_RUN = 12;
 const SCHEDULED_BATCH_SIZE = 24;
-const WEEKLY_CRONS = ["30 0 * * 0", "0 1 * * 0", "30 1 * * 0", "0 2 * * 0", "30 2 * * 0"];
+const WEEKLY_CRONS = ["30 0 * * SUN", "0 1 * * SUN", "30 1 * * SUN", "0 2 * * SUN", "30 2 * * SUN"];
 
 const RUN_MODES = {
   backfill: { rawAds: 60, selectedAds: 24, scrollRounds: 8, maxBrands: 12, concurrency: 2 },
