@@ -87,17 +87,15 @@ Every manually imported record also enters the admin queue as `pending`.
 
 This repository is configured for Cloudflare Workers through the OpenNext adapter. Workers is required because the moderation backend uses server-rendered routes, signed cookies and API handlers; a static Pages export would remove those features.
 
-### Git-connected deployment
+### Canonical GitHub deployment
 
-1. Push this folder to a GitHub repository.
-2. In Cloudflare, create a Worker and connect the repository under **Workers Builds**.
-3. Set the root directory to this project if it lives inside a larger repository.
-4. Use `npx opennextjs-cloudflare deploy -- --keep-vars` as the deploy command after the OpenNext build command.
-5. Add all five environment variables under **Build variables and secrets** and to the Worker runtime secrets.
+Every push to `main` runs `.github/workflows/deploy.yml`, which installs dependencies, builds with OpenNext, and deploys this Worker with Wrangler.
+
+The workflow requires the GitHub repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Configure those once under **Settings → Secrets and variables → Actions**.
 
 Cloudflare installs the dependencies and performs the build remotely. No local `node_modules` directory is required.
 
-For a direct CLI deployment from any CI environment, run `npm run deploy` after authenticating Wrangler.
+Do not use a local CLI deployment for normal releases; push to `main` and check the **Deploy site to Cloudflare** workflow instead.
 
 ## Storage note
 
