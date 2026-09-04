@@ -1352,33 +1352,3 @@ body { background: var(--archive-paper); color: var(--archive-ink); }
     transform: none;
   }
 }
-
-/* Collection skin wins over the original workbench defaults. */
-body { background: var(--collections-black); color: var(--collections-white); }
-.site-header.app-header { background: var(--collections-black); color: var(--collections-white); border-color: var(--collections-line); }
-.app-header__inner { max-width: none; min-height: 4.2rem; padding-inline: 1.35rem; gap: .75rem; }
-.app-wordmark { color: var(--collections-white); }
-.app-wordmark__mark { background: var(--collections-white); color: var(--collections-black); border-radius: 50%; }
-.app-header__search { width: min(100%, 38rem); min-height: 2.5rem; border-color: var(--collections-line); border-radius: .55rem; background: var(--collections-panel); color: var(--collections-muted); }
-.app-header__search input { color: var(--collections-white); }
-.app-header__action { min-height: 2.5rem; border: 1px solid var(--collections-line); border-radius: .55rem; background: var(--collections-white); color: var(--collections-black); font-size: .72rem; }
-.library-shell--collections { width: 100%; max-width: none; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); background: var(--collections-black); color: var(--collections-white); }
-.collection-rail { min-height: calc(100dvh - 4.2rem); background: #101010; border-color: var(--collections-line); }
-.collection-main { background: var(--collections-black); }
-.collection-topline { border-color: var(--collections-line); }
-.featured-collection { background: var(--collections-pink); color: var(--collections-black); }
-.collections-heading h2, .collection-row__heading h3 { color: var(--collections-white); }
-.collection-row__cards .ad-card { border: 0; background: var(--collections-panel); }
-.library-layout { border-color: var(--collections-line); }
-.library-sidebar { border-color: var(--collections-line); background: #101010; }
-.library-results { background: var(--collections-black); }
-
-@media (max-width: 48rem) {
-  .library-shell--collections { display: block; }
-  .collection-rail { min-height: auto; flex-direction: row; border-inline-end: 0; border-block-end: 1px solid var(--collections-line); }
-  .collection-rail nav { display: flex; overflow-x: auto; }
-  .collection-rail nav a { white-space: nowrap; }
-  .collection-rail__bottom { display: none; }
-  .featured-collection { grid-template-columns: 1fr; }
-  .collection-row__cards { grid-auto-columns: minmax(9.5rem, 42vw); }
-}
