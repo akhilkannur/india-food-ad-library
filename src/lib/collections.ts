@@ -27,10 +27,18 @@ const COLLECTION_FIELDS: Array<{
   { field: "category", label: (value) => value },
   { field: "creative_style", label: (value) => `${value} creative` },
   { field: "selling_angle", label: (value) => `${value} ads` },
-  { field: "language", label: (value) => `${value} ads` },
 ];
 
-/** Build collections only from the four controlled classification fields. */
+const COLLECTION_FIELD_PRIORITY: Record<CollectionDefinition["field"], number> = {
+  category: 0,
+  creative_style: 1,
+  selling_angle: 2,
+  language: 3,
+};
+const MAX_COLLECTIONS = 6;
+const MIN_COLLECTION_SIZE = 3;
+
+/** Build a short list from the highest-signal controlled classification fields. */
 export function getCollectionDefinitions(ads: Ad[]): CollectionDefinition[] {
   const collections = new Map<string, { field: CollectionDefinition["field"]; name: string; count: number; value: string }>();
 
@@ -46,7 +54,11 @@ export function getCollectionDefinitions(ads: Ad[]): CollectionDefinition[] {
   });
 
   return Array.from(collections.entries())
-    .sort(([, left], [, right]) => right.count - left.count || left.name.localeCompare(right.name))
+    .filter(([, collection]) => collection.count >= MIN_COLLECTION_SIZE)
+    .sort(([, left], [, right]) => COLLECTION_FIELD_PRIORITY[left.field] - COLLECTION_FIELD_PRIORITY[right.field]
+      || right.count - left.count
+      || left.name.localeCompare(right.name))
+    .slice(0, MAX_COLLECTIONS)
     .map(([, { field, name, value }]) => ({
       slug: slugifyCollectionName(`${field}-${value}`),
       name,

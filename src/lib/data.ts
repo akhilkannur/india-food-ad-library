@@ -3,6 +3,11 @@ import { demoAds, demoBrands } from "@/lib/demo-data";
 import { hasDatabase } from "@/lib/config";
 import type { Ad, AdStatus, Brand } from "@/lib/types";
 
+export type AdPage = {
+  ads: Ad[];
+  total: number;
+};
+
 async function supabaseFetch<T>(path: string, init?: RequestInit): Promise<T> {
   // Bracket access keeps these server-only values dynamic in Next.js instead of
   // inlining NEXT_PUBLIC_SUPABASE_URL during the remote build.
@@ -29,6 +34,34 @@ async function supabaseFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+async function supabaseFetchPage<T>(path: string, offset: number, limit: number): Promise<{ rows: T; total: number }> {
+  const baseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
+  const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!baseUrl || !serviceKey) throw new Error("Supabase is not configured.");
+
+  const response = await fetch(`${baseUrl}/rest/v1/${path}`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+      Prefer: "count=exact, return=representation",
+      Range: `${offset}-${offset + limit - 1}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Database request failed (${response.status}): ${details}`);
+  }
+
+  const rows = await response.json() as T;
+  const contentRange = response.headers.get("content-range");
+  const parsedTotal = Number(contentRange?.split("/")[1]);
+  const total = Number.isFinite(parsedTotal) ? parsedTotal : Array.isArray(rows) ? rows.length : 0;
+  return { rows, total };
 }
 
 const getCachedApprovedAds = unstable_cache(
@@ -60,6 +93,31 @@ export async function getApprovedAds(): Promise<Ad[]> {
     // routes still fail loudly so ingestion/configuration problems are visible.
     console.error("Approved ad query failed", error);
     return [];
+  }
+}
+
+export async function getApprovedAdsPage({ limit = 36, offset = 0 }: { limit?: number; offset?: number } = {}): Promise<AdPage> {
+  const safeLimit = Math.min(Math.max(limit, 1), 60);
+  const safeOffset = Math.max(offset, 0);
+
+  if (!hasDatabase) {
+    const approvedAds = demoAds.filter((ad) => ad.status === "approved");
+    return {
+      ads: approvedAds.slice(safeOffset, safeOffset + safeLimit),
+      total: approvedAds.length,
+    };
+  }
+
+  try {
+    const { rows, total } = await supabaseFetchPage<Ad[]>(
+      "ads?select=*,brand:brands(*)&order=submitted_at.desc,id.asc&status=eq.approved",
+      safeOffset,
+      safeLimit,
+    );
+    return { ads: rows, total };
+  } catch (error) {
+    console.error("Approved ad page query failed", error);
+    return { ads: [], total: 0 };
   }
 }
 

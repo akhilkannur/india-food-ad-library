@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
@@ -14,7 +14,7 @@ import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Ad } from "@/lib/types";
 
 type SortOrder = "newest" | "oldest";
-const AD_BATCH_SIZE = 100;
+const AD_BATCH_SIZE = 36;
 const FREE_AD_OPEN_LIMIT = 10;
 const OPENED_ADS_KEY = "ifal-opened-ads";
 
@@ -33,17 +33,23 @@ function getOpenedAdIds() {
 
 export function LibraryExplorer({
   ads,
+  initialTotal,
   demoMode,
   showCollections = true,
   pageTitle,
   backLabel = "All collections",
 }: {
   ads: Ad[];
+  initialTotal?: number;
   demoMode: boolean;
   showCollections?: boolean;
   pageTitle?: string;
   backLabel?: string;
 }) {
+  const [loadedAds, setLoadedAds] = useState(ads);
+  const [totalAds, setTotalAds] = useState(initialTotal ?? ads.length);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [format, setFormat] = useState("All");
@@ -56,19 +62,20 @@ export function LibraryExplorer({
   const [authOpen, setAuthOpen] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(AD_BATCH_SIZE);
   const filterDialogRef = useRef<HTMLDialogElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const loadedAdsRef = useRef(ads);
+  const loadingMoreRef = useRef(false);
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
-  const categories = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.category))], [ads]);
-  const formats = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.creative_style || ad.format))], [ads]);
-  const sellingAngles = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.selling_angle))], [ads]);
-  const languages = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.language))], [ads]);
-  const brandCount = useMemo(() => new Set(ads.map((ad) => ad.brand.id)).size, [ads]);
+  const categories = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.category))], [loadedAds]);
+  const formats = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.creative_style || ad.format))], [loadedAds]);
+  const sellingAngles = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.selling_angle))], [loadedAds]);
+  const languages = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.language))], [loadedAds]);
+  const brandCount = useMemo(() => new Set(loadedAds.map((ad) => ad.brand.id)).size, [loadedAds]);
 
   const visibleAds = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return diversifyByBrand(ads
+    return diversifyByBrand(loadedAds
       .filter((ad) => !unavailableIds.has(ad.id))
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => format === "All" || (ad.creative_style || ad.format) === format)
@@ -84,12 +91,44 @@ export function LibraryExplorer({
         const delta = new Date(right.first_seen_at).getTime() - new Date(left.first_seen_at).getTime();
         return sortOrder === "newest" ? delta : -delta;
       }));
-  }, [ads, category, format, sellingAngle, language, search, sortOrder, unavailableIds]);
+  }, [loadedAds, category, format, sellingAngle, language, search, sortOrder, unavailableIds]);
 
   const activeFilterCount = [category, format, sellingAngle, language].filter((value) => value !== "All").length
     + (search.trim() ? 1 : 0);
+  const resultCount = activeFilterCount === 0 ? totalAds : visibleAds.length;
 
-  const renderedAds = visibleAds.slice(0, visibleCount);
+  const renderedAds = visibleAds;
+
+  useEffect(() => {
+    loadedAdsRef.current = loadedAds;
+  }, [loadedAds]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMoreRef.current || loadedAdsRef.current.length >= totalAds) return;
+
+    loadingMoreRef.current = true;
+    setIsLoadingMore(true);
+    setLoadMoreError(null);
+
+    try {
+      const response = await fetch(`/api/ads?offset=${loadedAdsRef.current.length}&limit=${AD_BATCH_SIZE}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error("The next page could not be loaded.");
+
+      const page = await response.json() as { ads: Ad[]; total: number };
+      setLoadedAds((current) => {
+        const existing = new Set(current.map((ad) => ad.id));
+        return [...current, ...page.ads.filter((ad) => !existing.has(ad.id))];
+      });
+      setTotalAds(page.total);
+    } catch (error) {
+      setLoadMoreError(error instanceof Error ? error.message : "The next page could not be loaded.");
+    } finally {
+      loadingMoreRef.current = false;
+      setIsLoadingMore(false);
+    }
+  }, [totalAds]);
 
   const activeFilters = useMemo<ActiveFilter[]>(() => {
     const filters: ActiveFilter[] = [];
@@ -200,22 +239,16 @@ export function LibraryExplorer({
   }, [filtersOpen]);
 
   useEffect(() => {
-    setVisibleCount(AD_BATCH_SIZE);
-  }, [category, format, sellingAngle, language, search, sortOrder]);
-
-  useEffect(() => {
     const target = loadMoreRef.current;
-    if (!target || visibleCount >= visibleAds.length) return;
+    if (!target || loadedAds.length >= totalAds) return;
 
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setVisibleCount((count) => Math.min(count + AD_BATCH_SIZE, visibleAds.length));
-      }
+      if (entry.isIntersecting) loadMore();
     }, { rootMargin: "600px 0px" });
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [visibleAds.length, visibleCount]);
+  }, [loadMore, loadedAds.length, totalAds]);
 
   return (
     <>
@@ -226,7 +259,7 @@ export function LibraryExplorer({
             <header className="collection-page-heading">
               <Link href="/">← {backLabel}</Link>
               <h1>{pageTitle}</h1>
-              <p>{ads.length} creatives · {brandCount} brand{brandCount === 1 ? "" : "s"}</p>
+              <p>{totalAds} creatives · {brandCount} brand{brandCount === 1 ? "" : "s"}</p>
             </header>
           )}
 
@@ -276,7 +309,7 @@ export function LibraryExplorer({
               sellingAngle={sellingAngle}
               language={language}
               activeCount={activeFilterCount}
-              resultCount={visibleAds.length}
+              resultCount={resultCount}
               onCategoryChange={setCategory}
               onFormatChange={setFormat}
               onSellingAngleChange={setSellingAngle}
@@ -289,7 +322,7 @@ export function LibraryExplorer({
             <ResultsToolbar
               search={search}
               sortOrder={sortOrder}
-              resultCount={visibleAds.length}
+              resultCount={resultCount}
               activeFilters={activeFilters}
               demoMode={demoMode}
               onSearchChange={setSearch}
@@ -310,9 +343,16 @@ export function LibraryExplorer({
                     />
                   ))}
                 </div>
-                {renderedAds.length < visibleAds.length && (
-                  <div ref={loadMoreRef} className="load-more" aria-live="polite">
-                    Showing {renderedAds.length} of {visibleAds.length} creatives
+                {loadedAds.length < totalAds && (
+                  <div ref={loadMoreRef} className="load-more" aria-live="polite" aria-busy={isLoadingMore}>
+                    {isLoadingMore ? "Loading more creatives…" : loadMoreError ? (
+                      <>
+                        <span>{loadMoreError}</span>
+                        <button type="button" className="load-more__button" onClick={loadMore}>Try again</button>
+                      </>
+                    ) : (
+                      <span>Showing {loadedAds.length} of {totalAds} creatives</span>
+                    )}
                   </div>
                 )}
               </>
@@ -322,6 +362,18 @@ export function LibraryExplorer({
                 <h2>No matching ads</h2>
                 <p>Try another search or clear the active filters.</p>
                 <button type="button" onClick={clearFilters}>Reset filters</button>
+                {loadedAds.length < totalAds && (
+                  <div ref={loadMoreRef} className="load-more load-more--empty" aria-live="polite" aria-busy={isLoadingMore}>
+                    {isLoadingMore ? "Checking more creatives…" : loadMoreError ? (
+                      <>
+                        <span>{loadMoreError}</span>
+                        <button type="button" className="load-more__button" onClick={loadMore}>Try again</button>
+                      </>
+                    ) : (
+                      <span>Keep scrolling to search the remaining creatives</span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -350,7 +402,7 @@ export function LibraryExplorer({
             sellingAngle={sellingAngle}
             language={language}
             activeCount={activeFilterCount}
-            resultCount={visibleAds.length}
+            resultCount={resultCount}
             onCategoryChange={setCategory}
             onFormatChange={setFormat}
             onSellingAngleChange={setSellingAngle}
