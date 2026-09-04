@@ -389,8 +389,11 @@ function base64FromBytes(bytes) {
 }
 
 function parseClassificationJson(value) {
+  if (value && typeof value === "object" && value.creative_style) return value;
   if (value && typeof value === "object" && value.response && typeof value.response === "object") return value.response;
-  const text = typeof value === "string" ? value : value?.response;
+  const response = value?.response ?? value?.result?.response ?? value?.result;
+  if (response && typeof response === "object") return response;
+  const text = typeof value === "string" ? value : response;
   if (!text) throw new Error("Workers AI returned no classification response");
   const clean = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   const start = clean.indexOf("{");
@@ -455,7 +458,13 @@ Copy: ${ad.body_copy || "None"}`;
     max_tokens: 160,
     temperature: 0,
   });
-  const labels = parseClassificationJson(result);
+  let labels;
+  try {
+    labels = parseClassificationJson(result);
+  } catch (error) {
+    const response = typeof result?.response === "string" ? result.response.slice(0, 600) : null;
+    throw new Error(`${error instanceof Error ? error.message : String(error)}${response ? `: ${response}` : ""}`);
+  }
   return {
     labels: {
       creative_style: labels.creative_style || null,
