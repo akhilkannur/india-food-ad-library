@@ -283,13 +283,13 @@ export function LibraryExplorer({
             <section id="collections" className="collections-area" aria-label="Curated collections">
               <div className="collections-heading">
                 <h2>Collections</h2>
-                <span>Curated by <a href="https://lisn.agency" target="_blank" rel="noreferrer">LISN</a></span>
+                <span>Grouped by ad format</span>
               </div>
               {collections.map((collection) => (
                 <div className="collection-row" key={collection.name}>
                   <div className="collection-row__heading"><h3>{collection.name}</h3><span>{collection.ads.length} ads · {collection.brandCount} brands</span></div>
                   <div className="collection-row__cards">
-                    {collection.ads.map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onUnavailable={() => hideUnavailable(ad)} />)}
+                    {collection.ads.slice(0, 3).map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onUnavailable={() => hideUnavailable(ad)} />)}
                   </div>
                   <Link className="collection-row__link" href={`/collections/${collection.slug}`} aria-label={`View ${collection.name} collection`} />
                 </div>

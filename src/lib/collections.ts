@@ -3,11 +3,11 @@ import type { Ad } from "@/lib/types";
 export type CollectionDefinition = {
   slug: string;
   name: string;
-  field: "category" | "creative_style" | "selling_angle" | "language";
+  field: "creative_style";
   match: (ad: Ad) => boolean;
 };
 
-function normalizeCategory(value: string | null | undefined) {
+function normalizeCollectionValue(value: string | null | undefined) {
   return value?.trim().toLocaleLowerCase() ?? "";
 }
 
@@ -24,47 +24,40 @@ const COLLECTION_FIELDS: Array<{
   field: CollectionDefinition["field"];
   label: (value: string) => string;
 }> = [
-  { field: "category", label: (value) => value },
-  { field: "creative_style", label: (value) => `${value} creative` },
-  { field: "selling_angle", label: (value) => `${value} ads` },
+  { field: "creative_style", label: (value) => value },
 ];
 
-const COLLECTION_FIELD_PRIORITY: Record<CollectionDefinition["field"], number> = {
-  category: 0,
-  creative_style: 1,
-  selling_angle: 2,
-  language: 3,
-};
 const MAX_COLLECTIONS = 6;
 const MIN_COLLECTION_SIZE = 3;
 
-/** Build a short list from the highest-signal controlled classification fields. */
-export function getCollectionDefinitions(ads: Ad[]): CollectionDefinition[] {
-  const collections = new Map<string, { field: CollectionDefinition["field"]; name: string; count: number; value: string }>();
+function getCollectionCandidates(ads: Ad[]): CollectionDefinition[] {
+  const collections = new Map<string, { name: string; count: number; value: string }>();
 
   ads.forEach((ad) => {
     COLLECTION_FIELDS.forEach(({ field, label }) => {
       const value = ad[field]?.trim();
       if (!value) return;
-      const key = `${field}:${normalizeCategory(value)}`;
+      const key = normalizeCollectionValue(value);
       const existing = collections.get(key);
       if (existing) existing.count += 1;
-      else collections.set(key, { field, name: label(value), count: 1, value });
+      else collections.set(key, { name: label(value), count: 1, value });
     });
   });
 
-  return Array.from(collections.entries())
-    .filter(([, collection]) => collection.count >= MIN_COLLECTION_SIZE)
-    .sort(([, left], [, right]) => COLLECTION_FIELD_PRIORITY[left.field] - COLLECTION_FIELD_PRIORITY[right.field]
-      || right.count - left.count
-      || left.name.localeCompare(right.name))
-    .slice(0, MAX_COLLECTIONS)
-    .map(([, { field, name, value }]) => ({
-      slug: slugifyCollectionName(`${field}-${value}`),
+  return Array.from(collections.values())
+    .filter((collection) => collection.count >= MIN_COLLECTION_SIZE)
+    .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name))
+    .map(({ name, value }) => ({
+      slug: slugifyCollectionName(`creative-style-${value}`),
       name,
-      field,
-      match: (ad: Ad) => normalizeCategory(ad[field]) === normalizeCategory(value),
+      field: "creative_style" as const,
+      match: (ad: Ad) => normalizeCollectionValue(ad.creative_style) === normalizeCollectionValue(value),
     }));
+}
+
+/** Build a short, classified-ad-format list for the homepage. */
+export function getCollectionDefinitions(ads: Ad[]): CollectionDefinition[] {
+  return getCollectionCandidates(ads).slice(0, MAX_COLLECTIONS);
 }
 
 export function diversifyByBrand(items: Ad[]) {
@@ -91,9 +84,21 @@ export function diversifyByBrand(items: Ad[]) {
 }
 
 export function getCollectionAds(ads: Ad[], definition: CollectionDefinition) {
-  return diversifyByBrand(ads.filter(definition.match));
+  const seenCreatives = new Set<string>();
+  const distinctAds = ads.filter(definition.match).filter((ad) => {
+    // Prefer the visible thumbnail: video ads can have different source URLs
+    // while still resolving to the same poster image.
+    const source = ad.thumbnail_url || ad.creative_url;
+    const key = source ? source.split("?")[0].split("#")[0] : `ad:${ad.id}`;
+    if (seenCreatives.has(key)) return false;
+    seenCreatives.add(key);
+    return true;
+  });
+  return diversifyByBrand(distinctAds);
 }
 
 export function getCollectionDefinition(slug: string, ads: Ad[]) {
-  return getCollectionDefinitions(ads).find((definition) => definition.slug === slug);
+  const candidates = getCollectionCandidates(ads);
+  const definition = candidates.find((candidate) => candidate.slug === slug);
+  return definition && getCollectionAds(ads, definition).length >= 2 ? definition : undefined;
 }
