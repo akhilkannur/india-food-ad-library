@@ -15,6 +15,28 @@ function uniqueValues(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter((value): value is string => Boolean(value)))).sort();
 }
 
+function diversifyByBrand(items: Ad[]) {
+  const queues = new Map<string, Ad[]>();
+  const brandOrder: string[] = [];
+  items.forEach((ad) => {
+    const key = ad.brand.id;
+    if (!queues.has(key)) {
+      queues.set(key, []);
+      brandOrder.push(key);
+    }
+    queues.get(key)!.push(ad);
+  });
+
+  const result: Ad[] = [];
+  while (brandOrder.some((key) => queues.get(key)!.length)) {
+    brandOrder.forEach((key) => {
+      const ad = queues.get(key)!.shift();
+      if (ad) result.push(ad);
+    });
+  }
+  return result;
+}
+
 export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolean }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -34,7 +56,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
 
   const visibleAds = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return ads
+    return diversifyByBrand(ads
       .filter((ad) => !unavailableIds.has(ad.id))
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => format === "All" || (ad.creative_style || ad.format) === format)
@@ -49,7 +71,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
       .sort((left, right) => {
         const delta = new Date(right.first_seen_at).getTime() - new Date(left.first_seen_at).getTime();
         return sortOrder === "newest" ? delta : -delta;
-      });
+      }));
   }, [ads, category, format, funnelStage, language, search, sortOrder, unavailableIds]);
 
   const activeFilterCount = [category, format, funnelStage, language].filter((value) => value !== "All").length
@@ -75,7 +97,7 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
     return definitions.map((definition) => {
       const matches = visibleAds.filter(definition.match);
       const brands = new Set(matches.map((ad) => ad.brand.id));
-      return { name: definition.name, ads: matches.slice(0, 8), brandCount: brands.size };
+      return { name: definition.name, ads: diversifyByBrand(matches).slice(0, 8), brandCount: brands.size };
     }).filter((collection) => collection.ads.length >= 4 && collection.brandCount >= 3);
   }, [visibleAds]);
 
