@@ -139,25 +139,12 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader search={search} onSearch={setSearch} />
       <main className="library-shell library-shell--collections">
-        <aside className="collection-rail" aria-label="Library sections">
-          <div className="collection-rail__brand">IF<span>/</span>AL</div>
-          <nav>
-            <a className="is-active" href="#featured">Featured</a>
-            <a href="#collections">Collections</a>
-            <a href="#all-ads">All ads</a>
-          </nav>
-          <div className="collection-rail__bottom">
-            <a href="/admin">Review queue ↗</a>
-            <span>{brandCount} brands indexed</span>
-          </div>
-        </aside>
-
         <div className="collection-main">
           <header className="collection-topline">
-            <div><span className="collection-topline__dot" /> India Food Ad Library</div>
-            <div className="collection-topline__meta">{ads.length} approved creatives <span>·</span> India</div>
+            <div><span className="collection-topline__dot" /> Latest creative</div>
+            <div className="collection-topline__meta">{ads.length} approved <span>·</span> {brandCount} brands</div>
           </header>
 
           <section id="collections" className="collections-area" aria-label="Curated collections">
