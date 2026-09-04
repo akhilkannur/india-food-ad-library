@@ -12,6 +12,7 @@ import { collectionDefinitions, diversifyByBrand, getCollectionAds } from "@/lib
 import type { Ad } from "@/lib/types";
 
 type SortOrder = "newest" | "oldest";
+const AD_BATCH_SIZE = 100;
 
 function uniqueValues(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter((value): value is string => Boolean(value)))).sort();
@@ -21,12 +22,14 @@ export function LibraryExplorer({
   ads,
   demoMode,
   showCollections = true,
-  collectionTitle,
+  pageTitle,
+  backLabel = "All collections",
 }: {
   ads: Ad[];
   demoMode: boolean;
   showCollections?: boolean;
-  collectionTitle?: string;
+  pageTitle?: string;
+  backLabel?: string;
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -36,7 +39,9 @@ export function LibraryExplorer({
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(AD_BATCH_SIZE);
   const filterDialogRef = useRef<HTMLDialogElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
   const categories = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.category))], [ads]);
   const formats = useMemo(() => ["All", ...uniqueValues(ads.map((ad) => ad.creative_style || ad.format))], [ads]);
@@ -66,6 +71,8 @@ export function LibraryExplorer({
 
   const activeFilterCount = [category, format, funnelStage, language].filter((value) => value !== "All").length
     + (search.trim() ? 1 : 0);
+
+  const renderedAds = visibleAds.slice(0, visibleCount);
 
   const activeFilters = useMemo<ActiveFilter[]>(() => {
     const filters: ActiveFilter[] = [];
@@ -121,16 +128,42 @@ export function LibraryExplorer({
     if (!filtersOpen && dialog.open) dialog.close();
   }, [filtersOpen]);
 
+  useEffect(() => {
+    setVisibleCount(AD_BATCH_SIZE);
+  }, [category, format, funnelStage, language, search, sortOrder]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || visibleCount >= visibleAds.length) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setVisibleCount((count) => Math.min(count + AD_BATCH_SIZE, visibleAds.length));
+      }
+    }, { rootMargin: "600px 0px" });
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [visibleAds.length, visibleCount]);
+
   return (
     <>
       <SiteHeader search={search} onSearch={setSearch} />
       <main className="library-shell library-shell--collections">
         <div className="collection-main">
-          {collectionTitle && (
+          {pageTitle && (
             <header className="collection-page-heading">
-              <Link href="/">← All collections</Link>
-              <h1>{collectionTitle}</h1>
-              <p>{ads.length} creatives · {brandCount} brands</p>
+              <Link href="/">← {backLabel}</Link>
+              <h1>{pageTitle}</h1>
+              <p>{ads.length} creatives · {brandCount} brand{brandCount === 1 ? "" : "s"}</p>
+            </header>
+          )}
+
+          {showCollections && collections.length > 0 && (
+            <header className="library-intro">
+              <p>Creative inspiration for DTC teams</p>
+              <h1>See what India’s food and beverage brands are advertising.</h1>
+              <span>Search {ads.length} creatives from {brandCount} brands by format, funnel stage, and language.</span>
             </header>
           )}
 
@@ -183,17 +216,24 @@ export function LibraryExplorer({
             />
 
             {visibleAds.length ? (
-              <div className="ad-grid" aria-label="Approved ads">
-                {visibleAds.map((ad, index) => (
-                  <AdCard
-                    ad={ad}
-                    key={ad.id}
-                    priority={index < 4}
-                    onOpen={() => setSelectedAd(ad)}
-                    onUnavailable={() => hideUnavailable(ad)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="ad-grid" aria-label="Approved ads">
+                  {renderedAds.map((ad, index) => (
+                    <AdCard
+                      ad={ad}
+                      key={ad.id}
+                      priority={index < 4}
+                      onOpen={() => setSelectedAd(ad)}
+                      onUnavailable={() => hideUnavailable(ad)}
+                    />
+                  ))}
+                </div>
+                {renderedAds.length < visibleAds.length && (
+                  <div ref={loadMoreRef} className="load-more" aria-live="polite">
+                    Showing {renderedAds.length} of {visibleAds.length} creatives
+                  </div>
+                )}
+              </>
             ) : (
               <div className="library-empty">
                 <Search aria-hidden="true" size={22} strokeWidth={1.6} />

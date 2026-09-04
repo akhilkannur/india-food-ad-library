@@ -34,7 +34,7 @@ export default async function CollectionPage({
       ads={ads}
       demoMode={isDemoMode}
       showCollections={false}
-      collectionTitle={definition.name}
+      pageTitle={definition.name}
     />
   );
 }

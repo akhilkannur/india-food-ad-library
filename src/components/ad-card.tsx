@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Eye } from "lucide-react";
 import { CreativePreview } from "@/components/creative-preview";
 import type { Ad } from "@/lib/types";
@@ -42,7 +43,7 @@ export function AdCard({
           ) : (
             <span className="ad-card__monogram" aria-hidden="true">{ad.brand.name.charAt(0)}</span>
           )}
-          <span className="ad-card__brand">{ad.brand.name}</span>
+          <Link className="ad-card__brand" href={`/brands/${ad.brand.slug}`}>{ad.brand.name}</Link>
           <time dateTime={ad.first_seen_at}>{formatDate(ad.first_seen_at)}</time>
         </div>
 

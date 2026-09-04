@@ -24,9 +24,11 @@ export function SiteHeader({
             <kbd>/</kbd>
           </label>
         ) : <span className="app-header__edition">Creative research workspace</span>}
-        <Link className="app-header__action" href={admin ? "/" : "/admin"}>
-          {admin ? "Back to library" : "Review queue"}<ArrowUpRight aria-hidden="true" size={14} />
-        </Link>
+        {admin && (
+          <Link className="app-header__action" href="/">
+            Back to library<ArrowUpRight aria-hidden="true" size={14} />
+          </Link>
+        )}
       </div>
     </header>
   );
