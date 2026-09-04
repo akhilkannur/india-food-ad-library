@@ -27,6 +27,11 @@ on:
         description: "Optional Gemini classifications (0–12; zero is fastest)"
         required: false
         default: "0"
+      publish:
+        description: "Publish all media-backed pending ads after this run"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -49,8 +54,9 @@ jobs:
           LIMIT: ${{ inputs.limit }}
           OFFSET: ${{ inputs.offset }}
           AI: ${{ inputs.ai }}
+          PUBLISH: ${{ inputs.publish }}
         run: |
-          query="?mode=$MODE&ai=$AI"
+          query="?mode=$MODE&ai=$AI&publish=$PUBLISH"
           if [ -n "$BRAND" ]; then
             query="$query&brand=$BRAND"
           else

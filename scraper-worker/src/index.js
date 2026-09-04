@@ -379,6 +379,26 @@ async function upsertAds(env, rows) {
   }
 }
 
+async function publishPendingAds(env) {
+  const now = new Date().toISOString();
+  const rows = await supabase(
+    env,
+    "ads?status=eq.pending&source_ad_id=not.is.null&creative_url=not.is.null&select=id",
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        status: "approved",
+        approved_at: now,
+        reviewed_at: now,
+        reviewer_notes: "Bulk approved after automated Meta source and media validation",
+        updated_at: now,
+      }),
+    },
+  );
+  return rows.length;
+}
+
 function balancedCandidateSample(groups, limit) {
   const eligible = groups.map((group) => group.candidates.filter((ad) =>
     ad.creative_url && ad.format === "Image"
@@ -578,12 +598,14 @@ async function run(env, selectedBrands, options) {
   const completedDiscoveries = discoveries.filter(Boolean);
   const discovered = completedDiscoveries.reduce((total, item) => total + item.records.length, 0);
   const queueReport = await queueAds(env, completedDiscoveries, options);
+  const published = options.publishPending ? await publishPendingAds(env) : 0;
   return {
     ok: failures.length === 0,
     mode,
     brands: selectedBrands.length,
     discovered,
     ...queueReport,
+    published,
     duration_ms: Date.now() - startedAt,
     failures,
   };
@@ -620,13 +642,14 @@ const worker = {
     const limit = boundedInteger(url.searchParams.get("limit"), config.maxBrands, 1, config.maxBrands);
     const offset = boundedInteger(url.searchParams.get("offset"), 0, 0, Math.max(BRANDS.length - 1, 0));
     const aiLimit = boundedInteger(url.searchParams.get("ai"), 0, 0, MAX_AI_CLASSIFICATIONS_PER_RUN);
+    const publishPending = ["1", "true"].includes(url.searchParams.get("publish")?.toLowerCase());
     const selected = slug
       ? BRANDS.filter((brand) => brand.slug === slug)
       : BRANDS.slice(offset, offset + limit);
     if (!selected.length) return Response.json({ error: "Unknown brand" }, { status: 400 });
 
     try {
-      return Response.json(await run(env, selected, { mode, aiLimit }));
+      return Response.json(await run(env, selected, { mode, aiLimit, publishPending }));
     } catch (error) {
       return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }

@@ -71,7 +71,7 @@ SCRAPER_WORKER_URL
 SCRAPER_RUN_TOKEN
 ```
 
-For the initial backfill, run 12-brand batches at offsets `0`, `12`, `24`, and so on through `108`. Use `mode=refresh` for a lighter manual update. Every run remains finite; there is no persistent browser process.
+For the initial backfill, run 12-brand batches at offsets `0`, `12`, `24`, and so on through `108`. Use `mode=refresh` for a lighter manual update. Every run remains finite; there is no persistent browser process. The optional `publish` control bulk-approves pending records only when they have both a Meta ID and creative media; it remains off by default so ordinary collection continues to use the review queue.
 
 ## Manual queue import
 
