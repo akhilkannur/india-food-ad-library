@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
+import { CreativePreview } from "@/components/creative-preview";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
@@ -65,6 +66,15 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
     return filters;
   }, [category, format, funnelStage, language, search]);
 
+  const collections = useMemo(() => {
+    const groups = Array.from(new Set(visibleAds.map((ad) => ad.category).filter(Boolean)));
+    return groups.slice(0, 4).map((name) => ({
+      name,
+      ads: visibleAds.filter((ad) => ad.category === name).slice(0, 6),
+    })).filter((collection) => collection.ads.length > 1);
+  }, [visibleAds]);
+  const featuredAd = visibleAds[0];
+
   function clearFilters() {
     setSearch("");
     setCategory("All");
@@ -104,20 +114,52 @@ export function LibraryExplorer({ ads, demoMode }: { ads: Ad[]; demoMode: boolea
   return (
     <>
       <SiteHeader />
-      <main className="library-shell">
-        <header className="library-titlebar">
-          <div>
-            <h1 id="library-title">Ad library</h1>
-            <p>Approved food and beverage creatives running in India.</p>
+      <main className="library-shell library-shell--collections">
+        <aside className="collection-rail" aria-label="Library sections">
+          <div className="collection-rail__brand">IF<span>/</span>AL</div>
+          <nav>
+            <a className="is-active" href="#featured">Featured</a>
+            <a href="#collections">Collections</a>
+            <a href="#all-ads">All ads</a>
+          </nav>
+          <div className="collection-rail__bottom">
+            <a href="/admin">Review queue ↗</a>
+            <span>{brandCount} brands indexed</span>
           </div>
-          <dl className="library-coverage" aria-label="Library coverage">
-            <div><dt>Ads</dt><dd>{ads.length}</dd></div>
-            <div><dt>Brands</dt><dd>{brandCount}</dd></div>
-            <div><dt>Source</dt><dd>Meta</dd></div>
-          </dl>
-        </header>
+        </aside>
 
-        <div className="library-layout">
+        <div className="collection-main">
+          <header className="collection-topline">
+            <div><span className="collection-topline__dot" /> India Food Ad Library</div>
+            <div className="collection-topline__meta">{ads.length} approved creatives <span>·</span> India</div>
+          </header>
+
+          {featuredAd && <section id="featured" className="featured-collection" aria-labelledby="featured-title">
+            <div className="featured-collection__copy">
+              <span className="collection-eyebrow">Featured collection · 01</span>
+              <h1 id="featured-title">The new<br /><em>Indian</em> pantry</h1>
+              <p>A rotating shelf of the food and beverage work shaping how India eats, drinks, and shops now.</p>
+              <button type="button" onClick={() => setSelectedAd(featuredAd)}>Open featured ad ↗</button>
+            </div>
+            <div className="featured-collection__media">
+              <CreativePreview ad={featuredAd} priority onUnavailable={() => hideUnavailable(featuredAd)} />
+              <span className="featured-collection__label">{featuredAd.brand.name}</span>
+            </div>
+          </section>}
+
+          <section id="collections" className="collections-area" aria-label="Curated collections">
+            <div className="collections-heading"><h2>Browse collections</h2><span>Curated by category</span></div>
+            {collections.map((collection, index) => (
+              <div className="collection-row" key={collection.name}>
+                <div className="collection-row__heading"><h3>{collection.name}</h3><span>{String(index + 2).padStart(2, "0")} / {collection.ads.length} ads</span></div>
+                <div className="collection-row__cards">
+                  {collection.ads.map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onOpen={() => setSelectedAd(ad)} onUnavailable={() => hideUnavailable(ad)} />)}
+                </div>
+              </div>
+            ))}
+          </section>
+
+        <div id="all-ads" className="library-layout">
           <aside className="library-sidebar" aria-label="Filter ads">
             <FilterPanel
               categories={categories}
