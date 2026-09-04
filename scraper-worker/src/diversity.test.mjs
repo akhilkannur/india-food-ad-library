@@ -49,6 +49,30 @@ test("round-robin selection favours different concepts", () => {
   const recipe = ad({ source_ad_id: "recipe-1", format: "Video", creative_style: "Recipe/how-to", hook: "Education", headline: "Three steps to a quick breakfast" });
   const result = selectDiverseCandidates([productOne, productTwo, ugc, recipe], [], { maxSelected: 3, maxPerCluster: 2 });
   assert.deepEqual(result.selected.map((item) => item.source_ad_id), ["product-1", "ugc-1", "recipe-1"]);
+  assert.equal(result.skippedCapacity, 1);
+});
+
+test("clusters are ordered for variety without dropping valid inventory", () => {
+  const candidates = [
+    ad({ source_ad_id: "one", headline: "Crunchy millet bites for movie night" }),
+    ad({ source_ad_id: "two", headline: "Spicy potato chips made for parties" }),
+    ad({ source_ad_id: "three", headline: "Tangy banana crisps in a sharing pack" }),
+  ];
+  const result = selectDiverseCandidates(candidates, [], { maxSelected: 10 });
+  assert.equal(result.selected.length, 3);
+  assert.equal(result.skippedCluster, 0);
+  assert.equal(result.skippedCapacity, 0);
+});
+
+test("an explicit cluster cap is still available", () => {
+  const candidates = [
+    ad({ source_ad_id: "one", headline: "Crunchy millet bites for movie night" }),
+    ad({ source_ad_id: "two", headline: "Spicy potato chips made for parties" }),
+    ad({ source_ad_id: "three", headline: "Tangy banana crisps in a sharing pack" }),
+  ];
+  const result = selectDiverseCandidates(candidates, [], { maxSelected: 10, maxPerCluster: 2 });
+  assert.equal(result.selected.length, 2);
+  assert.equal(result.skippedCluster, 1);
 });
 
 test("existing near-duplicates are not queued again", () => {

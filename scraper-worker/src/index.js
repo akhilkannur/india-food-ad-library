@@ -9,8 +9,8 @@ const SCHEDULED_BATCH_SIZE = 24;
 const WEEKLY_CRONS = ["30 0 * * SUN", "0 1 * * SUN", "30 1 * * SUN", "0 2 * * SUN", "30 2 * * SUN"];
 
 const RUN_MODES = {
-  backfill: { rawAds: 60, selectedAds: 24, scrollRounds: 8, maxBrands: 12, concurrency: 2 },
-  refresh: { rawAds: 30, selectedAds: 8, scrollRounds: 4, maxBrands: 24, concurrency: 3 },
+  backfill: { rawAds: 80, selectedAds: 60, scrollRounds: 10, maxBrands: 12, concurrency: 2 },
+  refresh: { rawAds: 40, selectedAds: 20, scrollRounds: 5, maxBrands: 24, concurrency: 3 },
 };
 
 const HIGH_VOLUME_BRANDS = new Set([
@@ -379,9 +379,46 @@ async function upsertAds(env, rows) {
   }
 }
 
+function balancedCandidateSample(groups, limit) {
+  const eligible = groups.map((group) => group.candidates.filter((ad) =>
+    ad.creative_url && ["Image", "Video"].includes(ad.format)
+  ));
+  const selected = [];
+  let depth = 0;
+
+  while (selected.length < limit) {
+    const available = eligible
+      .map((candidates) => candidates[depth])
+      .filter(Boolean);
+    if (!available.length) break;
+
+    const remaining = limit - selected.length;
+    if (available.length <= remaining) selected.push(...available);
+    else {
+      for (let index = 0; index < remaining; index += 1) {
+        selected.push(available[Math.floor(index * available.length / remaining)]);
+      }
+    }
+    depth += 1;
+  }
+
+  return selected;
+}
+
 async function queueAds(env, discoveries, options) {
   const recordsFound = discoveries.reduce((total, item) => total + item.records.length, 0);
-  if (!recordsFound) return { queued: 0, refreshed: 0, skippedSimilar: 0, skippedCluster: 0, classified: 0, results: [] };
+  if (!recordsFound) {
+    return {
+      queued: 0,
+      refreshed: 0,
+      skippedSimilar: 0,
+      skippedCluster: 0,
+      skippedCapacity: 0,
+      classificationAttempts: 0,
+      classified: 0,
+      results: [],
+    };
+  }
 
   const configuredBrands = [...new Map(discoveries.map(({ brand }) => [brand.slug, brand])).values()];
   const brandRows = await supabase(env, "brands?on_conflict=slug&select=id,slug", {
@@ -406,8 +443,10 @@ async function queueAds(env, discoveries, options) {
   const refreshRows = [];
   const newRows = [];
   const results = [];
+  const candidateGroups = [];
   let skippedSimilar = 0;
   let skippedCluster = 0;
+  let skippedCapacity = 0;
 
   for (const { brand, records, limits } of discoveries) {
     const brandId = brandIds.get(brand.slug);
@@ -428,35 +467,56 @@ async function queueAds(env, discoveries, options) {
       }
     }
 
-    const selection = selectDiverseCandidates(candidates, inventoryByBrand.get(brandId) || [], {
-      maxSelected: limits.selectedAds,
-      maxPerCluster: 2,
+    const deduplicated = selectDiverseCandidates(candidates, inventoryByBrand.get(brandId) || [], {
+      maxSelected: candidates.length,
     });
-    newRows.push(...selection.selected);
-    skippedSimilar += selection.skippedSimilar;
-    skippedCluster += selection.skippedCluster;
-    results.push({
-      brand: brand.slug,
+    candidateGroups.push({
+      brand,
+      brandId,
+      limits,
       found: records.length,
-      new_candidates: candidates.length,
-      queued: selection.selected.length,
+      candidateCount: candidates.length,
+      candidates: deduplicated.selected,
       refreshed,
-      skipped_similar: selection.skippedSimilar,
-      skipped_cluster: selection.skippedCluster,
+      skippedSimilar: deduplicated.skippedSimilar,
     });
+    skippedSimilar += deduplicated.skippedSimilar;
   }
 
+  let classificationAttempts = 0;
   let classified = 0;
   const aiLimit = Math.min(options.aiLimit || 0, MAX_AI_CLASSIFICATIONS_PER_RUN);
-  for (const ad of newRows.slice(0, aiLimit)) {
-    if (!env.GEMINI_API_KEY) break;
+  const aiCandidates = env.GEMINI_API_KEY ? balancedCandidateSample(candidateGroups, aiLimit) : [];
+  for (const ad of aiCandidates) {
+    classificationAttempts += 1;
     try {
       const labels = await classifyWithGemini(env, { ...ad, brand_name: brandNamesById.get(ad.brand_id) });
-      if (labels) Object.assign(ad, labels);
-      classified += 1;
+      if (labels) {
+        Object.assign(ad, labels);
+        classified += 1;
+      }
     } catch (error) {
       console.log(JSON.stringify({ event: "gemini_classification_failed", source_ad_id: ad.source_ad_id, error: error instanceof Error ? error.message : String(error) }));
     }
+  }
+
+  for (const group of candidateGroups) {
+    const selection = selectDiverseCandidates(group.candidates, [], {
+      maxSelected: group.limits.selectedAds,
+    });
+    newRows.push(...selection.selected);
+    skippedCluster += selection.skippedCluster;
+    skippedCapacity += selection.skippedCapacity;
+    results.push({
+      brand: group.brand.slug,
+      found: group.found,
+      new_candidates: group.candidateCount,
+      queued: selection.selected.length,
+      refreshed: group.refreshed,
+      skipped_similar: group.skippedSimilar,
+      skipped_cluster: selection.skippedCluster,
+      skipped_capacity: selection.skippedCapacity,
+    });
   }
 
   const rowsBySource = new Map([...refreshRows, ...newRows].map((row) => [row.source_ad_id, row]));
@@ -466,6 +526,8 @@ async function queueAds(env, discoveries, options) {
     refreshed: refreshRows.length,
     skippedSimilar,
     skippedCluster,
+    skippedCapacity,
+    classificationAttempts,
     classified,
     results,
   };

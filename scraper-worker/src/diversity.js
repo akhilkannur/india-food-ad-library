@@ -60,7 +60,7 @@ function isNearDuplicate(candidate, comparison) {
 
 export function selectDiverseCandidates(candidates, existing = [], options = {}) {
   const maxSelected = options.maxSelected ?? 24;
-  const maxPerCluster = options.maxPerCluster ?? 2;
+  const maxPerCluster = options.maxPerCluster ?? Number.POSITIVE_INFINITY;
   const unique = [];
   let skippedSimilar = 0;
 
@@ -84,6 +84,7 @@ export function selectDiverseCandidates(candidates, existing = [], options = {})
 
   const selected = [];
   let skippedCluster = 0;
+  let skippedCapacity = 0;
   let madeSelection = true;
   while (selected.length < maxSelected && madeSelection) {
     madeSelection = false;
@@ -100,6 +101,9 @@ export function selectDiverseCandidates(candidates, existing = [], options = {})
     }
   }
 
-  for (const group of groups.values()) skippedCluster += group.length;
-  return { selected, skippedSimilar, skippedCluster };
+  for (const group of groups.values()) {
+    if (selected.length >= maxSelected) skippedCapacity += group.length;
+    else skippedCluster += group.length;
+  }
+  return { selected, skippedSimilar, skippedCluster, skippedCapacity };
 }
