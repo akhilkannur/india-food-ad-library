@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { AuthGateDialog } from "@/components/auth-gate-dialog";
+import { CreativePreview } from "@/components/creative-preview";
 import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
 import { SiteHeader } from "@/components/site-header";
@@ -272,8 +273,25 @@ export function LibraryExplorer({
             <header className="library-intro">
               <div className="library-intro__copy">
                 <p>India Food Ad Library</p>
-                <h1>Food ads by creative format.</h1>
+                <h1>Food ads by <span className="library-intro__highlight">creative format.</span></h1>
                 <span>Product demos, UGC, recipes, offers, and more from Indian food brands.</span>
+                <div className="library-intro__actions">
+                  <a className="library-intro__primary" href="#all-ads">Start exploring</a>
+                  <a className="library-intro__secondary" href="#collections"><span aria-hidden="true">→</span> See formats</a>
+                </div>
+              </div>
+              <div className="library-intro__visual" aria-label="Examples from the ad library">
+                {visibleAds.slice(0, 3).map((ad, index) => (
+                  <div className={`library-intro__visual-card library-intro__visual-card--${index + 1}`} key={ad.id}>
+                    <CreativePreview ad={ad} compact priority={index === 0} onUnavailable={() => hideUnavailable(ad)} />
+                  </div>
+                ))}
+                {visibleAds[0] && (
+                  <div className="library-intro__visual-caption">
+                    <span>{visibleAds[0].brand.name}</span>
+                    <strong>{visibleAds[0].creative_style || visibleAds[0].format}</strong>
+                  </div>
+                )}
               </div>
             </header>
           )}
