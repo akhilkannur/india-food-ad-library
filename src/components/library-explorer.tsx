@@ -283,15 +283,17 @@ export function LibraryExplorer({
               <div className="collections-heading">
                 <h2>Formats</h2>
               </div>
-              {collections.map((collection) => (
-                <div className="collection-row" key={collection.name}>
-                  <div className="collection-row__heading"><h3>{collection.name}</h3><span>{collection.ads.length} ads · {collection.brandCount} brands</span></div>
-                  <div className="collection-row__cards">
-                    {collection.ads.slice(0, 3).map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onUnavailable={() => hideUnavailable(ad)} />)}
+              <div className="collections-rail" aria-label="Browse ad formats">
+                {collections.map((collection) => (
+                  <div className="collection-row" key={collection.name}>
+                    <div className="collection-row__heading"><h3>{collection.name}</h3><span>{collection.ads.length} ads · {collection.brandCount} brands</span></div>
+                    <div className="collection-row__cards">
+                      {collection.ads.slice(0, 3).map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onUnavailable={() => hideUnavailable(ad)} />)}
+                    </div>
+                    <Link className="collection-row__link" href={`/collections/${collection.slug}`} aria-label={`View ${collection.name} collection`} />
                   </div>
-                  <Link className="collection-row__link" href={`/collections/${collection.slug}`} aria-label={`View ${collection.name} collection`} />
-                </div>
-              ))}
+                ))}
+              </div>
             </section>
           )}
 

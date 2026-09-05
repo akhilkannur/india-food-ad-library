@@ -298,8 +298,14 @@ function validateWorkersLabels(labels) {
     selling_angle: labels.selling_angle,
     language: labels.language,
   };
+  const options = {
+    product_category: CLASSIFICATION_OPTIONS.category,
+    creative_style: CLASSIFICATION_OPTIONS.creative_style,
+    selling_angle: CLASSIFICATION_OPTIONS.selling_angle,
+    language: CLASSIFICATION_OPTIONS.language,
+  };
   const valid = Object.entries(result).every(([field, value]) =>
-    typeof value === "string" && CLASSIFICATION_OPTIONS[field].includes(value),
+    typeof value === "string" && options[field].includes(value),
   );
   if (!valid) throw new Error("Workers AI returned a missing or invalid single-label classification");
   return result;
@@ -342,20 +348,45 @@ async function getClassificationMedia(env, ad) {
   const headers = { Referer: "https://www.facebook.com/", "User-Agent": "IndiaFoodAdLibrary/1.0" };
 
   if (isVideo) {
-    if (!env.MEDIA) throw new Error("Cloudflare Media binding is missing for video frame extraction");
-    if (!ad.creative_url) throw new Error("Video has no downloadable creative URL");
-    const videoResponse = await fetch(ad.creative_url, { headers });
-    if (!videoResponse.ok || !videoResponse.body) throw new Error(`Video download failed (${videoResponse.status})`);
-    const spritesheet = await env.MEDIA.input(videoResponse.body)
-      .transform({ width: 720 })
-      .output({ mode: "spritesheet", time: "0s", duration: "8s", imageCount: 4 })
-      .response();
-    if (!spritesheet.ok) throw new Error(`Video frame extraction failed (${spritesheet.status})`);
-    return {
-      bytes: new Uint8Array(await spritesheet.arrayBuffer()),
-      mimeType: "image/jpeg",
-      source: "video-frames-0-8s",
-    };
+    let videoFailure = null;
+    if (ad.creative_url && env.MEDIA) {
+      try {
+        const videoResponse = await fetch(ad.creative_url, { headers });
+        if (!videoResponse.ok || !videoResponse.body) throw new Error(`Video download failed (${videoResponse.status})`);
+        const spritesheet = await env.MEDIA.input(videoResponse.body)
+          .transform({ width: 720 })
+          .output({ mode: "spritesheet", time: "0s", duration: "8s", imageCount: 4 })
+          .response();
+        if (!spritesheet.ok) throw new Error(`Video frame extraction failed (${spritesheet.status})`);
+        return {
+          bytes: new Uint8Array(await spritesheet.arrayBuffer()),
+          mimeType: "image/jpeg",
+          source: "video-frames-0-8s",
+        };
+      } catch (error) {
+        videoFailure = error;
+      }
+    } else if (!env.MEDIA) {
+      videoFailure = new Error("Cloudflare Media binding is missing for video frame extraction");
+    }
+
+    if (ad.thumbnail_url) {
+      try {
+        const imageResponse = await fetch(ad.thumbnail_url, { headers });
+        if (!imageResponse.ok) throw new Error(`Thumbnail download failed (${imageResponse.status})`);
+        const bytes = new Uint8Array(await imageResponse.arrayBuffer());
+        if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Thumbnail is larger than the classification limit");
+        return {
+          bytes,
+          mimeType: imageResponse.headers.get("content-type")?.split(";")[0] || "image/jpeg",
+          source: "thumbnail-fallback",
+        };
+      } catch (error) {
+        videoFailure = videoFailure || error;
+      }
+    }
+
+    throw videoFailure || new Error("Video has no downloadable creative or thumbnail");
   }
 
   const url = ad.creative_url || ad.thumbnail_url;
@@ -427,16 +458,19 @@ Copy: ${ad.body_copy || "None"}`;
 }
 
 function hasClassificationMedia(ad) {
-  return /video/i.test(ad.format || "") ? Boolean(ad.creative_url) : Boolean(ad.creative_url || ad.thumbnail_url);
+  return Boolean(ad.creative_url || ad.thumbnail_url);
 }
 
 async function classifyAds(env, limit, offset, write, status = "approved") {
   const statusFilter = ["pending", "approved"].includes(status) ? status : "approved";
   const rows = await supabase(
     env,
-    `ads?status=eq.${statusFilter}&select=id,source_ad_id,format,language,category,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc,id.asc&offset=${offset}&limit=${Math.min(limit * 2, 100)}`,
+    `ads?status=eq.${statusFilter}&select=id,source_ad_id,format,language,category,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc,id.asc&offset=${offset}&limit=${Math.min(limit * 2, 100)}`,
   );
-  const selected = rows.filter(hasClassificationMedia).slice(0, limit);
+  const selected = rows
+    .filter(hasClassificationMedia)
+    .filter((ad) => !ad.category || !ad.creative_style || !ad.selling_angle || !ad.language)
+    .slice(0, limit);
 
   const results = [];
   let writes = 0;
