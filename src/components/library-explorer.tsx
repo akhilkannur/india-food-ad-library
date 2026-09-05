@@ -271,9 +271,9 @@ export function LibraryExplorer({
           {showCollections && collections.length > 0 && (
             <header className="library-intro">
               <div className="library-intro__copy">
-                <p>Creative library</p>
-                <h1>Browse ad creative.</h1>
-                <span>Search by brand, format, message angle, or language.</span>
+                <p>India Food Ad Library</p>
+                <h1>Food ads by creative format.</h1>
+                <span>Product demos, UGC, recipes, offers, and more from Indian food brands.</span>
               </div>
             </header>
           )}
