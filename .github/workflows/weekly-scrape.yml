@@ -23,8 +23,8 @@ on:
         description: "Start position in the brand list when brand is blank"
         required: false
         default: "0"
-      ai:
-        description: "Optional Gemini classifications (0–12; zero is fastest)"
+      classify:
+        description: "Optional Workers AI image classifications (0–25; zero is fastest)"
         required: false
         default: "0"
       publish:
@@ -53,10 +53,10 @@ jobs:
           BRAND: ${{ inputs.brand }}
           LIMIT: ${{ inputs.limit }}
           OFFSET: ${{ inputs.offset }}
-          AI: ${{ inputs.ai }}
+          CLASSIFY: ${{ inputs.classify }}
           PUBLISH: ${{ inputs.publish }}
         run: |
-          query="?mode=$MODE&ai=$AI&publish=$PUBLISH"
+          query="?mode=$MODE&classify=$CLASSIFY&publish=$PUBLISH"
           if [ -n "$BRAND" ]; then
             query="$query&brand=$BRAND"
           else

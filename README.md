@@ -54,13 +54,13 @@ For each discovery it:
 1. Extracts the Meta Library ID, source link, copy and available creative URLs.
 2. Upserts the real brand record.
 3. Deduplicates exact Meta IDs, identical media URLs and near-identical copy variants.
-4. Optionally uses Gemini on a balanced sample of no more than 12 candidates before final selection, then orders candidates across format, creative style, selling angle and hook clusters. Clusters are not hard-capped, so diversity ordering does not discard otherwise valid inventory.
+4. Optionally uses Cloudflare Workers AI on a balanced sample of up to 25 candidates before final selection, then orders candidates across format, creative style, selling angle and hook clusters. Images are classified directly and videos are classified from a four-frame contact sheet. Clusters are not hard-capped, so diversity ordering does not discard otherwise valid inventory.
 5. Inserts selected ads with `status = pending`, while refreshing existing media URLs without changing approval decisions.
 6. Returns per-brand counts for discovered, queued, refreshed, similarity-filtered and capacity-limited ads.
 
 Meta changes its public UI regularly, so every candidate is brand-page matched and still requires approval in `/admin`. The public library never exposes pending records.
 
-The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RUN_TOKEN`, and optionally `GEMINI_API_KEY` as encrypted runtime secrets. Fast heuristic labels are applied during normal collection. Gemini image classification is opt-in for manual runs with `ai=1` through `ai=12`, is spread across brands in the batch and runs before the final diversity ordering. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
+The Worker stores `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `RUN_TOKEN` as encrypted runtime secrets. Fast heuristic labels are applied during normal collection. Workers AI image classification is opt-in for manual runs with `classify=1` through `classify=25`, is spread across brands in the batch and runs before the final diversity ordering. Its public `/health` endpoint contains no credentials, and `/run` requires the run token.
 
 Run `supabase/migrations/002_ai_classifications.sql` after the initial schema migration. It adds the reviewed `creative_style` and `selling_angle` fields used by the public catalogue and moderation queue.
 
