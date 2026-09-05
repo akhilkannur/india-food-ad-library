@@ -38,12 +38,12 @@ export function AuthGateDialog({
         <button className="auth-dialog__close" type="button" onClick={onClose} aria-label="Close sign in">
           <X aria-hidden="true" size={18} />
         </button>
-        <p>Creative inspiration</p>
-        <h2>Keep exploring.</h2>
-        <span>Sign up with Google to unlock the full library and keep your place.</span>
+        <p>Full library access</p>
+        <h2>Get the good stuff.</h2>
+        <span>Sign in with Google to unlock every creative in the library — free. Your signup email is saved with your library account.</span>
         <button className="auth-dialog__google" type="button" onClick={onSignIn} disabled={busy}>
           <span aria-hidden="true">G</span>
-          {busy ? "Connecting…" : "Continue with Google"}
+          {busy ? "Connecting…" : "Get full access — free"}
         </button>
         {error && <p className="auth-dialog__error" role="alert">{error}</p>}
       </div>

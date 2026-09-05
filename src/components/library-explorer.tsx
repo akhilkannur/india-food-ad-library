@@ -9,7 +9,8 @@ import { AuthGateDialog } from "@/components/auth-gate-dialog";
 import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
 import { SiteHeader } from "@/components/site-header";
-import { diversifyByBrand, getCollectionAds, getCollectionDefinitions } from "@/lib/collections";
+import { SiteFooter } from "@/components/site-footer";
+import { diversifyByBrand, diversifyByBrandAndMedia, getCollectionAds, getCollectionDefinitions } from "@/lib/collections";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Ad } from "@/lib/types";
 
@@ -17,6 +18,11 @@ type SortOrder = "newest" | "oldest";
 const AD_BATCH_SIZE = 36;
 const FREE_AD_OPEN_LIMIT = 10;
 const OPENED_ADS_KEY = "ifal-opened-ads";
+const HERO_AD_IDS = [
+  "47e1eb57-ee28-4b1d-8a01-07d6517149d4",
+  "1f105113-8b63-4e7d-a8e8-a1170c8033bd",
+  "6000feac-5509-42fd-875e-f04c1fe15c23",
+];
 
 function uniqueValues(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter((value): value is string => Boolean(value)))).sort();
@@ -38,6 +44,7 @@ export function LibraryExplorer({
   showCollections = true,
   pageTitle,
   backLabel = "All collections",
+  initialBrandTotal,
 }: {
   ads: Ad[];
   initialTotal?: number;
@@ -45,6 +52,7 @@ export function LibraryExplorer({
   showCollections?: boolean;
   pageTitle?: string;
   backLabel?: string;
+  initialBrandTotal?: number;
 }) {
   const [loadedAds, setLoadedAds] = useState(ads);
   const [totalAds, setTotalAds] = useState(initialTotal ?? ads.length);
@@ -62,6 +70,7 @@ export function LibraryExplorer({
   const [authOpen, setAuthOpen] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [gallerySeed, setGallerySeed] = useState(0);
   const filterDialogRef = useRef<HTMLDialogElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const loadedAdsRef = useRef(ads);
@@ -72,10 +81,23 @@ export function LibraryExplorer({
   const sellingAngles = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.selling_angle))], [loadedAds]);
   const languages = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.language))], [loadedAds]);
   const brandCount = useMemo(() => new Set(loadedAds.map((ad) => ad.brand.id)).size, [loadedAds]);
+  const brandTotal = initialBrandTotal ?? brandCount;
+  const heroAds = useMemo(() => {
+    const available = new Map(ads.filter((ad) => !unavailableIds.has(ad.id)).map((ad) => [ad.id, ad]));
+    const selected = HERO_AD_IDS.map((id) => available.get(id)).filter((ad): ad is Ad => Boolean(ad));
+    const selectedBrands = new Set(selected.map((ad) => ad.brand.id));
+    const fallbacks = ads.filter((ad) => {
+      if (unavailableIds.has(ad.id) || selected.some((item) => item.id === ad.id)) return false;
+      if (selectedBrands.has(ad.brand.id)) return false;
+      selectedBrands.add(ad.brand.id);
+      return Boolean(ad.creative_url || ad.thumbnail_url);
+    });
+    return [...selected, ...fallbacks].slice(0, 3);
+  }, [ads, unavailableIds]);
 
   const visibleAds = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return diversifyByBrand(loadedAds
+    const filteredAds = loadedAds
       .filter((ad) => !unavailableIds.has(ad.id))
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => format === "All" || ad.creative_style === format)
@@ -90,8 +112,9 @@ export function LibraryExplorer({
       .sort((left, right) => {
         const delta = new Date(right.first_seen_at).getTime() - new Date(left.first_seen_at).getTime();
         return sortOrder === "newest" ? delta : -delta;
-      }));
-  }, [loadedAds, category, format, sellingAngle, language, search, sortOrder, unavailableIds]);
+      });
+    return showCollections ? diversifyByBrandAndMedia(filteredAds, gallerySeed) : diversifyByBrand(filteredAds);
+  }, [loadedAds, category, format, sellingAngle, language, search, sortOrder, unavailableIds, showCollections, gallerySeed]);
 
   const activeFilterCount = [category, format, sellingAngle, language].filter((value) => value !== "All").length
     + (search.trim() ? 1 : 0);
@@ -103,6 +126,12 @@ export function LibraryExplorer({
     loadedAdsRef.current = loadedAds;
   }, [loadedAds]);
 
+  useEffect(() => {
+    const values = new Uint32Array(1);
+    window.crypto.getRandomValues(values);
+    setGallerySeed(values[0]);
+  }, []);
+
   const loadMore = useCallback(async () => {
     if (loadingMoreRef.current || loadedAdsRef.current.length >= totalAds) return;
 
@@ -111,7 +140,8 @@ export function LibraryExplorer({
     setLoadMoreError(null);
 
     try {
-      const response = await fetch(`/api/ads?offset=${loadedAdsRef.current.length}&limit=${AD_BATCH_SIZE}`, {
+      const diversity = showCollections ? "&diversity=variety" : "";
+      const response = await fetch(`/api/ads?offset=${loadedAdsRef.current.length}&limit=${AD_BATCH_SIZE}${diversity}`, {
         headers: { Accept: "application/json" },
       });
       if (!response.ok) throw new Error("The next page could not be loaded.");
@@ -128,7 +158,7 @@ export function LibraryExplorer({
       loadingMoreRef.current = false;
       setIsLoadingMore(false);
     }
-  }, [totalAds]);
+  }, [showCollections, totalAds]);
 
   const activeFilters = useMemo<ActiveFilter[]>(() => {
     const filters: ActiveFilter[] = [];
@@ -144,7 +174,7 @@ export function LibraryExplorer({
     return getCollectionDefinitions(visibleAds).map((definition) => {
       const matches = getCollectionAds(visibleAds, definition);
       const brands = new Set(matches.map((ad) => ad.brand.id));
-      return { ...definition, ads: matches.slice(0, 6), brandCount: brands.size };
+      return { ...definition, ads: matches.slice(0, 6), count: matches.length, brandCount: brands.size };
     }).filter((collection) => collection.ads.length >= 2);
   }, [visibleAds]);
 
@@ -201,7 +231,7 @@ export function LibraryExplorer({
       setAuthOpen(true);
       return;
     }
-    await supabaseBrowser.auth.signOut();
+    if (authenticated) await supabaseBrowser.auth.signOut();
   }
 
   useEffect(() => {
@@ -254,6 +284,7 @@ export function LibraryExplorer({
     <>
       <SiteHeader
         authenticated={authenticated}
+        adCount={totalAds}
         onAuthAction={authAction}
       />
       <main className="library-shell library-shell--collections">
@@ -272,10 +303,20 @@ export function LibraryExplorer({
                 <p>India Food Ad Library</p>
                 <h1>Food ads by <span className="library-intro__highlight">creative format.</span></h1>
                 <span>Product demos, UGC, recipes, offers, and more from Indian food brands.</span>
+                <div className="library-intro__stats" aria-label="Library scale">
+                  <span><strong>{totalAds.toLocaleString()}</strong> ads</span>
+                  <span><strong>{brandTotal.toLocaleString()}</strong> brands</span>
+                  <span>Updated weekly</span>
+                </div>
                 <div className="library-intro__actions">
                   <a className="library-intro__primary" href="#all-ads">Start exploring</a>
                   <a className="library-intro__secondary" href="#collections"><span aria-hidden="true">→</span> See formats</a>
                 </div>
+              </div>
+              <div className="collection-row__cards library-intro__visual" aria-label="Selected ad examples">
+                {heroAds.map((ad) => (
+                  <AdCard ad={ad} key={ad.id} priority={false} onOpen={() => openAd(ad)} onUnavailable={() => hideUnavailable(ad)} />
+                ))}
               </div>
             </header>
           )}
@@ -288,7 +329,7 @@ export function LibraryExplorer({
               <div className="collections-rail" aria-label="Browse ad formats">
                 {collections.map((collection) => (
                   <div className="collection-row" key={collection.name}>
-                    <div className="collection-row__heading"><h3>{collection.name}</h3><span>{collection.ads.length} ads · {collection.brandCount} brands</span></div>
+                    <div className="collection-row__heading"><h3>{collection.name}</h3><span>{collection.count} ads · {collection.brandCount} brands</span></div>
                     <div className="collection-row__cards">
                       {collection.ads.slice(0, 3).map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onUnavailable={() => hideUnavailable(ad)} />)}
                     </div>
@@ -382,6 +423,8 @@ export function LibraryExplorer({
         </div>
         </div>
       </main>
+
+      <SiteFooter />
 
       <dialog
         ref={filterDialogRef}

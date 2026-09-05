@@ -7,6 +7,8 @@ export type CollectionDefinition = {
   match: (ad: Ad) => boolean;
 };
 
+type GalleryRecord = Pick<Ad, "brand_id" | "format"> & { creative_url?: string | null };
+
 function normalizeCollectionValue(value: string | null | undefined) {
   return value?.trim().toLocaleLowerCase() ?? "";
 }
@@ -80,6 +82,78 @@ export function diversifyByBrand(items: Ad[]) {
       if (ad) result.push(ad);
     });
   }
+  return result;
+}
+
+function isVideoAd(ad: GalleryRecord) {
+  return ad.format.toLowerCase().includes("video")
+    || /\.mp4(?:\?|$)/i.test(ad.creative_url || "");
+}
+
+function seededHash(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * Arrange the public gallery for variety while keeping the input order inside
+ * each brand queue. The seed changes once per page visit, so the page
+ * feels fresh without reshuffling on every render or filter interaction.
+ */
+export function diversifyByBrandAndMedia<T extends GalleryRecord>(items: T[], seed = 0) {
+  if (items.length < 2) return items;
+
+  const queues = new Map<string, T[]>();
+  items.forEach((ad) => {
+    const key = ad.brand_id;
+    if (!queues.has(key)) queues.set(key, []);
+    queues.get(key)!.push(ad);
+  });
+
+  const brandOrder = Array.from(queues.keys()).sort((left, right) => {
+    const delta = seededHash(`${seed}:${left}`) - seededHash(`${seed}:${right}`);
+    return delta || left.localeCompare(right);
+  });
+  const result: T[] = [];
+  let cursor = 0;
+  let previousBrand: string | null = null;
+  let previousMedia: "image" | "video" = seededHash(`${seed}:media`) % 2 === 0 ? "video" : "image";
+
+  while (result.length < items.length) {
+    const available = brandOrder.flatMap((key) => queues.get(key)!.map((ad) => isVideoAd(ad) ? "video" : "image"));
+    const hasVideo = available.includes("video");
+    const hasImage = available.includes("image");
+    const preferredMedia = previousMedia === "video" ? "image" : "video";
+    const media = (preferredMedia === "video" && hasVideo) || (preferredMedia === "image" && hasImage)
+      ? preferredMedia
+      : hasVideo
+        ? "video"
+        : "image";
+
+    const findCandidate = (avoidPreviousBrand: boolean) => {
+      for (let offset = 0; offset < brandOrder.length; offset += 1) {
+        const brandIndex = (cursor + offset) % brandOrder.length;
+        const brand = brandOrder[brandIndex];
+        if (avoidPreviousBrand && brand === previousBrand) continue;
+        const queue = queues.get(brand)!;
+        const adIndex = queue.findIndex((ad) => (isVideoAd(ad) ? "video" : "image") === media);
+        if (adIndex !== -1) return { ad: queue.splice(adIndex, 1)[0], brandIndex, brand };
+      }
+      return undefined;
+    };
+
+    const candidate = findCandidate(true) || findCandidate(false);
+    if (!candidate) break;
+    result.push(candidate.ad);
+    previousBrand = candidate.brand;
+    previousMedia = media;
+    cursor = (candidate.brandIndex + 1) % brandOrder.length;
+  }
+
   return result;
 }
 

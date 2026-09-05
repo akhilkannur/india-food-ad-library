@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { diversifyByBrandAndMedia } from "@/lib/collections";
 import { demoAds, demoBrands } from "@/lib/demo-data";
 import { hasDatabase } from "@/lib/config";
 import type { Ad, AdStatus, Brand } from "@/lib/types";
@@ -72,6 +73,16 @@ const getCachedApprovedAds = unstable_cache(
   { revalidate: 300 },
 );
 
+type AdOrderRecord = Pick<Ad, "id" | "brand_id" | "format">;
+
+const getCachedApprovedAdOrder = unstable_cache(
+  () => supabaseFetch<AdOrderRecord[]>(
+    "ads?select=id,brand_id,format&order=submitted_at.desc,id.asc&status=eq.approved",
+  ),
+  ["approved-ad-order"],
+  { revalidate: 300 },
+);
+
 export async function getAds(status?: AdStatus): Promise<Ad[]> {
   if (!hasDatabase) {
     return status ? demoAds.filter((ad) => ad.status === status) : demoAds;
@@ -96,16 +107,39 @@ export async function getApprovedAds(): Promise<Ad[]> {
   }
 }
 
-export async function getApprovedAdsPage({ limit = 36, offset = 0 }: { limit?: number; offset?: number } = {}): Promise<AdPage> {
+export async function getApprovedAdsPage({
+  limit = 36,
+  offset = 0,
+  diverse = false,
+}: { limit?: number; offset?: number; diverse?: boolean } = {}): Promise<AdPage> {
   const safeLimit = Math.min(Math.max(limit, 1), 60);
   const safeOffset = Math.max(offset, 0);
 
   if (!hasDatabase) {
     const approvedAds = demoAds.filter((ad) => ad.status === "approved");
+    const orderedAds = diverse ? diversifyByBrandAndMedia(approvedAds) : approvedAds;
     return {
-      ads: approvedAds.slice(safeOffset, safeOffset + safeLimit),
-      total: approvedAds.length,
+      ads: orderedAds.slice(safeOffset, safeOffset + safeLimit),
+      total: orderedAds.length,
     };
+  }
+
+  if (diverse) {
+    try {
+      const order = diversifyByBrandAndMedia(await getCachedApprovedAdOrder());
+      const selectedIds = order.slice(safeOffset, safeOffset + safeLimit).map((ad) => ad.id);
+      if (!selectedIds.length) return { ads: [], total: order.length };
+
+      const idList = selectedIds.map((id) => encodeURIComponent(id)).join(",");
+      const rows = await supabaseFetch<Ad[]>(`ads?select=*,brand:brands(*)&id=in.(${idList})&status=eq.approved`);
+      const adsById = new Map(rows.map((ad) => [ad.id, ad]));
+      return {
+        ads: selectedIds.map((id) => adsById.get(id)).filter((ad): ad is Ad => Boolean(ad)),
+        total: order.length,
+      };
+    } catch (error) {
+      console.error("Diverse approved ad query failed", error);
+    }
   }
 
   try {

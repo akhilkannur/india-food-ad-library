@@ -10,7 +10,11 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const limit = boundedInteger(url.searchParams.get("limit"), 36, 1, 60);
   const offset = boundedInteger(url.searchParams.get("offset"), 0, 0, 100_000);
-  const page = await getApprovedAdsPage({ limit, offset });
+  const page = await getApprovedAdsPage({
+    limit,
+    offset,
+    diverse: url.searchParams.get("diversity") === "variety",
+  });
 
   return NextResponse.json({
     ads: page.ads,
