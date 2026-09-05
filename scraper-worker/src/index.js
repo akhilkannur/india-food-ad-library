@@ -463,14 +463,12 @@ function hasClassificationMedia(ad) {
 
 async function classifyAds(env, limit, offset, write, status = "approved") {
   const statusFilter = ["pending", "approved"].includes(status) ? status : "approved";
+  const missingClassification = "or=(category.is.null,creative_style.is.null,selling_angle.is.null,language.is.null)";
   const rows = await supabase(
     env,
-    `ads?status=eq.${statusFilter}&select=id,source_ad_id,format,language,category,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc,id.asc&offset=${offset}&limit=${Math.min(limit * 2, 100)}`,
+    `ads?status=eq.${statusFilter}&${missingClassification}&select=id,source_ad_id,format,language,category,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc,id.asc&offset=${offset}&limit=${limit}`,
   );
-  const selected = rows
-    .filter(hasClassificationMedia)
-    .filter((ad) => !ad.category || !ad.creative_style || !ad.selling_angle || !ad.language)
-    .slice(0, limit);
+  const selected = rows.filter(hasClassificationMedia).slice(0, limit);
 
   const results = [];
   let writes = 0;
