@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowUpRight, Library, LogIn, LogOut } from "lucide-react";
 
 export function SiteHeader({
@@ -10,6 +13,7 @@ export function SiteHeader({
   authenticated?: boolean;
   onAuthAction?: () => void;
 }) {
+  const pathname = usePathname();
   return (
     <header className={`site-header app-header${admin ? "" : " workspace-header"}`}>
       <div className="app-header__inner">
@@ -25,7 +29,7 @@ export function SiteHeader({
         </div>
 
         {!admin && <nav className="workspace-nav" aria-label="Library navigation">
-          <Link href="/">Explore</Link>
+          <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Explore</Link>
           <Link href="/#collections">Formats</Link>
           <Link href="/#all-ads">All ads</Link>
         </nav>}
@@ -41,7 +45,7 @@ export function SiteHeader({
               className="app-header__action"
               type="button"
               onClick={onAuthAction}
-              aria-label={authenticated ? "Sign out" : "Get full access for free"}
+              aria-label={authenticated ? "Sign out" : "Sign in for free"}
               title={authenticated ? "Sign out" : "Get full access for free"}
             >
               {authenticated ? <LogOut aria-hidden="true" size={16} /> : <LogIn aria-hidden="true" size={16} />}

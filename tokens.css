@@ -1,4 +1,10 @@
 :root {
+  --color-workspace-surface: oklch(25% 0.025 158);
+  --color-workspace-text: oklch(97% 0.012 95);
+  --color-workspace-muted: oklch(79% 0.02 145);
+  --color-workspace-rule: oklch(42% 0.025 158);
+  --color-workspace-highlight: oklch(84% 0.055 90);
+  --color-workspace-focus: oklch(84% 0.09 92);
   --color-transparent: transparent;
   --color-paper: oklch(97.5% 0.012 95);
   --color-paper-2: oklch(94.7% 0.016 95);
