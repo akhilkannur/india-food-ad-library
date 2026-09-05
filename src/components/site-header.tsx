@@ -1,15 +1,11 @@
 import Link from "next/link";
-import { ArrowUpRight, LogIn, LogOut, Search } from "lucide-react";
+import { ArrowUpRight, LogIn, LogOut } from "lucide-react";
 
 export function SiteHeader({
-  search,
-  onSearch,
   admin = false,
   authenticated = false,
   onAuthAction,
 }: {
-  search?: string;
-  onSearch?: (value: string) => void;
   admin?: boolean;
   authenticated?: boolean;
   onAuthAction?: () => void;
@@ -23,17 +19,10 @@ export function SiteHeader({
             <span>Ad Library</span>
           </Link>
           <span className="app-header__separator" aria-hidden="true" />
-          <span className="app-header__page-title">{admin ? "Review queue" : "Browse"}</span>
+          <span className="app-header__page-title">{admin ? "Review queue" : "Ad library"}</span>
         </div>
 
         <div className="app-header__actions">
-          {onSearch && (
-            <label className="app-header__search">
-              <Search aria-hidden="true" size={15} strokeWidth={1.8} />
-              <input aria-label="Search ads" type="search" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search ads" />
-              <kbd>/</kbd>
-            </label>
-          )}
           {admin && (
             <Link className="app-header__action" href="/">
               Back to library<ArrowUpRight aria-hidden="true" size={14} />
@@ -44,11 +33,11 @@ export function SiteHeader({
               className="app-header__action"
               type="button"
               onClick={onAuthAction}
-              aria-label={authenticated ? "Sign out" : "Join free"}
-              title={authenticated ? "Sign out" : "Join free"}
+              aria-label={authenticated ? "Sign out" : "Unlock the library"}
+              title={authenticated ? "Sign out" : "Unlock the library"}
             >
               {authenticated ? <LogOut aria-hidden="true" size={16} /> : <LogIn aria-hidden="true" size={16} />}
-              <span className="app-header__action-label">{authenticated ? "Sign out" : "Join free"}</span>
+              <span className="app-header__action-label">{authenticated ? "Sign out" : "Unlock the library"}</span>
             </button>
           )}
         </div>
