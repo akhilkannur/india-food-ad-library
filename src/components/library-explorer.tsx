@@ -68,7 +68,7 @@ export function LibraryExplorer({
   const loadingMoreRef = useRef(false);
   const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
   const categories = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.category))], [loadedAds]);
-  const formats = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.creative_style || ad.format))], [loadedAds]);
+  const formats = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.creative_style))], [loadedAds]);
   const sellingAngles = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.selling_angle))], [loadedAds]);
   const languages = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.language))], [loadedAds]);
   const brandCount = useMemo(() => new Set(loadedAds.map((ad) => ad.brand.id)).size, [loadedAds]);
@@ -78,7 +78,7 @@ export function LibraryExplorer({
     return diversifyByBrand(loadedAds
       .filter((ad) => !unavailableIds.has(ad.id))
       .filter((ad) => category === "All" || ad.category === category)
-      .filter((ad) => format === "All" || (ad.creative_style || ad.format) === format)
+      .filter((ad) => format === "All" || ad.creative_style === format)
       .filter((ad) => sellingAngle === "All" || ad.selling_angle === sellingAngle)
       .filter((ad) => language === "All" || ad.language === language)
       .filter((ad) => {
