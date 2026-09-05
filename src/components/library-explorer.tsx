@@ -18,11 +18,6 @@ type SortOrder = "newest" | "oldest";
 const AD_BATCH_SIZE = 36;
 const FREE_AD_OPEN_LIMIT = 10;
 const OPENED_ADS_KEY = "ifal-opened-ads";
-const HERO_AD_IDS = [
-  "47e1eb57-ee28-4b1d-8a01-07d6517149d4",
-  "1f105113-8b63-4e7d-a8e8-a1170c8033bd",
-  "6000feac-5509-42fd-875e-f04c1fe15c23",
-];
 
 function uniqueValues(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.filter((value): value is string => Boolean(value)))).sort();
@@ -44,7 +39,6 @@ export function LibraryExplorer({
   showCollections = true,
   pageTitle,
   backLabel = "All collections",
-  initialBrandTotal,
 }: {
   ads: Ad[];
   initialTotal?: number;
@@ -59,6 +53,7 @@ export function LibraryExplorer({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [introSearch, setIntroSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [format, setFormat] = useState("All");
   const [sellingAngle, setSellingAngle] = useState("All");
@@ -81,19 +76,6 @@ export function LibraryExplorer({
   const sellingAngles = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.selling_angle))], [loadedAds]);
   const languages = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.language))], [loadedAds]);
   const brandCount = useMemo(() => new Set(loadedAds.map((ad) => ad.brand.id)).size, [loadedAds]);
-  const brandTotal = initialBrandTotal ?? brandCount;
-  const heroAds = useMemo(() => {
-    const available = new Map(ads.filter((ad) => !unavailableIds.has(ad.id)).map((ad) => [ad.id, ad]));
-    const selected = HERO_AD_IDS.map((id) => available.get(id)).filter((ad): ad is Ad => Boolean(ad));
-    const selectedBrands = new Set(selected.map((ad) => ad.brand.id));
-    const fallbacks = ads.filter((ad) => {
-      if (unavailableIds.has(ad.id) || selected.some((item) => item.id === ad.id)) return false;
-      if (selectedBrands.has(ad.brand.id)) return false;
-      selectedBrands.add(ad.brand.id);
-      return Boolean(ad.creative_url || ad.thumbnail_url);
-    });
-    return [...selected, ...fallbacks].slice(0, 3);
-  }, [ads, unavailableIds]);
 
   const visibleAds = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -284,7 +266,6 @@ export function LibraryExplorer({
     <>
       <SiteHeader
         authenticated={authenticated}
-        adCount={totalAds}
         onAuthAction={authAction}
       />
       <main className="library-shell library-shell--collections">
@@ -297,27 +278,32 @@ export function LibraryExplorer({
             </header>
           )}
 
-          {showCollections && collections.length > 0 && (
-            <header className="library-intro">
-              <div className="library-intro__copy">
-                <p>India Food Ad Library</p>
-                <h1>Food ads by <span className="library-intro__highlight">creative format.</span></h1>
-                <span>Product demos, UGC, recipes, offers, and more from Indian food brands.</span>
-                <div className="library-intro__stats" aria-label="Library scale">
-                  <span><strong>{totalAds.toLocaleString()}</strong> ads</span>
-                  <span><strong>{brandTotal.toLocaleString()}</strong> brands</span>
-                  <span>Updated weekly</span>
+          {showCollections && (
+            <header className="explore-intro">
+              <div className="explore-intro__heading">
+                <div>
+                  <h1>Explore ads</h1>
+                  <p>A creative reference library for Indian food & beverage brands.</p>
                 </div>
-                <div className="library-intro__actions">
-                  <a className="library-intro__primary" href="#all-ads">Start exploring</a>
-                  <a className="library-intro__secondary" href="#collections"><span aria-hidden="true">→</span> See formats</a>
+                <span className="explore-intro__scope">Food & beverage <span aria-hidden="true">/</span> India</span>
+              </div>
+              <form className="explore-search" role="search" aria-label="Explore the library" onSubmit={(event) => {
+                event.preventDefault();
+                setSearch(introSearch);
+                window.requestAnimationFrame(() => {
+                  document.getElementById("all-ads")?.scrollIntoView({ block: "start" });
+                  document.querySelector<HTMLInputElement>(".results-search input")?.focus({ preventScroll: true });
+                });
+              }}>
+                <label htmlFor="explore-search">Find your next reference</label>
+                <div className="explore-search__row">
+                  <div className="explore-search__field">
+                    <Search aria-hidden="true" size={19} />
+                    <input id="explore-search" type="search" placeholder="Brand, product, hook or creative style" value={introSearch} onChange={(event) => setIntroSearch(event.target.value)} />
+                  </div>
+                  <button type="submit">Search ads</button>
                 </div>
-              </div>
-              <div className="collection-row__cards library-intro__visual" aria-label="Selected ad examples">
-                {heroAds.map((ad) => (
-                  <AdCard ad={ad} key={ad.id} priority={false} onOpen={() => openAd(ad)} onUnavailable={() => hideUnavailable(ad)} />
-                ))}
-              </div>
+              </form>
             </header>
           )}
 
