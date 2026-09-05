@@ -38,10 +38,11 @@ export function SiteHeader({
             className="app-header__action"
             type="button"
             onClick={onAuthAction}
-            aria-label={authenticated ? "Sign out" : "Sign in"}
-            title={authenticated ? "Sign out" : "Sign in"}
+            aria-label={authenticated ? "Sign out" : "Join free"}
+            title={authenticated ? "Sign out" : "Join free"}
           >
             {authenticated ? <LogOut aria-hidden="true" size={16} /> : <LogIn aria-hidden="true" size={16} />}
+            <span className="app-header__action-label">{authenticated ? "Sign out" : "Join free"}</span>
           </button>
         )}
       </div>

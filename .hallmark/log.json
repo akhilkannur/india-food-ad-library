@@ -1,5 +1,12 @@
 [
   {
+    "date": "2026-09-05",
+    "macrostructure": "Index-First",
+    "theme": "studied-DNA (source: official mymind product UI)",
+    "enrichment": "none",
+    "brief": "Compact app-style homepage with a visible Google join action"
+  },
+  {
     "date": "2026-09-04",
     "macrostructure": "Catalogue",
     "theme": "studied-DNA (source: official mymind product UI)",

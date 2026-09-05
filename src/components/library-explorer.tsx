@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { LogIn, Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { AuthGateDialog } from "@/components/auth-gate-dialog";
@@ -252,7 +252,12 @@ export function LibraryExplorer({
 
   return (
     <>
-      <SiteHeader search={search} onSearch={setSearch} authenticated={authenticated} onAuthAction={authAction} />
+      <SiteHeader
+        search={search}
+        onSearch={setSearch}
+        authenticated={authenticated}
+        onAuthAction={authAction}
+      />
       <main className="library-shell library-shell--collections">
         <div className="collection-main">
           {pageTitle && (
@@ -266,8 +271,9 @@ export function LibraryExplorer({
           {showCollections && collections.length > 0 && (
             <header className="library-intro">
               <div className="library-intro__copy">
-                <h1>Find Indian food ads by format.</h1>
-                <span>Search 1000s of ads from 100s of brands by product category, creative style, message angle, and language.</span>
+                <p>Creative research workspace</p>
+                <h1>Food ad research, in one place.</h1>
+                <span>Browse creative by format, product category, message angle, and language.</span>
               </div>
               <div className="library-intro__utility">
                 <nav aria-label="Library sections">
@@ -276,6 +282,19 @@ export function LibraryExplorer({
                 </nav>
               </div>
             </header>
+          )}
+
+          {showCollections && !authenticated && (
+            <aside className="library-join" aria-label="Join the library">
+              <div className="library-join__copy">
+                <strong>Keep exploring the full library.</strong>
+                <span>Join free with Google when you reach the preview limit.</span>
+              </div>
+              <button className="library-join__button" type="button" onClick={() => setAuthOpen(true)}>
+                Join free
+                <LogIn aria-hidden="true" size={15} />
+              </button>
+            </aside>
           )}
 
           {showCollections && collections.length > 0 && (
