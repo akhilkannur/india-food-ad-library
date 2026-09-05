@@ -1,14 +1,22 @@
-name: Classify approved ads
+name: Classify ads
 
 on:
   workflow_dispatch:
     inputs:
+      status:
+        description: "Ads to classify"
+        required: true
+        default: "pending"
+        type: choice
+        options:
+          - pending
+          - approved
       limit:
         description: "Number of ads to classify (maximum 25)"
         required: true
         default: "10"
       offset:
-        description: "Number of approved ads to skip before this batch"
+        description: "Number of selected ads to skip before this batch"
         required: true
         default: "0"
 
@@ -20,17 +28,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Classify and save approved ads
+      - name: Classify and save ads
         env:
           SCRAPER_WORKER_URL: ${{ secrets.SCRAPER_WORKER_URL }}
           SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
+          STATUS: ${{ inputs.status }}
           LIMIT: ${{ inputs.limit }}
           OFFSET: ${{ inputs.offset }}
         run: |
           curl --fail-with-body --silent --show-error --max-time 1800 \
             --request POST \
             --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
-            "$SCRAPER_WORKER_URL/classify?limit=$LIMIT&offset=$OFFSET" | tee classification-result.json
+            "$SCRAPER_WORKER_URL/classify?status=$STATUS&limit=$LIMIT&offset=$OFFSET" | tee classification-result.json
       - name: Upload classification report
         if: always()
         uses: actions/upload-artifact@v4

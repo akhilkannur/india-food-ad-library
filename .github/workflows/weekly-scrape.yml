@@ -23,10 +23,6 @@ on:
         description: "Start position in the brand list when brand is blank"
         required: false
         default: "0"
-      classify:
-        description: "Optional Workers AI image classifications (0–25; zero is fastest)"
-        required: false
-        default: "0"
       publish:
         description: "Publish all media-backed pending ads after this run"
         required: true
@@ -53,10 +49,9 @@ jobs:
           BRAND: ${{ inputs.brand }}
           LIMIT: ${{ inputs.limit }}
           OFFSET: ${{ inputs.offset }}
-          CLASSIFY: ${{ inputs.classify }}
           PUBLISH: ${{ inputs.publish }}
         run: |
-          query="?mode=$MODE&classify=$CLASSIFY&publish=$PUBLISH"
+          query="?mode=$MODE&publish=$PUBLISH"
           if [ -n "$BRAND" ]; then
             query="$query&brand=$BRAND"
           else

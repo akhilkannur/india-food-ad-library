@@ -430,10 +430,11 @@ function hasClassificationMedia(ad) {
   return /video/i.test(ad.format || "") ? Boolean(ad.creative_url) : Boolean(ad.creative_url || ad.thumbnail_url);
 }
 
-async function classifyApprovedAds(env, limit, offset, write) {
+async function classifyAds(env, limit, offset, write, status = "approved") {
+  const statusFilter = ["pending", "approved"].includes(status) ? status : "approved";
   const rows = await supabase(
     env,
-    `ads?status=eq.approved&select=id,source_ad_id,format,language,category,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc,id.asc&offset=${offset}&limit=${Math.min(limit * 2, 100)}`,
+    `ads?status=eq.${statusFilter}&select=id,source_ad_id,format,language,category,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc,id.asc&offset=${offset}&limit=${Math.min(limit * 2, 100)}`,
   );
   const selected = rows.filter(hasClassificationMedia).slice(0, limit);
 
@@ -488,7 +489,7 @@ async function classifyApprovedAds(env, limit, offset, write) {
 }
 
 async function pilotClassify(env, limit, offset) {
-  return classifyApprovedAds(env, limit, offset, false);
+  return classifyAds(env, limit, offset, false, "approved");
 }
 
 async function publishPendingAds(env) {
@@ -511,31 +512,7 @@ async function publishPendingAds(env) {
   return rows.length;
 }
 
-function balancedCandidateSample(groups, limit) {
-  const eligible = groups.map((group) => group.candidates.filter((ad) => hasClassificationMedia(ad)));
-  const selected = [];
-  let depth = 0;
-
-  while (selected.length < limit) {
-    const available = eligible
-      .map((candidates) => candidates[depth])
-      .filter(Boolean);
-    if (!available.length) break;
-
-    const remaining = limit - selected.length;
-    if (available.length <= remaining) selected.push(...available);
-    else {
-      for (let index = 0; index < remaining; index += 1) {
-        selected.push(available[Math.floor(index * available.length / remaining)]);
-      }
-    }
-    depth += 1;
-  }
-
-  return selected;
-}
-
-async function queueAds(env, discoveries, options) {
+async function queueAds(env, discoveries) {
   const recordsFound = discoveries.reduce((total, item) => total + item.records.length, 0);
   if (!recordsFound) {
     return {
@@ -614,26 +591,6 @@ async function queueAds(env, discoveries, options) {
     skippedSimilar += deduplicated.skippedSimilar;
   }
 
-  let classificationAttempts = 0;
-  let classified = 0;
-  const classificationLimit = Math.min(options.classificationLimit || 0, MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN);
-  const classificationCandidates = env.AI ? balancedCandidateSample(candidateGroups, classificationLimit) : [];
-  for (const ad of classificationCandidates) {
-    classificationAttempts += 1;
-    try {
-      const classification = await classifyWithWorkersAI(env, {
-        ...ad,
-        brand: configuredBrands.find((brand) => brandIds.get(brand.slug) === ad.brand_id),
-      });
-      if (classification) {
-        Object.assign(ad, classification.labels);
-        classified += 1;
-      }
-    } catch (error) {
-      console.log(JSON.stringify({ event: "workers_ai_classification_failed", source_ad_id: ad.source_ad_id, error: error instanceof Error ? error.message : String(error) }));
-    }
-  }
-
   for (const group of candidateGroups) {
     const selection = selectDiverseCandidates(group.candidates, [], {
       maxSelected: group.limits.selectedAds,
@@ -661,8 +618,8 @@ async function queueAds(env, discoveries, options) {
     skippedSimilar,
     skippedCluster,
     skippedCapacity,
-    classificationAttempts,
-    classified,
+    classificationAttempts: 0,
+    classified: 0,
     results,
   };
 }
@@ -711,7 +668,7 @@ async function run(env, selectedBrands, options) {
 
   const completedDiscoveries = discoveries.filter(Boolean);
   const discovered = completedDiscoveries.reduce((total, item) => total + item.records.length, 0);
-  const queueReport = await queueAds(env, completedDiscoveries, options);
+  const queueReport = await queueAds(env, completedDiscoveries);
   const published = options.publishPending ? await publishPendingAds(env) : 0;
   return {
     ok: failures.length === 0,
@@ -761,8 +718,11 @@ const worker = {
       if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
       const limit = boundedInteger(url.searchParams.get("limit"), 10, 1, MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN);
       const offset = boundedInteger(url.searchParams.get("offset"), 0, 0, 10_000);
+      const status = ["pending", "approved"].includes(url.searchParams.get("status"))
+        ? url.searchParams.get("status")
+        : "approved";
       try {
-        return Response.json(await classifyApprovedAds(env, limit, offset, true));
+        return Response.json(await classifyAds(env, limit, offset, true, status));
       } catch (error) {
         return Response.json({ error: error instanceof Error ? error.message : String(error), writes: 0 }, { status: 500 });
       }
@@ -775,7 +735,6 @@ const worker = {
     const slug = url.searchParams.get("brand");
     const limit = boundedInteger(url.searchParams.get("limit"), config.maxBrands, 1, config.maxBrands);
     const offset = boundedInteger(url.searchParams.get("offset"), 0, 0, Math.max(BRANDS.length - 1, 0));
-    const classificationLimit = boundedInteger(url.searchParams.get("classify"), 0, 0, MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN);
     const publishPending = ["1", "true"].includes(url.searchParams.get("publish")?.toLowerCase());
     const selected = slug
       ? BRANDS.filter((brand) => brand.slug === slug)
@@ -783,7 +742,7 @@ const worker = {
     if (!selected.length) return Response.json({ error: "Unknown brand" }, { status: 400 });
 
     try {
-      return Response.json(await run(env, selected, { mode, classificationLimit, publishPending }));
+      return Response.json(await run(env, selected, { mode, publishPending }));
     } catch (error) {
       return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
@@ -793,7 +752,7 @@ const worker = {
     const slot = Math.max(WEEKLY_CRONS.indexOf(controller.cron), 0);
     const offset = slot * SCHEDULED_BATCH_SIZE;
     const selected = BRANDS.slice(offset, offset + SCHEDULED_BATCH_SIZE);
-    if (selected.length) ctx.waitUntil(run(env, selected, { mode: "refresh", classificationLimit: 0 }));
+    if (selected.length) ctx.waitUntil(run(env, selected, { mode: "refresh", publishPending: false }));
   },
 };
 
