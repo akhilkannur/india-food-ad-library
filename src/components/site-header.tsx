@@ -16,11 +16,17 @@ export function SiteHeader({
 }) {
   return (
     <header className="site-header app-header">
-      <div className="app-header__inner">
+      <div className={`app-header__inner${onSearch ? " app-header__inner--library" : ""}`}>
         <Link className="app-wordmark" href="/" aria-label="India Food Ad Library home">
           <strong>India Food</strong>
           <span>Ad Library</span>
         </Link>
+        {onSearch && (
+          <nav className="app-header__nav" aria-label="Library views">
+            <Link href="/#collections">Collections</Link>
+            <Link href="/#all-ads">All ads</Link>
+          </nav>
+        )}
         {onSearch ? (
           <label className="app-header__search">
             <Search aria-hidden="true" size={16} strokeWidth={1.8} />

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { LogIn, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { AuthGateDialog } from "@/components/auth-gate-dialog";
@@ -271,36 +271,17 @@ export function LibraryExplorer({
           {showCollections && collections.length > 0 && (
             <header className="library-intro">
               <div className="library-intro__copy">
-                <p>Creative research workspace</p>
-                <h1>Food ad research, in one place.</h1>
-                <span>Browse creative by format, product category, message angle, and language.</span>
-              </div>
-              <div className="library-intro__utility">
-                <nav aria-label="Library sections">
-                  <a href="#collections">Collections</a>
-                  <a href="#all-ads">All ads</a>
-                </nav>
+                <p>Creative library</p>
+                <h1>Browse ad creative.</h1>
+                <span>Search by brand, format, message angle, or language.</span>
               </div>
             </header>
-          )}
-
-          {showCollections && !authenticated && (
-            <aside className="library-join" aria-label="Join the library">
-              <div className="library-join__copy">
-                <strong>Keep exploring the full library.</strong>
-                <span>Join free with Google when you reach the preview limit.</span>
-              </div>
-              <button className="library-join__button" type="button" onClick={() => setAuthOpen(true)}>
-                Join free
-                <LogIn aria-hidden="true" size={15} />
-              </button>
-            </aside>
           )}
 
           {showCollections && collections.length > 0 && (
             <section id="collections" className="collections-area" aria-label="Ad format collections">
               <div className="collections-heading">
-                <h2>Collections</h2>
+                <h2>Formats</h2>
               </div>
               {collections.map((collection) => (
                 <div className="collection-row" key={collection.name}>
