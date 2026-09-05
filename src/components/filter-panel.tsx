@@ -63,7 +63,7 @@ export function FilterPanel(props: FilterPanelProps) {
 
       <div className="filter-panel__fields">
         <FilterSelect label="Category" value={props.category} values={props.categories} onChange={props.onCategoryChange} />
-        <FilterSelect label="Creative format" value={props.format} values={props.formats} onChange={props.onFormatChange} />
+        <FilterSelect label="Ad format" value={props.format} values={props.formats} onChange={props.onFormatChange} />
         <FilterSelect label="Message angle" value={props.sellingAngle} values={props.sellingAngles} onChange={props.onSellingAngleChange} />
         <FilterSelect label="Language" value={props.language} values={props.languages} onChange={props.onLanguageChange} />
       </div>

@@ -78,7 +78,7 @@ export function ReviewQueue({ initialAds, demoMode }: { initialAds: Ad[]; demoMo
                 <div className="review-card__top">
                   <div>
                     <p className="review-card__brand">{ad.brand.name}</p>
-                    <h2 className="review-card__title">{ad.headline || "No headline captured"}</h2>
+                    <h2 className="review-card__title">{ad.headline || "Headline not available"}</h2>
                   </div>
                   <span className={`status-badge status-badge--${ad.status}`}>{ad.status}</span>
                 </div>

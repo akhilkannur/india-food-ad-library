@@ -42,7 +42,7 @@ Generate `AUTH_SECRET` with a password manager or `openssl rand -base64 32`. Kee
 
 ## Automated collection and approval
 
-The `india-food-ad-scraper` Worker covers 112 Indian food and beverage brands from `scraper-worker/src/brands.js`. Its normal refresh runs once a week on Sunday morning in five 24-brand batches between 06:00 and 08:00 Asia/Kolkata. The batches use one Browser Run session with up to three isolated pages, so the collector finishes in a bounded window instead of running continuously. The earlier MIT-licensed `meta-ads-collector` implementation remains in `scraper/` as a local or self-hosted fallback.
+The `india-food-ad-scraper` Worker covers 168 Indian food and beverage brands from `scraper-worker/src/brands.js`, with the expanded catalogue focused on digital-first and D2C brands. Its normal refresh runs once a week on Sunday morning in seven 24-brand batches between 06:00 and 09:00 Asia/Kolkata. The batches use one Browser Run session with up to three isolated pages, so the collector finishes in a bounded window instead of running continuously. The earlier MIT-licensed `meta-ads-collector` implementation remains in `scraper/` as a local or self-hosted fallback.
 
 The Worker has two collection modes:
 
@@ -77,7 +77,7 @@ SCRAPER_WORKER_URL
 SCRAPER_RUN_TOKEN
 ```
 
-For the initial backfill, run 12-brand batches at offsets `0`, `12`, `24`, and so on through `108`. Use `mode=refresh` for a lighter manual update. Every run remains finite; there is no persistent browser process. The optional `publish` control bulk-approves pending records only when they have both a Meta ID and creative media; it remains off by default so ordinary collection continues to use the review queue.
+For the initial backfill, run 12-brand batches at offsets `0`, `12`, `24`, and so on through `156`. Use `mode=refresh` for a lighter manual update. Every run remains finite; there is no persistent browser process. The optional `publish` control bulk-approves pending records only when they have both a Meta ID and creative media; it remains off by default so ordinary collection continues to use the review queue.
 
 ## Manual queue import
 

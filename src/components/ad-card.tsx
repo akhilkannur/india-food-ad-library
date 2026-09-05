@@ -47,7 +47,7 @@ export function AdCard({
           <time dateTime={ad.first_seen_at}>{formatDate(ad.first_seen_at)}</time>
         </div>
 
-        <h2 className="ad-card__headline">{ad.headline || ad.hook || "No headline captured"}</h2>
+        <h2 className="ad-card__headline">{ad.headline || ad.hook || "Headline not available"}</h2>
 
         <div className="ad-card__meta">
           <span>{ad.language}</span>

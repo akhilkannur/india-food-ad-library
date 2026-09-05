@@ -38,9 +38,9 @@ export function AuthGateDialog({
         <button className="auth-dialog__close" type="button" onClick={onClose} aria-label="Close sign in">
           <X aria-hidden="true" size={18} />
         </button>
-        <p>Keep exploring</p>
-        <h2>Keep exploring the library.</h2>
-        <span>Sign in free for unlimited access to creatives across every brand and collection.</span>
+        <p>Sign in to continue</p>
+        <h2>View more ads.</h2>
+        <span>Sign in to keep viewing ads across the library.</span>
         <button className="auth-dialog__google" type="button" onClick={onSignIn} disabled={busy}>
           <span aria-hidden="true">G</span>
           {busy ? "Connecting…" : "Continue with Google"}

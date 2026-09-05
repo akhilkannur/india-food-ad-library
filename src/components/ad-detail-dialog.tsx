@@ -49,19 +49,20 @@ export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; 
           <div className="detail-copy">
             <div>
               <p>{ad.category} · {ad.format}</p>
-              <h2>{ad.headline || "No headline captured"}</h2>
+              <h2>{ad.headline || "Headline not available"}</h2>
             </div>
             {ad.body_copy && <p>{ad.body_copy}</p>}
             <dl className="detail-list">
-              <div><dt>Creative style</dt><dd>{ad.creative_style || ad.format || "Not tagged"}</dd></div>
-              <div><dt>Message angle</dt><dd>{ad.selling_angle || "Not tagged"}</dd></div>
+              <div><dt>Ad format</dt><dd>{ad.creative_style || "Not classified"}</dd></div>
+              <div><dt>Media type</dt><dd>{ad.format || "Not available"}</dd></div>
+              <div><dt>Message angle</dt><dd>{ad.selling_angle || "Not classified"}</dd></div>
               <div><dt>Language</dt><dd>{ad.language}</dd></div>
-              <div><dt>CTA</dt><dd>{ad.cta || "Not captured"}</dd></div>
+              <div><dt>CTA</dt><dd>{ad.cta || "Not available"}</dd></div>
               <div><dt>First seen</dt><dd>{formatDate(ad.first_seen_at)}</dd></div>
             </dl>
             <div className="button-row">
               <a className="button button--primary" href={ad.source_url} target="_blank" rel="noreferrer">
-                Open source <ArrowUpRight aria-hidden="true" size={15} strokeWidth={1.8} />
+                View original ad <ArrowUpRight aria-hidden="true" size={15} strokeWidth={1.8} />
               </a>
               <button className="button" type="button" onClick={onClose}>Back to library</button>
             </div>

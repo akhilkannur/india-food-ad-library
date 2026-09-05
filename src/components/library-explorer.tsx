@@ -266,8 +266,7 @@ export function LibraryExplorer({
           {showCollections && collections.length > 0 && (
             <header className="library-intro">
               <div className="library-intro__copy">
-                <p>Creative reference for DTC teams</p>
-                <h1>Indian food advertising, indexed.</h1>
+                <h1>Find Indian food ads by format.</h1>
                 <span>Search 1000s of ads from 100s of brands by product category, creative style, message angle, and language.</span>
               </div>
               <div className="library-intro__utility">
@@ -280,10 +279,9 @@ export function LibraryExplorer({
           )}
 
           {showCollections && collections.length > 0 && (
-            <section id="collections" className="collections-area" aria-label="Curated collections">
+            <section id="collections" className="collections-area" aria-label="Ad format collections">
               <div className="collections-heading">
                 <h2>Collections</h2>
-                <span>Grouped by ad format</span>
               </div>
               {collections.map((collection) => (
                 <div className="collection-row" key={collection.name}>
@@ -345,13 +343,13 @@ export function LibraryExplorer({
                 </div>
                 {loadedAds.length < totalAds && (
                   <div ref={loadMoreRef} className="load-more" aria-live="polite" aria-busy={isLoadingMore}>
-                    {isLoadingMore ? "Loading more creatives…" : loadMoreError ? (
+                    {isLoadingMore ? "Loading more ads…" : loadMoreError ? (
                       <>
                         <span>{loadMoreError}</span>
                         <button type="button" className="load-more__button" onClick={loadMore}>Try again</button>
                       </>
                     ) : (
-                      <span>Showing {loadedAds.length} of {totalAds} creatives</span>
+                      <span>Showing {loadedAds.length} of {totalAds} ads</span>
                     )}
                   </div>
                 )}
@@ -359,18 +357,18 @@ export function LibraryExplorer({
             ) : (
               <div className="library-empty">
                 <Search aria-hidden="true" size={22} strokeWidth={1.6} />
-                <h2>No matching ads</h2>
+                <h2>No matches in the loaded ads</h2>
                 <p>Try another search or clear the active filters.</p>
                 <button type="button" onClick={clearFilters}>Reset filters</button>
                 {loadedAds.length < totalAds && (
                   <div ref={loadMoreRef} className="load-more load-more--empty" aria-live="polite" aria-busy={isLoadingMore}>
-                    {isLoadingMore ? "Checking more creatives…" : loadMoreError ? (
+                    {isLoadingMore ? "Loading more ads…" : loadMoreError ? (
                       <>
                         <span>{loadMoreError}</span>
                         <button type="button" className="load-more__button" onClick={loadMore}>Try again</button>
                       </>
                     ) : (
-                      <span>Keep scrolling to search the remaining creatives</span>
+                      <span>More ads load as you scroll…</span>
                     )}
                   </div>
                 )}

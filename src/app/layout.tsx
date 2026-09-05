@@ -3,8 +3,8 @@ import "./globals.css";
 import "./workbench.css";
 
 export const metadata: Metadata = {
-  title: "India Food Ad Library — Creative Index",
-  description: "A living index of advertising creative from Indian food and beverage brands.",
+  title: "India Food Ad Library — Indian food advertising",
+  description: "Browse advertising creative from Indian food and beverage brands.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
