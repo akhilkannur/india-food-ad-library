@@ -16,9 +16,9 @@ export function SiteHeader({
     <header className={`site-header app-header${admin ? "" : " workspace-header"}`}>
       <div className="app-header__inner">
         <div className="app-header__context">
-          <Link className="app-wordmark" href="/" aria-label="India Food Ad Library home">
-            <strong>India Food</strong>
-            <span>Ad Library</span>
+          <Link className="app-wordmark" href="/" aria-label="F&B Ad Library home">
+            <strong>F&amp;B Ad Library</strong>
+            <span>1,000s of ads by 100s of brands, for sorting</span>
           </Link>
           <span className="app-header__separator" aria-hidden="true" />
           <span className="app-header__page-title">{admin ? "Review queue" : "Ad library"}</span>
