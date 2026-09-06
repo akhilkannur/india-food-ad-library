@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { ArrowUpRight, Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
+import { CreativePreview } from "@/components/creative-preview";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { AuthGateDialog } from "@/components/auth-gate-dialog";
 import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { diversifyByBrand, diversifyByBrandAndMedia, getCollectionAds, getCollectionDefinitions } from "@/lib/collections";
+import { getCollectionAds, getCollectionDefinitions } from "@/lib/collections";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Ad } from "@/lib/types";
 
@@ -53,7 +54,6 @@ export function LibraryExplorer({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [introSearch, setIntroSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [format, setFormat] = useState("All");
   const [sellingAngle, setSellingAngle] = useState("All");
@@ -65,22 +65,18 @@ export function LibraryExplorer({
   const [authOpen, setAuthOpen] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [gallerySeed, setGallerySeed] = useState(0);
   const filterDialogRef = useRef<HTMLDialogElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const loadedAdsRef = useRef(ads);
   const loadingMoreRef = useRef(false);
-  const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
   const categories = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.category))], [loadedAds]);
   const formats = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.creative_style))], [loadedAds]);
   const sellingAngles = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.selling_angle))], [loadedAds]);
   const languages = useMemo(() => ["All", ...uniqueValues(loadedAds.map((ad) => ad.language))], [loadedAds]);
-  const brandCount = useMemo(() => new Set(loadedAds.map((ad) => ad.brand.id)).size, [loadedAds]);
 
   const visibleAds = useMemo(() => {
     const query = search.trim().toLowerCase();
     const filteredAds = loadedAds
-      .filter((ad) => !unavailableIds.has(ad.id))
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => format === "All" || ad.creative_style === format)
       .filter((ad) => sellingAngle === "All" || ad.selling_angle === sellingAngle)
@@ -95,8 +91,8 @@ export function LibraryExplorer({
         const delta = new Date(right.first_seen_at).getTime() - new Date(left.first_seen_at).getTime();
         return sortOrder === "newest" ? delta : -delta;
       });
-    return showCollections ? diversifyByBrandAndMedia(filteredAds, gallerySeed) : diversifyByBrand(filteredAds);
-  }, [loadedAds, category, format, sellingAngle, language, search, sortOrder, unavailableIds, showCollections, gallerySeed]);
+    return filteredAds;
+  }, [loadedAds, category, format, sellingAngle, language, search, sortOrder]);
 
   const activeFilterCount = [category, format, sellingAngle, language].filter((value) => value !== "All").length
     + (search.trim() ? 1 : 0);
@@ -107,12 +103,6 @@ export function LibraryExplorer({
   useEffect(() => {
     loadedAdsRef.current = loadedAds;
   }, [loadedAds]);
-
-  useEffect(() => {
-    const values = new Uint32Array(1);
-    window.crypto.getRandomValues(values);
-    setGallerySeed(values[0]);
-  }, []);
 
   const loadMore = useCallback(async () => {
     if (loadingMoreRef.current || loadedAdsRef.current.length >= totalAds) return;
@@ -153,12 +143,11 @@ export function LibraryExplorer({
   }, [category, format, sellingAngle, language, search]);
 
   const collections = useMemo(() => {
-    return getCollectionDefinitions(visibleAds).map((definition) => {
-      const matches = getCollectionAds(visibleAds, definition);
-      const brands = new Set(matches.map((ad) => ad.brand.id));
-      return { ...definition, ads: matches.slice(0, 6), count: matches.length, brandCount: brands.size };
+    return getCollectionDefinitions(ads).map((definition) => {
+      const matches = getCollectionAds(ads, definition);
+      return { ...definition, ads: matches.slice(0, 3) };
     }).filter((collection) => collection.ads.length >= 2);
-  }, [visibleAds]);
+  }, [ads]);
 
   function clearFilters() {
     setSearch("");
@@ -166,15 +155,6 @@ export function LibraryExplorer({
     setFormat("All");
     setSellingAngle("All");
     setLanguage("All");
-  }
-
-  function hideUnavailable(ad: Ad) {
-    setUnavailableIds((ids) => {
-      const next = new Set(ids);
-      next.add(ad.id);
-      return next;
-    });
-    if (selectedAd?.id === ad.id) setSelectedAd(null);
   }
 
   function openAd(ad: Ad) {
@@ -233,7 +213,7 @@ export function LibraryExplorer({
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "/" && !(event.target instanceof HTMLInputElement)) {
+      if (event.key === "/" && !document.querySelector("dialog[open]") && !(event.target instanceof HTMLElement && (event.target.matches("input, textarea, select") || event.target.isContentEditable))) {
         event.preventDefault();
         document.querySelector<HTMLInputElement>(".library-search-input")?.focus();
       }
@@ -263,7 +243,7 @@ export function LibraryExplorer({
   }, [loadMore, loadedAds.length, totalAds]);
 
   return (
-    <>
+    <div className="library-app">
       <SiteHeader
         authenticated={authenticated}
         onAuthAction={authAction}
@@ -274,7 +254,7 @@ export function LibraryExplorer({
             <header className="collection-page-heading">
               <Link href="/">← {backLabel}</Link>
               <h1>{pageTitle}</h1>
-              <p>{totalAds} creatives · {brandCount} brand{brandCount === 1 ? "" : "s"}</p>
+              <p>Food & beverage creative, selected for your next brief.</p>
             </header>
           )}
 
@@ -285,42 +265,36 @@ export function LibraryExplorer({
                   <h1>Explore ads</h1>
                   <p>A creative reference library for Indian food & beverage brands.</p>
                 </div>
-                <span className="explore-intro__scope">Food & beverage <span aria-hidden="true">/</span> India</span>
+                <span className="explore-intro__scope">The Indian food & beverage edit</span>
               </div>
-              <form className="explore-search" role="search" aria-label="Explore the library" onSubmit={(event) => {
-                event.preventDefault();
-                setSearch(introSearch);
-                window.requestAnimationFrame(() => {
-                  document.getElementById("all-ads")?.scrollIntoView({ block: "start" });
-                  document.querySelector<HTMLInputElement>(".results-search input")?.focus({ preventScroll: true });
-                });
-              }}>
-                <label htmlFor="explore-search">Find your next reference</label>
-                <div className="explore-search__row">
-                  <div className="explore-search__field">
-                    <Search aria-hidden="true" size={19} />
-                    <input id="explore-search" type="search" placeholder="Brand, product, hook or creative style" value={introSearch} onChange={(event) => setIntroSearch(event.target.value)} />
-                  </div>
-                  <button type="submit">Search ads</button>
-                </div>
-              </form>
             </header>
           )}
+
+          <ResultsToolbar
+            search={search}
+            sortOrder={sortOrder}
+            resultCount={resultCount}
+            activeFilters={activeFilters}
+            demoMode={demoMode}
+            onSearchChange={setSearch}
+            onSortChange={setSortOrder}
+            onOpenFilters={() => setFiltersOpen(true)}
+          />
 
           {showCollections && collections.length > 0 && (
             <section id="collections" className="collections-area" aria-label="Ad format collections">
               <div className="collections-heading">
-                <h2>Formats</h2>
+                <h2>Browse by format</h2>
+                <span>Find a starting point for your next creative.</span>
               </div>
               <div className="collections-rail" aria-label="Browse ad formats">
                 {collections.map((collection) => (
-                  <div className="collection-row" key={collection.name}>
-                    <div className="collection-row__heading"><h3>{collection.name}</h3><span>{collection.count} ads · {collection.brandCount} brands</span></div>
-                    <div className="collection-row__cards">
-                      {collection.ads.slice(0, 3).map((ad) => <AdCard ad={ad} key={ad.id} priority={false} onUnavailable={() => hideUnavailable(ad)} />)}
-                    </div>
-                    <Link className="collection-row__link" href={`/collections/${collection.slug}`} aria-label={`View ${collection.name} collection`} />
-                  </div>
+                  <Link className="format-tile" key={collection.name} href={`/collections/${collection.slug}`}>
+                    <span className="format-tile__preview" aria-hidden="true"><CreativePreview ad={collection.ads[0]} compact /></span>
+                    <span className="format-tile__index" aria-hidden="true"><ArrowUpRight size={19} /></span>
+                    <strong>{collection.name}</strong>
+                    <span>Explore format</span>
+                  </Link>
                 ))}
               </div>
             </section>
@@ -348,16 +322,7 @@ export function LibraryExplorer({
           </aside>
 
           <section className="library-results" aria-labelledby="library-title">
-            <ResultsToolbar
-              search={search}
-              sortOrder={sortOrder}
-              resultCount={resultCount}
-              activeFilters={activeFilters}
-              demoMode={demoMode}
-              onSearchChange={setSearch}
-              onSortChange={setSortOrder}
-              onOpenFilters={() => setFiltersOpen(true)}
-            />
+            <div className="gallery-heading"><h2 id="library-title">{activeFilterCount ? "Your results" : pageTitle ? "Creative library" : "The creative library"}</h2><span>Open any ad to take a closer look</span></div>
 
             {visibleAds.length ? (
               <>
@@ -368,7 +333,6 @@ export function LibraryExplorer({
                       key={ad.id}
                       priority={index < 4}
                       onOpen={() => openAd(ad)}
-                      onUnavailable={() => hideUnavailable(ad)}
                     />
                   ))}
                 </div>
@@ -380,7 +344,7 @@ export function LibraryExplorer({
                         <button type="button" className="load-more__button" onClick={loadMore}>Try again</button>
                       </>
                     ) : (
-                      <span>Showing {loadedAds.length} of {totalAds} ads</span>
+                      <span>Scroll to discover more</span>
                     )}
                   </div>
                 )}
@@ -446,7 +410,6 @@ export function LibraryExplorer({
       <AdDetailDialog
         ad={selectedAd}
         onClose={() => setSelectedAd(null)}
-        onUnavailable={() => selectedAd && hideUnavailable(selectedAd)}
       />
       <AuthGateDialog
         open={authOpen}
@@ -455,6 +418,6 @@ export function LibraryExplorer({
         onClose={() => setAuthOpen(false)}
         onSignIn={signIn}
       />
-    </>
+    </div>
   );
 }

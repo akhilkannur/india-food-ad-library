@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import "./globals.css";
-import "./workbench.css";
-import "./explore-intro.css";
+import "./base.css";
+import "./product.css";
 
 export const metadata: Metadata = {
   title: "India Food Ad Library — Indian food advertising",
@@ -11,7 +10,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="product-body">{children}</body>
     </html>
   );
 }

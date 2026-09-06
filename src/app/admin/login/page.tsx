@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
 import { LoginForm } from "@/components/login-form";
 import { hasAdminCredentials } from "@/lib/config";
 
@@ -7,11 +7,7 @@ export const dynamic = "force-dynamic";
 export default function LoginPage() {
   return (
     <main className="login-page">
-      <header className="site-header">
-        <div className="site-header__inner shell">
-          <Link className="wordmark" href="/">Food Ads <span className="wordmark__region">IND</span></Link>
-        </div>
-      </header>
+      <SiteHeader admin />
       <section className="login-card">
         <div>
           <h1>Admin sign in</h1>

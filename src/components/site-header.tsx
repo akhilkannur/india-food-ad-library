@@ -29,9 +29,8 @@ export function SiteHeader({
         </div>
 
         {!admin && <nav className="workspace-nav" aria-label="Library navigation">
-          <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Explore</Link>
-          <Link href="/#collections">Formats</Link>
-          <Link href="/#all-ads">All ads</Link>
+          <Link href="/" aria-current={pathname === "/" || pathname.startsWith("/collections/") || pathname.startsWith("/brands/") ? "page" : undefined}>Ad library</Link>
+          <a href="https://lisnagency.online" target="_blank" rel="noreferrer">About LISN<ArrowUpRight size={13} aria-hidden="true" /></a>
         </nav>}
 
         <div className="app-header__actions">

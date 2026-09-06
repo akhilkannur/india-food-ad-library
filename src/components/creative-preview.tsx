@@ -24,6 +24,7 @@ function isUsablePoster(url: string | null) {
 
 export function CreativePreview({ ad, compact = false, priority = false, onUnavailable }: CreativePreviewProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const [posterFailed, setPosterFailed] = useState<string | null>(null);
   const theme = themes.has(ad.creative_theme ?? "") ? ad.creative_theme : "oat";
   const video = isVideoCreative(ad) && Boolean(ad.creative_url);
   const imageUrl = video ? null : ad.creative_url || ad.thumbnail_url;
@@ -34,20 +35,37 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
     : undefined;
   const label = video ? "Video creative" : "Image creative";
 
+  if (!failed && video && compact) {
+    return (
+      <figure className={`creative creative--media creative--video creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
+        {poster && posterFailed !== poster ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="creative__media" src={poster} alt={`${ad.brand.name} video preview`} loading={priority ? "eager" : "lazy"} onError={() => setPosterFailed(poster)} />
+        ) : (
+          <div className="creative__video-cover">
+            <Play aria-hidden="true" size={28} />
+            <strong>{ad.brand.name}</strong>
+            <span>Open to watch the video</span>
+          </div>
+        )}
+        <figcaption className="creative__format"><Play aria-hidden="true" size={12} /> Video</figcaption>
+      </figure>
+    );
+  }
+
   if (!failed && video) {
     return (
       <figure className={`creative creative--media creative--video creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
         <video
           className="creative__media"
           src={ad.creative_url!}
-          poster={poster}
+          poster={posterFailed !== poster ? poster : undefined}
           controls={!compact}
           muted={compact}
           playsInline
           preload={compact ? "none" : "metadata"}
           onError={() => {
             setFailedUrl(ad.creative_url!);
-            onUnavailable?.();
           }}
         >
           Your browser does not support embedded video.
@@ -88,7 +106,7 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
       </span>
       <span className="creative__empty-foot">
         <ImageOff aria-hidden="true" size={compact ? 16 : 20} strokeWidth={1.6} />
-        {failed ? "Source media unavailable" : "Original media not captured"}
+        {compact ? "Open details" : "Use the original ad link below to view this creative"}
       </span>
     </div>
   );

@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { diversifyByBrandAndMedia } from "@/lib/collections";
+import { isFoodCreative } from "@/lib/curation";
 import { demoAds, demoBrands } from "@/lib/demo-data";
 import { hasDatabase } from "@/lib/config";
 import type { Ad, AdStatus, Brand } from "@/lib/types";
@@ -66,20 +67,20 @@ async function supabaseFetchPage<T>(path: string, offset: number, limit: number)
 }
 
 const getCachedApprovedAds = unstable_cache(
-  () => supabaseFetch<Ad[]>(
-    "ads?select=*,brand:brands(*)&order=submitted_at.desc&status=eq.approved",
-  ),
-  ["approved-ads"],
-  { revalidate: 300 },
-);
-
-type AdOrderRecord = Pick<Ad, "id" | "brand_id" | "format">;
-
-const getCachedApprovedAdOrder = unstable_cache(
-  () => supabaseFetch<AdOrderRecord[]>(
-    "ads?select=id,brand_id,format&order=submitted_at.desc,id.asc&status=eq.approved",
-  ),
-  ["approved-ad-order"],
+  async () => {
+    const ads: Ad[] = [];
+    let total = Infinity;
+    while (ads.length < total) {
+      const page = await supabaseFetchPage<Ad[]>(
+        "ads?select=*,brand:brands(*)&order=submitted_at.desc,id.asc&status=eq.approved", ads.length, 500,
+      );
+      if (!page.rows.length) break;
+      ads.push(...page.rows);
+      total = page.total;
+    }
+    return ads.filter(isFoodCreative);
+  },
+  ["approved-food-ads-v2"],
   { revalidate: 300 },
 );
 
@@ -95,7 +96,7 @@ export async function getAds(status?: AdStatus): Promise<Ad[]> {
 }
 
 export async function getApprovedAds(): Promise<Ad[]> {
-  if (!hasDatabase) return demoAds.filter((ad) => ad.status === "approved");
+  if (!hasDatabase) return demoAds.filter((ad) => ad.status === "approved" && isFoodCreative(ad));
 
   try {
     return await getCachedApprovedAds();
@@ -115,44 +116,9 @@ export async function getApprovedAdsPage({
   const safeLimit = Math.min(Math.max(limit, 1), 60);
   const safeOffset = Math.max(offset, 0);
 
-  if (!hasDatabase) {
-    const approvedAds = demoAds.filter((ad) => ad.status === "approved");
-    const orderedAds = diverse ? diversifyByBrandAndMedia(approvedAds) : approvedAds;
-    return {
-      ads: orderedAds.slice(safeOffset, safeOffset + safeLimit),
-      total: orderedAds.length,
-    };
-  }
-
-  if (diverse) {
-    try {
-      const order = diversifyByBrandAndMedia(await getCachedApprovedAdOrder());
-      const selectedIds = order.slice(safeOffset, safeOffset + safeLimit).map((ad) => ad.id);
-      if (!selectedIds.length) return { ads: [], total: order.length };
-
-      const idList = selectedIds.map((id) => encodeURIComponent(id)).join(",");
-      const rows = await supabaseFetch<Ad[]>(`ads?select=*,brand:brands(*)&id=in.(${idList})&status=eq.approved`);
-      const adsById = new Map(rows.map((ad) => [ad.id, ad]));
-      return {
-        ads: selectedIds.map((id) => adsById.get(id)).filter((ad): ad is Ad => Boolean(ad)),
-        total: order.length,
-      };
-    } catch (error) {
-      console.error("Diverse approved ad query failed", error);
-    }
-  }
-
-  try {
-    const { rows, total } = await supabaseFetchPage<Ad[]>(
-      "ads?select=*,brand:brands(*)&order=submitted_at.desc,id.asc&status=eq.approved",
-      safeOffset,
-      safeLimit,
-    );
-    return { ads: rows, total };
-  } catch (error) {
-    console.error("Approved ad page query failed", error);
-    return { ads: [], total: 0 };
-  }
+  const approvedAds = await getApprovedAds();
+  const ordered = diverse ? diversifyByBrandAndMedia(approvedAds) : approvedAds;
+  return { ads: ordered.slice(safeOffset, safeOffset + safeLimit), total: ordered.length };
 }
 
 export async function getBrands(): Promise<Brand[]> {

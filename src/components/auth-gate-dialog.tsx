@@ -29,6 +29,7 @@ export function AuthGateDialog({
     <dialog
       ref={dialogRef}
       className="auth-dialog"
+      aria-labelledby="auth-title"
       onClose={onClose}
       onClick={(event) => {
         if (event.target === dialogRef.current) onClose();
@@ -39,11 +40,11 @@ export function AuthGateDialog({
           <X aria-hidden="true" size={18} />
         </button>
         <p>Full library access</p>
-        <h2>Get the good stuff.</h2>
+        <h2 id="auth-title">Keep exploring.</h2>
         <span>Sign in with Google to unlock every creative in the library — free. Your signup email is saved with your library account.</span>
         <button className="auth-dialog__google" type="button" onClick={onSignIn} disabled={busy}>
           <span aria-hidden="true">G</span>
-          {busy ? "Connecting…" : "Get full access — free"}
+          {busy ? "Connecting…" : "Continue with Google"}
         </button>
         {error && <p className="auth-dialog__error" role="alert">{error}</p>}
       </div>

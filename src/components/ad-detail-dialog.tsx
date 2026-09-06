@@ -30,6 +30,7 @@ export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; 
     <dialog
       ref={dialogRef}
       className="ad-dialog"
+      aria-label={ad ? `${ad.brand.name} ad details` : "Ad details"}
       onClose={onClose}
       onClick={(event) => {
         if (event.target === dialogRef.current) onClose();
@@ -67,7 +68,7 @@ export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; 
               <button className="button" type="button" onClick={onClose}>Back to library</button>
             </div>
             <aside className="ad-dialog__lisn-cta">
-              <p>Want a street-interview ad like this for your food brand?</p>
+              <p>Have a brief for your food brand?</p>
               <a href="https://lisnagency.online" target="_blank" rel="noreferrer">See what LISN does <ArrowUpRight aria-hidden="true" size={14} strokeWidth={1.8} /></a>
             </aside>
           </div>

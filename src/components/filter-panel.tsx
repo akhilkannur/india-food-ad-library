@@ -76,7 +76,7 @@ export function FilterPanel(props: FilterPanelProps) {
 
       {props.mobile && (
         <button className="filter-panel__apply" type="button" onClick={props.onClose}>
-          Show {props.resultCount} ad{props.resultCount === 1 ? "" : "s"}
+          View results
         </button>
       )}
     </div>

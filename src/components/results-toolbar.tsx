@@ -11,7 +11,6 @@ export type ActiveFilter = {
 export function ResultsToolbar({
   search,
   sortOrder,
-  resultCount,
   activeFilters,
   demoMode,
   onSearchChange,
@@ -28,7 +27,7 @@ export function ResultsToolbar({
   onOpenFilters: () => void;
 }) {
   return (
-    <div className="results-toolbar">
+    <div className="results-toolbar" role="search" aria-label="Search and filter ads">
       <div className="results-toolbar__row">
         <label className="results-search">
           <Search aria-hidden="true" size={17} strokeWidth={1.8} />
@@ -37,7 +36,7 @@ export function ResultsToolbar({
             type="search"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search brands, formats, hooks…"
+            placeholder="Search brands, formats or hooks"
             aria-label="Search ads"
           />
           <kbd>/</kbd>
@@ -59,7 +58,6 @@ export function ResultsToolbar({
       </div>
 
       <div className="results-toolbar__summary" aria-live="polite">
-        <p><strong>{resultCount}</strong> creative{resultCount === 1 ? "" : "s"}</p>
         {demoMode && <span className="data-note">Sample data</span>}
         {activeFilters.length > 0 && (
           <div className="active-filters" aria-label="Active filters">

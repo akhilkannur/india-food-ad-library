@@ -22,7 +22,7 @@ export function AdCard({
   ad: Ad;
   priority: boolean;
   onOpen?: () => void;
-  onUnavailable: () => void;
+  onUnavailable?: () => void;
 }) {
   const format = ad.creative_style || ad.format;
   const secondaryTag = ad.selling_angle;
@@ -50,6 +50,7 @@ export function AdCard({
         <h2 className="ad-card__headline">{ad.headline || ad.hook || "Headline not available"}</h2>
 
         <div className="ad-card__meta">
+          <span>{format}</span>
           <span>{ad.language}</span>
           {secondaryTag && <span>{secondaryTag}</span>}
           <span className="ad-card__inspect">View details <Eye aria-hidden="true" size={15} /></span>
