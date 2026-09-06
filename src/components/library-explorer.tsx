@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { MasonryGrid } from "@/components/masonry-grid";
+import { CreativePreview } from "@/components/creative-preview";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { AuthGateDialog } from "@/components/auth-gate-dialog";
 import { FilterPanel } from "@/components/filter-panel";
@@ -283,17 +284,17 @@ export function LibraryExplorer({
               </div>
               <div className="collections-rail" aria-label="Browse ad formats">
                 {collections.map((collection) => (
-                  <section className="collection-row" key={collection.name} aria-labelledby={`format-${collection.slug}`}>
-                    <div className="collection-row__heading">
-                      <h3 id={`format-${collection.slug}`}>{collection.name}</h3>
-                      <Link href={`/collections/${collection.slug}`}>View all <ArrowUpRight aria-hidden="true" size={15} /></Link>
-                    </div>
+                  <div className="collection-row" key={collection.name}>
                     <div className="collection-row__cards">
                       {collection.ads.map((ad) => (
-                        <AdCard ad={ad} key={ad.id} priority={false} onOpen={() => openAd(ad)} />
+                        <span className="collection-row__creative" key={ad.id} aria-hidden="true">
+                          <CreativePreview ad={ad} compact />
+                        </span>
                       ))}
                     </div>
-                  </section>
+                    <div className="collection-row__heading"><h3>{collection.name}</h3></div>
+                    <Link className="collection-row__link" href={`/collections/${collection.slug}`} aria-label={`Browse ${collection.name} ads`} />
+                  </div>
                 ))}
               </div>
             </section>
