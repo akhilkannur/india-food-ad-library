@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ArrowUpRight, Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { MasonryGrid } from "@/components/masonry-grid";
-import { CreativePreview } from "@/components/creative-preview";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { AuthGateDialog } from "@/components/auth-gate-dialog";
 import { FilterPanel } from "@/components/filter-panel";
@@ -15,6 +14,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { getCollectionAds, getCollectionDefinitions } from "@/lib/collections";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Ad } from "@/lib/types";
+import { isVideoCreative, type MediaFilter } from "@/lib/media";
 
 type SortOrder = "newest" | "oldest";
 const AD_BATCH_SIZE = 36;
@@ -55,6 +55,7 @@ export function LibraryExplorer({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [category, setCategory] = useState("All");
   const [format, setFormat] = useState("All");
   const [sellingAngle, setSellingAngle] = useState("All");
@@ -78,6 +79,7 @@ export function LibraryExplorer({
   const visibleAds = useMemo(() => {
     const query = search.trim().toLowerCase();
     const filteredAds = loadedAds
+      .filter(ad => mediaFilter === "all" || (mediaFilter === "video" ? isVideoCreative(ad) : !isVideoCreative(ad)))
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => format === "All" || ad.creative_style === format)
       .filter((ad) => sellingAngle === "All" || ad.selling_angle === sellingAngle)
@@ -93,10 +95,10 @@ export function LibraryExplorer({
         return sortOrder === "newest" ? delta : -delta;
       });
     return filteredAds;
-  }, [loadedAds, category, format, sellingAngle, language, search, sortOrder]);
+  }, [loadedAds, category, format, sellingAngle, language, search, sortOrder, mediaFilter]);
 
   const activeFilterCount = [category, format, sellingAngle, language].filter((value) => value !== "All").length
-    + (search.trim() ? 1 : 0);
+    + (search.trim() ? 1 : 0) + (mediaFilter !== "all" ? 1 : 0);
   const resultCount = activeFilterCount === 0 ? totalAds : visibleAds.length;
 
   const renderedAds = visibleAds;
@@ -151,6 +153,7 @@ export function LibraryExplorer({
   }, [ads]);
 
   function clearFilters() {
+    setMediaFilter("all");
     setSearch("");
     setCategory("All");
     setFormat("All");
@@ -241,7 +244,7 @@ export function LibraryExplorer({
 
     observer.observe(target);
     return () => observer.disconnect();
-  }, [loadMore, loadedAds.length, totalAds]);
+  }, [loadMore, loadedAds.length, totalAds, visibleAds.length]);
 
   return (
     <div className="library-app">
@@ -255,24 +258,15 @@ export function LibraryExplorer({
             <header className="collection-page-heading">
               <Link href="/">← {backLabel}</Link>
               <h1>{pageTitle}</h1>
-              <p>Food & beverage creative, selected for your next brief.</p>
             </header>
           )}
 
-          {showCollections && (
-            <header className="explore-intro">
-              <div className="explore-intro__heading">
-                <div>
-                  <h1>Fresh ideas. <span>Food for thought.</span></h1>
-                  <p>A creative reference library for Indian food & beverage brands.</p>
-                </div>
-                <span className="explore-intro__scope">The Indian food & beverage edit</span>
-              </div>
-            </header>
-          )}
+          {showCollections && <h1 className="visually-hidden">India Food Ad Library</h1>}
 
           <ResultsToolbar
             search={search}
+            mediaFilter={mediaFilter}
+            onMediaFilterChange={setMediaFilter}
             sortOrder={sortOrder}
             resultCount={resultCount}
             activeFilters={activeFilters}
@@ -285,16 +279,13 @@ export function LibraryExplorer({
           {showCollections && collections.length > 0 && (
             <section id="collections" className="collections-area" aria-label="Ad format collections">
               <div className="collections-heading">
-                <h2>Browse by format</h2>
-                <span>Find a starting point for your next creative.</span>
+                <h2>Formats</h2>
               </div>
               <div className="collections-rail" aria-label="Browse ad formats">
                 {collections.map((collection) => (
                   <Link className="format-tile" key={collection.name} href={`/collections/${collection.slug}`}>
-                    <span className="format-tile__preview" aria-hidden="true"><CreativePreview ad={collection.ads[0]} compact /></span>
                     <span className="format-tile__index" aria-hidden="true"><ArrowUpRight size={19} /></span>
                     <strong>{collection.name}</strong>
-                    <span>Explore format</span>
                   </Link>
                 ))}
               </div>
@@ -323,7 +314,7 @@ export function LibraryExplorer({
           </aside>
 
           <section className="library-results" aria-labelledby="library-title">
-            <div className="gallery-heading"><h2 id="library-title">{activeFilterCount ? "Your results" : pageTitle ? "Creative library" : "The creative library"}</h2><span>Open any ad to take a closer look</span></div>
+            <h2 id="library-title" className="visually-hidden">{activeFilterCount ? "Filtered ads" : "All ads"}</h2>
 
             {visibleAds.length ? (
               <>

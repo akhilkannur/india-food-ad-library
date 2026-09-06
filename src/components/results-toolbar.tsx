@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
+import type { MediaFilter } from "@/lib/media";
 
 export type ActiveFilter = {
   id: string;
@@ -10,6 +11,8 @@ export type ActiveFilter = {
 
 export function ResultsToolbar({
   search,
+  mediaFilter,
+  onMediaFilterChange,
   sortOrder,
   activeFilters,
   demoMode,
@@ -18,6 +21,8 @@ export function ResultsToolbar({
   onOpenFilters,
 }: {
   search: string;
+  mediaFilter: MediaFilter;
+  onMediaFilterChange: (value: MediaFilter) => void;
   sortOrder: "newest" | "oldest";
   resultCount: number;
   activeFilters: ActiveFilter[];
@@ -29,6 +34,11 @@ export function ResultsToolbar({
   return (
     <div className="results-toolbar" role="search" aria-label="Search and filter ads">
       <div className="results-toolbar__row">
+        <div className="media-toggle" role="group" aria-label="Media type">
+          {([['all', 'All'], ['video', 'Videos'], ['image', 'Images']] as const).map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={mediaFilter === value} onClick={() => onMediaFilterChange(value)}>{label}</button>
+          ))}
+        </div>
         <label className="results-search">
           <Search aria-hidden="true" size={17} strokeWidth={1.8} />
           <input
@@ -36,7 +46,7 @@ export function ResultsToolbar({
             type="search"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search brands, formats or hooks"
+            placeholder="Search ads"
             aria-label="Search ads"
           />
           <kbd>/</kbd>
@@ -49,7 +59,7 @@ export function ResultsToolbar({
 
         <label className="sort-control">
           <span>Sort</span>
-          <select value={sortOrder} onChange={(event) => onSortChange(event.target.value as "newest" | "oldest")}>
+          <select aria-label="Sort ads" value={sortOrder} onChange={(event) => onSortChange(event.target.value as "newest" | "oldest")}>
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
           </select>

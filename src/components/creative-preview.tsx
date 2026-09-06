@@ -1,28 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImageOff, Play } from "lucide-react";
 import type { Ad } from "@/lib/types";
+import { isVideoCreative } from "@/lib/media";
 
 const themes = new Set(["turmeric", "lime", "oat", "sea", "chilli", "cacao"]);
 
 type CreativePreviewProps = {
   ad: Ad;
   compact?: boolean;
+  inlinePlayback?: boolean;
   priority?: boolean;
   onUnavailable?: () => void;
 };
-
-function isVideoCreative(ad: Ad) {
-  return ad.format.toLowerCase().includes("video")
-    || /\.mp4(?:\?|$)/i.test(ad.creative_url || "");
-}
 
 function isUsablePoster(url: string | null) {
   return Boolean(url && !/[?/_-]s?\d{1,3}x\d{1,3}(?:[?/_&.-]|$)/i.test(url));
 }
 
-export function CreativePreview({ ad, compact = false, priority = false, onUnavailable }: CreativePreviewProps) {
+export function CreativePreview({ ad, compact = false, inlinePlayback = false, priority = false, onUnavailable }: CreativePreviewProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [nearViewport, setNearViewport] = useState(!inlinePlayback || priority);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const [posterFailed, setPosterFailed] = useState<string | null>(null);
   const theme = themes.has(ad.creative_theme ?? "") ? ad.creative_theme : "oat";
@@ -35,7 +34,18 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
     : undefined;
   const label = video ? "Video creative" : "Image creative";
 
-  if (!failed && video && compact) {
+  useEffect(() => {
+    const player = videoRef.current;
+    if (!player || !inlinePlayback) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setNearViewport(true);
+      else player.pause();
+    }, { rootMargin: "200px" });
+    observer.observe(player);
+    return () => observer.disconnect();
+  }, [inlinePlayback, mediaUrl]);
+
+  if (!failed && video && compact && !inlinePlayback) {
     return (
       <figure className={`creative creative--media creative--video creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
         {poster && posterFailed !== poster ? (
@@ -57,20 +67,27 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
     return (
       <figure className={`creative creative--media creative--video creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
         <video
+          ref={videoRef}
           className="creative__media"
-          src={ad.creative_url!}
+          aria-label={`${ad.brand.name} video`}
+          src={nearViewport ? ad.creative_url! : undefined}
           poster={posterFailed !== poster ? poster : undefined}
-          controls={!compact}
-          muted={compact}
+          controls
           playsInline
-          preload={compact ? "none" : "metadata"}
+          preload="metadata"
+          onLoadedMetadata={event => { event.currentTarget.dataset.loaded = "true"; }}
+          onPlay={event => {
+            document.querySelectorAll("video").forEach(player => {
+              if (player !== event.currentTarget) player.pause();
+            });
+          }}
           onError={() => {
             setFailedUrl(ad.creative_url!);
           }}
         >
           Your browser does not support embedded video.
         </video>
-        <figcaption className="creative__format"><Play aria-hidden="true" size={12} fill="currentColor" /> Video</figcaption>
+        {!compact && <figcaption className="creative__format"><Play aria-hidden="true" size={12} fill="currentColor" /> Video</figcaption>}
       </figure>
     );
   }
@@ -92,7 +109,7 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
             onUnavailable?.();
           }}
         />
-        <figcaption className="creative__format">Image</figcaption>
+        {!compact && <figcaption className="creative__format">Image</figcaption>}
       </figure>
     );
   }

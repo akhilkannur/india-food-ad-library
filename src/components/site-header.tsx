@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ArrowUpRight, Library, LogIn, LogOut } from "lucide-react";
+import { ArrowUpRight, LogIn, LogOut } from "lucide-react";
 
 export function SiteHeader({
   admin = false,
@@ -13,23 +12,19 @@ export function SiteHeader({
   authenticated?: boolean;
   onAuthAction?: () => void;
 }) {
-  const pathname = usePathname();
   return (
     <header className={`site-header app-header${admin ? "" : " workspace-header"}`}>
       <div className="app-header__inner">
         <div className="app-header__context">
           <Link className="app-wordmark" href="/" aria-label="India Food Ad Library home">
-            {!admin && <Library aria-hidden="true" size={20} />}
             <strong>India Food</strong>
             <span>Ad Library</span>
           </Link>
-          {!admin && <span className="app-header__byline">by <a href="https://lisnagency.online" target="_blank" rel="noreferrer">LISN</a></span>}
           <span className="app-header__separator" aria-hidden="true" />
           <span className="app-header__page-title">{admin ? "Review queue" : "Ad library"}</span>
         </div>
 
         {!admin && <nav className="workspace-nav" aria-label="Library navigation">
-          <Link href="/" aria-current={pathname === "/" || pathname.startsWith("/collections/") || pathname.startsWith("/brands/") ? "page" : undefined}>Ad library</Link>
           <a href="https://lisnagency.online" target="_blank" rel="noreferrer">About LISN<ArrowUpRight size={13} aria-hidden="true" /></a>
         </nav>}
 

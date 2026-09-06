@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Eye } from "lucide-react";
 import { CreativePreview } from "@/components/creative-preview";
 import type { Ad } from "@/lib/types";
+import { isVideoCreative } from "@/lib/media";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-IN", {
@@ -30,8 +31,8 @@ export function AdCard({
   return (
     <article className="ad-card">
       <div className="ad-card__media">
-        <CreativePreview ad={ad} compact priority={priority} onUnavailable={onUnavailable} />
-        <span className="ad-card__format">{format}</span>
+        <CreativePreview ad={ad} compact inlinePlayback priority={priority} onUnavailable={onUnavailable} />
+        {!isVideoCreative(ad) && onOpen && <button className="ad-card__trigger" type="button" onClick={onOpen} aria-haspopup="dialog" aria-label={`Inspect ${ad.brand.name} ad: ${ad.headline || ad.format}`} />}
       </div>
 
       <div className="ad-card__content">
@@ -50,24 +51,13 @@ export function AdCard({
         <h2 className="ad-card__headline">{ad.headline || ad.hook || "Headline not available"}</h2>
 
         <div className="ad-card__meta">
-          <span>{format}</span>
+          {!/^(image|video)$/i.test(format) && <span>{format}</span>}
           <span>{ad.language}</span>
           {secondaryTag && <span>{secondaryTag}</span>}
-          <span className="ad-card__inspect">View details <Eye aria-hidden="true" size={15} /></span>
+          {onOpen && <button className="ad-card__inspect" type="button" onClick={onOpen} aria-haspopup="dialog" aria-label={`Details for ${ad.brand.name} ad`}>Details <Eye aria-hidden="true" size={15} /></button>}
         </div>
       </div>
 
-      {onOpen && (
-        <button
-          className="ad-card__trigger"
-          type="button"
-          onClick={onOpen}
-          aria-haspopup="dialog"
-          aria-label={`Inspect ${ad.brand.name} ad: ${ad.headline || ad.format}`}
-        >
-          <span className="visually-hidden">View ad details</span>
-        </button>
-      )}
     </article>
   );
 }

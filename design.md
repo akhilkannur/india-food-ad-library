@@ -2,7 +2,8 @@
 
 The public site is a creative research workspace. The ads provide the visual richness.
 
-- Structure: compact page heading, one search/filter/sort toolbar, a short format rail, creative grid, detail inspector.
+- Structure: distinctive serif masthead, no slogan hero, one compact toolbar with All / Videos / Images, search/filter/sort, a compact format-link row, masonry feed, detail inspector.
+- Playback: native inline video controls, metadata loaded near the viewport, no autoplay. Starting a video pauses other players. Details are a separate button; no card overlay may intercept player controls. No Image/Video badges on small cards.
 - Typography: Fraunces for expressive, upright serif headings; Manrope for controls and copy; IBM Plex Mono only for keyboard hints.
 - Palette: soft peach and lilac radial gradients fade into a cool off-white base. No dotted texture or animated background. Forest actions, terracotta heading accents and soft apricot/sage format tiles. Use the named tokens in `tokens.css`; avoid independent palettes for dialogs or subpages.
 - Controls: consistent 44px minimum touch targets, restrained rounded corners, visible keyboard focus, sorting available on mobile.
