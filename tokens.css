@@ -26,9 +26,13 @@
   --color-backdrop: oklch(12.9% 0.042 264.695 / 0.5);
   --color-shadow: oklch(20.8% 0.042 265.755 / 0.1);
 
-  --color-library-paper: oklch(98.8% 0.003 88);
-  --color-library-surface: oklch(96.8% 0.004 88);
-  --color-library-surface-strong: oklch(93.5% 0.006 88);
+  --color-library-paper: oklch(96% 0.025 83);
+  --color-library-surface: oklch(94% 0.03 83);
+  --color-library-surface-strong: oklch(90% 0.045 83);
+  --color-library-speckle: oklch(45% 0.035 70 / 0.12);
+  --color-library-apricot: oklch(91% 0.055 59);
+  --color-library-sage: oklch(91% 0.037 138);
+  --color-library-heading: oklch(46% 0.135 35);
   --color-library-elevated: oklch(99.5% 0.002 88);
   --color-library-ink: oklch(20% 0.01 55);
   --color-library-ink-2: oklch(33% 0.012 55);
@@ -63,7 +67,7 @@
   --color-creative-cacao: oklch(39% 0.055 48);
   --color-creative-cacao-ink: oklch(94% 0.025 78);
 
-  --font-display: "Space Grotesk", sans-serif;
+  --font-display: "Bricolage Grotesque", sans-serif;
   --font-body: "Manrope", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
   --font-mind-display: "Iowan Old Style", "Palatino Linotype", Georgia, serif;

@@ -40,7 +40,7 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
       <figure className={`creative creative--media creative--video creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
         {poster && posterFailed !== poster ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="creative__media" src={poster} alt={`${ad.brand.name} video preview`} loading={priority ? "eager" : "lazy"} onError={() => setPosterFailed(poster)} />
+          <img className="creative__media" src={poster} alt={`${ad.brand.name} video preview`} loading={priority ? "eager" : "lazy"} onLoad={event => { event.currentTarget.dataset.loaded = "true"; }} onError={() => setPosterFailed(poster)} />
         ) : (
           <div className="creative__video-cover">
             <Play aria-hidden="true" size={28} />
@@ -86,6 +86,7 @@ export function CreativePreview({ ad, compact = false, priority = false, onUnava
           alt={`${ad.brand.name} advertising creative`}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
+          onLoad={event => { event.currentTarget.dataset.loaded = "true"; }}
           onError={() => {
             setFailedUrl(imageUrl);
             onUnavailable?.();

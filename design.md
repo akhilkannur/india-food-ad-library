@@ -3,10 +3,10 @@
 The public site is a creative research workspace. The ads provide the visual richness.
 
 - Structure: compact page heading, one search/filter/sort toolbar, a short format rail, creative grid, detail inspector.
-- Typography: Space Grotesk for headings; Manrope for controls and copy; IBM Plex Mono only for keyboard hints. All headings are upright.
-- Palette: warm neutral paper and cards, forest for primary actions and selected navigation. Use the named tokens in `tokens.css`; avoid independent palettes for dialogs or subpages.
+- Typography: Bricolage Grotesque for expressive, upright headings; Manrope for controls and copy; IBM Plex Mono only for keyboard hints.
+- Palette: warm oat paper with a fine static speckle, forest actions, terracotta heading accents and soft apricot/sage format tiles. Use the named tokens in `tokens.css`; avoid independent palettes for dialogs or subpages.
 - Controls: consistent 44px minimum touch targets, restrained rounded corners, visible keyboard focus, sorting available on mobile.
-- Cards: uncropped media, readable captions, format and media type, obvious detail access. Missing media must have an explanatory fallback and must not remove the card or close the inspector.
+- Gallery: a flowing masonry pinboard, not uniform compartments. Images and video posters determine their own height from intrinsic dimensions, with no fixed aspect ratio or crop. Borderless captions sit directly on the paper. Keep DOM ordering and keyboard access intact; resize and late media loads must repack without overlaps. Only unloaded/unavailable previews use a temporary fallback ratio. Missing media must not remove the card or close the inspector.
 - Navigation: the library is one destination. Format and brand routes inherit the same page shell and controls.
 - Counts: no promotional ad totals or brand totals. Keep internal pagination totals separate from presentation.
 - Motion: no decorative animation. Use immediate state changes and respect reduced-motion preferences.

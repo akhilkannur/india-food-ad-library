@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
+import { MasonryGrid } from "@/components/masonry-grid";
 import { CreativePreview } from "@/components/creative-preview";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { AuthGateDialog } from "@/components/auth-gate-dialog";
@@ -262,7 +263,7 @@ export function LibraryExplorer({
             <header className="explore-intro">
               <div className="explore-intro__heading">
                 <div>
-                  <h1>Explore ads</h1>
+                  <h1>Fresh ideas. <span>Food for thought.</span></h1>
                   <p>A creative reference library for Indian food & beverage brands.</p>
                 </div>
                 <span className="explore-intro__scope">The Indian food & beverage edit</span>
@@ -326,7 +327,7 @@ export function LibraryExplorer({
 
             {visibleAds.length ? (
               <>
-                <div className="ad-grid" aria-label="Approved ads">
+                <MasonryGrid>
                   {renderedAds.map((ad, index) => (
                     <AdCard
                       ad={ad}
@@ -335,7 +336,7 @@ export function LibraryExplorer({
                       onOpen={() => openAd(ad)}
                     />
                   ))}
-                </div>
+                </MasonryGrid>
                 {loadedAds.length < totalAds && (
                   <div ref={loadMoreRef} className="load-more" aria-live="polite" aria-busy={isLoadingMore}>
                     {isLoadingMore ? "Loading more ads…" : loadMoreError ? (
