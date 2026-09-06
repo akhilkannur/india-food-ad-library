@@ -1,8 +1,8 @@
 /* Hallmark · macrostructure: Workbench / masonry pinboard · genre: playful · designed-as-app
  * Pre-emit critique: P4 H4 E4 S4 R4 V4
- * Oat paper, terracotta type, forest actions, intrinsic-height creative gallery.
+ * Soft peach/lilac light, expressive serif headings, intrinsic-height creative gallery.
  * Public component ownership lives here; legacy admin styles are route-specific. */
-.product-body { background-color: var(--color-library-paper); background-image: radial-gradient(var(--color-library-speckle) .6px,var(--color-transparent) .6px); background-size: 6px 6px; color: var(--color-library-ink); font-family: var(--font-body); }
+.product-body { background-color: var(--color-library-paper); background-image: radial-gradient(ellipse at 0% 8%,var(--color-library-gradient-peach),var(--color-transparent) 60%), radial-gradient(ellipse at 100% 28%,var(--color-library-gradient-lilac),var(--color-transparent) 65%); background-size: 100% 100dvh; background-repeat: no-repeat; color: var(--color-library-ink); font-family: var(--font-body); }
 .library-app { --product-accent: var(--color-workspace-surface); --product-paper: var(--color-library-paper); --product-card: var(--archive-card); --product-rule: var(--color-library-rule); --product-muted: var(--color-library-muted); color: var(--color-library-ink); font-family: var(--font-body); }
 .library-app h1, .library-app h2, .library-app h3 { min-width: 0; overflow-wrap: anywhere; font-family: var(--font-display); font-style: normal; letter-spacing: -.035em; }
 .library-app :is(a,button,input,select):focus-visible { outline: 2px solid var(--color-library-focus); outline-offset: 3px; }
@@ -28,7 +28,7 @@
 .library-app .collection-main { display: block; padding-inline: clamp(var(--space-md),3vw,var(--space-xl)); }
 .library-app .explore-intro, .library-app .collection-page-heading { display: block; margin: 0; padding-block: var(--space-xl) var(--space-lg); border: 0; background: transparent; color: var(--color-library-ink); }
 .library-app .explore-intro__heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-lg); }
-.library-app .explore-intro h1, .library-app .collection-page-heading h1 { margin: 0; font-size: clamp(2.15rem,3.6vw,3.6rem); line-height: 1.08; font-weight: 800; letter-spacing: -.045em; }
+.library-app .explore-intro h1, .library-app .collection-page-heading h1 { margin: 0; font-size: clamp(2.15rem,3.6vw,3.6rem); line-height: 1.12; font-weight: 700; letter-spacing: -.035em; font-optical-sizing: auto; }
 .library-app .explore-intro h1 span { color: var(--color-library-heading); }
 .library-app .explore-intro p, .library-app .collection-page-heading p { max-width: 65ch; margin-block-start: var(--space-xs); font-size: var(--text-sm); color: var(--product-muted); }
 .library-app .explore-intro__scope { max-width: 15ch; flex-shrink: 0; color: var(--color-library-heading); font-family: var(--font-display); font-size: var(--text-base); font-weight: 600; line-height: 1.3; }
