@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { MasonryGrid } from "@/components/masonry-grid";
+import { CreativePreview } from "@/components/creative-preview";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { AuthGateDialog } from "@/components/auth-gate-dialog";
 import { FilterPanel } from "@/components/filter-panel";
@@ -284,6 +285,9 @@ export function LibraryExplorer({
               <div className="collections-rail" aria-label="Browse ad formats">
                 {collections.map((collection) => (
                   <Link className="format-tile" key={collection.name} href={`/collections/${collection.slug}`}>
+                    <span className="format-tile__preview" aria-hidden="true">
+                      <CreativePreview ad={collection.ads[0]} compact />
+                    </span>
                     <span className="format-tile__index" aria-hidden="true"><ArrowUpRight size={19} /></span>
                     <strong>{collection.name}</strong>
                   </Link>

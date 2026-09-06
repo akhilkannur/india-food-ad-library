@@ -227,12 +227,21 @@
 .library-app .media-toggle button[aria-pressed=true] { background: var(--product-accent); color: var(--color-workspace-text); }
 .library-app .results-search, .library-app .mobile-filter-button, .library-app .sort-control, .library-app .sort-control select { min-height: var(--size-touch); }
 .library-app .results-search input { font-size: var(--text-sm); }
-.library-app .collections-area { display: flex; align-items: center; gap: var(--space-md); padding-block: var(--space-sm) var(--space-lg); }
+.library-app .collections-area { display: block; padding-block: var(--space-sm) var(--space-lg); }
 .library-app .collections-heading h2 { font-family: var(--font-body); font-size: var(--text-xs); color: var(--product-muted); letter-spacing: 0; }
-.library-app .collections-rail { display: flex; flex: 1; padding: var(--space-2xs); gap: var(--space-xs); }
-.library-app .format-tile { display: inline-flex; flex-shrink: 0; flex-direction: row-reverse; min-height: var(--size-touch); padding: var(--space-xs) var(--space-sm); gap: var(--space-xs); border-radius: var(--radius-pill); }
-.library-app .format-tile:nth-child(n) { background: var(--color-transparent); }
-.library-app .format-tile strong { font-family: var(--font-body); font-size: var(--text-xs); }
+.library-app .collections-rail { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(12rem, 1fr); padding: var(--space-sm) 0 var(--space-2xs); gap: var(--space-sm); overflow-x: auto; }
+.library-app .format-tile { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; grid-template-rows: 1fr; flex-shrink: 0; min-height: 4.25rem; padding: var(--space-sm); gap: var(--space-sm); border-radius: var(--radius-sm); background: var(--product-card); }
+.library-app .format-tile:nth-child(3n+1) { background: var(--color-library-apricot); }
+.library-app .format-tile:nth-child(3n+2) { background: var(--color-library-sage); }
+.library-app .format-tile:nth-child(3n) { background: var(--color-library-surface-strong); }
+.library-app .format-tile__preview { display: block; grid-column: 1; grid-row: 1; width: 3rem; height: 3rem; overflow: hidden; border-radius: var(--radius-xs); background: var(--color-library-surface); }
+.library-app .format-tile__preview .creative { width: 100%; height: 100%; min-height: 0; margin: 0; border: 0; }
+.library-app .format-tile__preview .creative__media { width: 100%; height: 100%; object-fit: cover; }
+.library-app .format-tile__preview :is(.creative__format,.creative__video-cover strong,.creative__video-cover span,.creative__empty-copy,.creative__empty-foot) { display: none; }
+.library-app .format-tile__preview .creative__video-cover { height: 100%; padding: var(--space-xs); }
+.library-app .format-tile__preview .creative__video-cover > svg { padding: 0; border: 0; width: 18px; }
+.library-app .format-tile strong { grid-column: 2; font-family: var(--font-body); font-size: var(--text-xs); }
+.library-app .format-tile__index { grid-column: 3; grid-row: 1; }
 .library-app .ad-card .creative__format { display: none; }
 .library-app .ad-card video.creative__media:not([data-loaded]) { aspect-ratio: 3/4; }
 .library-app .ad-card__inspect { position: relative; min-height: var(--size-touch); padding: 0 var(--space-2xs); border: 0; background: var(--color-transparent); font-size: var(--text-xs); white-space: nowrap; }
@@ -241,7 +250,7 @@
 @media (hover:hover) {
   .library-app .app-header__action:hover { background: var(--color-workspace-rule); color: var(--color-workspace-text); }
   .library-app .media-toggle button:not([aria-pressed=true]):hover { background: var(--product-card); color: var(--color-library-ink); }
-  .library-app .format-tile:hover { background: var(--color-library-surface); }
+  .library-app .format-tile:hover { border-color: var(--color-library-heading); }
 }
 @media (max-width:60rem) {
   .library-app .results-toolbar__row { grid-template-columns: auto minmax(0,1fr) auto; }
@@ -261,6 +270,7 @@
   .library-app .mobile-filter-button { grid-column: 2; grid-row: 1; justify-self: end; }
   .library-app .sort-control { grid-column: 2; grid-row: 2; }
   .library-app .collections-area { gap: var(--space-xs); }
+  .library-app .collections-rail { grid-auto-columns: 12rem; }
 }
 @media (max-width:25rem) {
   .library-app .workspace-nav { display: none; }
