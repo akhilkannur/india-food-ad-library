@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ArrowUpRight, Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
 import { MasonryGrid } from "@/components/masonry-grid";
-import { CreativePreview } from "@/components/creative-preview";
 import { AdDetailDialog } from "@/components/ad-detail-dialog";
 import { AuthGateDialog } from "@/components/auth-gate-dialog";
 import { FilterPanel } from "@/components/filter-panel";
@@ -284,13 +283,17 @@ export function LibraryExplorer({
               </div>
               <div className="collections-rail" aria-label="Browse ad formats">
                 {collections.map((collection) => (
-                  <Link className="format-tile" key={collection.name} href={`/collections/${collection.slug}`}>
-                    <span className="format-tile__preview" aria-hidden="true">
-                      <CreativePreview ad={collection.ads[0]} compact />
-                    </span>
-                    <span className="format-tile__index" aria-hidden="true"><ArrowUpRight size={19} /></span>
-                    <strong>{collection.name}</strong>
-                  </Link>
+                  <section className="collection-row" key={collection.name} aria-labelledby={`format-${collection.slug}`}>
+                    <div className="collection-row__heading">
+                      <h3 id={`format-${collection.slug}`}>{collection.name}</h3>
+                      <Link href={`/collections/${collection.slug}`}>View all <ArrowUpRight aria-hidden="true" size={15} /></Link>
+                    </div>
+                    <div className="collection-row__cards">
+                      {collection.ads.map((ad) => (
+                        <AdCard ad={ad} key={ad.id} priority={false} onOpen={() => openAd(ad)} />
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             </section>
