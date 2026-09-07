@@ -12,6 +12,7 @@ import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { LibraryIntroDisclosure } from "@/components/library-intro-disclosure";
 import { getCollectionAds, getCollectionDefinitions } from "@/lib/collections";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Ad } from "@/lib/types";
@@ -251,6 +252,7 @@ export function LibraryExplorer({
     <div className="library-app">
       <SiteHeader
         authenticated={authenticated}
+        showFluidOrb={showCollections}
         onAuthAction={authAction}
       />
       <main className="library-shell library-shell--collections">
@@ -263,6 +265,8 @@ export function LibraryExplorer({
           )}
 
           {showCollections && <h1 className="visually-hidden">India Food Ad Library</h1>}
+
+          {showCollections && <LibraryIntroDisclosure />}
 
           <ResultsToolbar
             search={search}

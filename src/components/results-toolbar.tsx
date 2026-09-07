@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
+import type { CSSProperties } from "react";
 import type { MediaFilter } from "@/lib/media";
 
 export type ActiveFilter = {
@@ -31,11 +32,20 @@ export function ResultsToolbar({
   onSortChange: (value: "newest" | "oldest") => void;
   onOpenFilters: () => void;
 }) {
+  const mediaOptions = [["all", "All"], ["video", "Videos"], ["image", "Images"]] as const;
+  const activeMediaIndex = mediaOptions.findIndex(([value]) => value === mediaFilter);
+
   return (
     <div className="results-toolbar" role="search" aria-label="Search and filter ads">
       <div className="results-toolbar__row">
-        <div className="media-toggle" role="group" aria-label="Media type">
-          {([['all', 'All'], ['video', 'Videos'], ['image', 'Images']] as const).map(([value, label]) => (
+        <div
+          className="media-toggle"
+          role="group"
+          aria-label="Media type"
+          style={{ "--media-index": activeMediaIndex } as CSSProperties}
+        >
+          <span className="media-toggle__indicator" aria-hidden="true" />
+          {mediaOptions.map(([value, label]) => (
             <button key={value} type="button" aria-pressed={mediaFilter === value} onClick={() => onMediaFilterChange(value)}>{label}</button>
           ))}
         </div>

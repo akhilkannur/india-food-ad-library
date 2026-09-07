@@ -2,22 +2,34 @@
 
 import Link from "next/link";
 import { ArrowUpRight, LogIn, LogOut } from "lucide-react";
+import FluidOrb from "@/components/fluid-orb";
 
 export function SiteHeader({
   admin = false,
   authenticated = false,
+  showFluidOrb = false,
   onAuthAction,
 }: {
   admin?: boolean;
   authenticated?: boolean;
+  showFluidOrb?: boolean;
   onAuthAction?: () => void;
 }) {
   return (
     <header className={`site-header app-header${admin ? "" : " workspace-header"}`}>
       <div className="app-header__inner">
         <div className="app-header__context">
-          <Link className="app-wordmark" href="/" aria-label="F&B Ad Library home">
-            <strong>F&amp;B Ad Library</strong>
+          <Link className={`app-wordmark${showFluidOrb ? " app-wordmark--with-orb" : ""}`} href="/" aria-label="F&B Ad Library home">
+            {showFluidOrb && <FluidOrb className="app-wordmark__orb" size={44} aria-hidden="true" />}
+            {showFluidOrb ? (
+              <strong className="app-wordmark__title-reveal" aria-label="F&B Ad Library">
+                <span aria-hidden="true">F&amp;B</span>{" "}
+                <span aria-hidden="true">Ad</span>{" "}
+                <span aria-hidden="true">Library</span>
+              </strong>
+            ) : (
+              <strong>F&amp;B Ad Library</strong>
+            )}
             <span>1,000s of ads by 100s of brands, for sorting</span>
           </Link>
           <span className="app-header__separator" aria-hidden="true" />
@@ -36,7 +48,7 @@ export function SiteHeader({
           )}
           {!admin && onAuthAction && (
             <button
-              className="app-header__action"
+              className={`app-header__action${authenticated ? "" : " app-header__action--beam"}`}
               type="button"
               onClick={onAuthAction}
               aria-label={authenticated ? "Sign out" : "Sign in for free"}
