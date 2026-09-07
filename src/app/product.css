@@ -92,6 +92,8 @@
 .library-app .creative__video-cover > svg { box-sizing: content-box; padding: var(--space-md); border: 1px solid var(--color-library-rule-strong); border-radius: var(--radius-pill); }
 .library-app .creative__video-cover strong { font-family: var(--font-display); font-size: var(--text-md); }
 .library-app .creative__video-cover span { font-size: var(--text-xs); }
+.library-app .creative__play { position: absolute; inset: 50% auto auto 50%; z-index: var(--z-raised); display: grid; width: 3.75rem; height: 3.75rem; padding: 0; place-items: center; transform: translate(-50%,-50%); border: 2px solid rgb(255 255 255 / .9); border-radius: var(--radius-pill); background: oklch(35% 0.12 257 / .92); color: white; box-shadow: 0 .45rem 1.4rem rgb(19 30 68 / .28); }
+.library-app .creative__play svg { margin-inline-start: .18rem; }
 .library-app .creative--empty { display: flex; flex-direction: column; justify-content: center; gap: var(--space-md); padding: var(--space-lg); background: var(--color-library-surface); color: var(--color-library-ink); }
 .library-app .creative__empty-copy { display: grid; gap: var(--space-xs); }
 .library-app .creative__empty-copy strong { font-family: var(--font-display); font-size: var(--text-base); }
@@ -297,6 +299,7 @@
 @media (hover:hover) {
   .library-app .app-header__action:hover { background: #ff8a70; border-color: #ff8a70; color: oklch(23% 0.07 257); }
   .library-app .workspace-nav a:hover { background: oklch(43% 0.12 257); color: white; }
+  .library-app .creative__play:hover { background: #ff765d; transform: translate(-50%,-50%) scale(1.05); }
   .library-app .direction-tabs__list button:not([aria-pressed=true]):hover { background: var(--product-card); color: var(--color-library-ink); }
   .library-app .collection-row:hover .collection-row__heading h3 { color: var(--color-library-heading); }
 }

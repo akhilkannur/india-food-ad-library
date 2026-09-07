@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ImageOff, Play } from "lucide-react";
 import type { Ad } from "@/lib/types";
 import { isVideoCreative } from "@/lib/media";
@@ -20,8 +20,7 @@ function isUsablePoster(url: string | null) {
 }
 
 export function CreativePreview({ ad, compact = false, inlinePlayback = false, priority = false, onUnavailable }: CreativePreviewProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [nearViewport, setNearViewport] = useState(!inlinePlayback || priority);
+  const [playRequested, setPlayRequested] = useState(false);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const [posterFailed, setPosterFailed] = useState<string | null>(null);
   const theme = themes.has(ad.creative_theme ?? "") ? ad.creative_theme : "oat";
@@ -33,17 +32,6 @@ export function CreativePreview({ ad, compact = false, inlinePlayback = false, p
     ? ad.thumbnail_url
     : undefined;
   const label = video ? "Video creative" : "Image creative";
-
-  useEffect(() => {
-    const player = videoRef.current;
-    if (!player || !inlinePlayback) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) setNearViewport(true);
-      else player.pause();
-    }, { rootMargin: "200px" });
-    observer.observe(player);
-    return () => observer.disconnect();
-  }, [inlinePlayback, mediaUrl]);
 
   if (!failed && video && compact && !inlinePlayback) {
     return (
@@ -63,18 +51,37 @@ export function CreativePreview({ ad, compact = false, inlinePlayback = false, p
     );
   }
 
+  if (!failed && video && inlinePlayback && !playRequested) {
+    return (
+      <figure className={`creative creative--media creative--video creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
+        {poster && posterFailed !== poster ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="creative__media" src={poster} alt={`${ad.brand.name} video preview`} loading={priority ? "eager" : "lazy"} onLoad={event => { event.currentTarget.dataset.loaded = "true"; }} onError={() => setPosterFailed(poster)} />
+        ) : (
+          <div className="creative__video-cover">
+            <strong>{ad.brand.name}</strong>
+            <span>Video ad</span>
+          </div>
+        )}
+        <button className="creative__play" type="button" onClick={() => setPlayRequested(true)} aria-label={`Play ${ad.brand.name} video ad`}>
+          <Play aria-hidden="true" size={25} fill="currentColor" />
+        </button>
+      </figure>
+    );
+  }
+
   if (!failed && video) {
     return (
       <figure className={`creative creative--media creative--video creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
         <video
-          ref={videoRef}
           className="creative__media"
           aria-label={`${ad.brand.name} video`}
-          src={nearViewport ? ad.creative_url! : undefined}
+          src={ad.creative_url!}
           poster={posterFailed !== poster ? poster : undefined}
           controls
+          autoPlay={playRequested}
           playsInline
-          preload="metadata"
+          preload={playRequested ? "auto" : "none"}
           onLoadedMetadata={event => { event.currentTarget.dataset.loaded = "true"; }}
           onPlay={event => {
             document.querySelectorAll("video").forEach(player => {
