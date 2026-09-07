@@ -292,17 +292,25 @@ function base64FromBytes(bytes) {
 
 function validateWorkersLabels(labels) {
   if (!labels || typeof labels !== "object") throw new Error("Workers AI returned invalid classification JSON");
-  const result = {
-    product_category: labels.product_category || labels.category,
-    creative_style: labels.creative_style,
-    selling_angle: labels.selling_angle,
-    language: labels.language,
+  const canonicalChoice = (value, options) => {
+    if (typeof value !== "string") return null;
+    const normalized = normalize(value);
+    const exact = options.find((option) => normalize(option) === normalized);
+    if (exact) return exact;
+    const matches = options.filter((option) => normalized.includes(normalize(option)));
+    return matches.length === 1 ? matches[0] : null;
   };
   const options = {
     product_category: CLASSIFICATION_OPTIONS.category,
     creative_style: CLASSIFICATION_OPTIONS.creative_style,
     selling_angle: CLASSIFICATION_OPTIONS.selling_angle,
     language: CLASSIFICATION_OPTIONS.language,
+  };
+  const result = {
+    product_category: canonicalChoice(labels.product_category || labels.category, options.product_category),
+    creative_style: canonicalChoice(labels.creative_style, options.creative_style),
+    selling_angle: canonicalChoice(labels.selling_angle, options.selling_angle),
+    language: canonicalChoice(labels.language, options.language),
   };
   const valid = Object.entries(result).every(([field, value]) =>
     typeof value === "string" && options[field].includes(value),
@@ -312,7 +320,7 @@ function validateWorkersLabels(labels) {
 }
 
 function parseClassificationJson(value) {
-  const direct = value && typeof value === "object" && value.product_category ? value : null;
+  const direct = value && typeof value === "object" && (value.product_category || value.category) ? value : null;
   const nested = value && typeof value === "object" && value.response && typeof value.response === "object"
     ? value.response
     : null;
@@ -341,6 +349,21 @@ function parseClassificationJson(value) {
     selling_angle: choose("Selling Angle", CLASSIFICATION_OPTIONS.selling_angle),
     language: choose("Language", CLASSIFICATION_OPTIONS.language),
   });
+}
+
+function repairClassificationFromAd(ad) {
+  const text = [ad.headline, ad.body_copy].filter(Boolean).join(" ");
+  const category = CLASSIFICATION_OPTIONS.category.includes(ad.category) ? ad.category : "Other";
+  return {
+    product_category: category,
+    creative_style: creativeStyleFor({
+      headline: ad.headline,
+      body: ad.body_copy,
+      video: /video/i.test(ad.format || ""),
+    }),
+    selling_angle: sellingAngleFor(text),
+    language: languageFor(text),
+  };
 }
 
 function createLiveCreativeCapture(env) {
@@ -556,6 +579,7 @@ Copy: ${ad.body_copy || "None"}`;
 
   let result = await env.AI.run(WORKERS_AI_MODEL, input);
   let labels;
+  let labelSource = "workers-ai";
   try {
     labels = parseClassificationJson(result);
   } catch (firstError) {
@@ -569,9 +593,10 @@ Copy: ${ad.body_copy || "None"}`;
     });
     try {
       labels = parseClassificationJson(result);
+      labelSource = "workers-ai-retry";
     } catch (retryError) {
-      const response = typeof result?.response === "string" ? result.response.slice(0, 600) : null;
-      throw new Error(`${retryError instanceof Error ? retryError.message : String(retryError)}${response ? `: ${response}` : ""}`);
+      labels = validateWorkersLabels(repairClassificationFromAd(ad));
+      labelSource = "schema-repair";
     }
   }
   return {
@@ -583,6 +608,7 @@ Copy: ${ad.body_copy || "None"}`;
     },
     media_source: media?.source || "copy-only",
     media_error: mediaFailure,
+    label_source: labelSource,
     usage: result.usage || null,
   };
 }
@@ -628,6 +654,7 @@ async function classifyAds(env, limit, offset, write, status = "approved") {
           format: ad.format,
           labels: classification.labels,
           media_source: classification.media_source,
+          label_source: classification.label_source,
           ...(classification.media_error ? { media_error: classification.media_error } : {}),
           usage: classification.usage,
         });
