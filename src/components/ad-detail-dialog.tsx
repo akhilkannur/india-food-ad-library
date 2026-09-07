@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpRight, X } from "lucide-react";
 import { CreativePreview } from "@/components/creative-preview";
+import { SidePanel } from "@/components/ui/side-panel";
 import type { Ad } from "@/lib/types";
 
 function formatDate(value?: string | null) {
@@ -61,6 +62,7 @@ export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; 
         if (event.target === dialogRef.current) requestClose();
       }}
     >
+      <SidePanel panelOpen={!closing} handlePanelOpen={requestClose} className="ad-detail-panel">
       <div className="ad-dialog__layout">
         <header className="ad-dialog__header">
           <strong>{ad.brand.name}</strong>
@@ -99,6 +101,7 @@ export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; 
           </div>
         </div>
       </div>
+      </SidePanel>
     </dialog>
   );
 }

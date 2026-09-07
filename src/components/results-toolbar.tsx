@@ -1,8 +1,14 @@
 "use client";
 
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
-import type { CSSProperties } from "react";
+import { DirectionAwareTabs } from "@/components/ui/direction-aware-tabs";
 import type { MediaFilter } from "@/lib/media";
+
+const MEDIA_TABS = [
+  { id: "all", label: "All" },
+  { id: "video", label: "Videos" },
+  { id: "image", label: "Images" },
+];
 
 export type ActiveFilter = {
   id: string;
@@ -32,23 +38,16 @@ export function ResultsToolbar({
   onSortChange: (value: "newest" | "oldest") => void;
   onOpenFilters: () => void;
 }) {
-  const mediaOptions = [["all", "All"], ["video", "Videos"], ["image", "Images"]] as const;
-  const activeMediaIndex = mediaOptions.findIndex(([value]) => value === mediaFilter);
-
   return (
     <div className="results-toolbar" role="search" aria-label="Search and filter ads">
       <div className="results-toolbar__row">
-        <div
+        <DirectionAwareTabs
+          ariaLabel="Media type"
           className="media-toggle"
-          role="group"
-          aria-label="Media type"
-          style={{ "--media-index": activeMediaIndex } as CSSProperties}
-        >
-          <span className="media-toggle__indicator" aria-hidden="true" />
-          {mediaOptions.map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={mediaFilter === value} onClick={() => onMediaFilterChange(value)}>{label}</button>
-          ))}
-        </div>
+          tabs={MEDIA_TABS}
+          value={mediaFilter}
+          onValueChange={(value) => onMediaFilterChange(value as MediaFilter)}
+        />
         <label className="results-search">
           <Search aria-hidden="true" size={17} strokeWidth={1.8} />
           <input

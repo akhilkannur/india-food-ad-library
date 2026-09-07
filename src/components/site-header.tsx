@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { ArrowUpRight, LogIn, LogOut } from "lucide-react";
 import FluidOrb from "@/components/fluid-orb";
+import { BorderBeamButton } from "@/components/ui/border-beam-button";
+import TextAnimate from "@/components/ui/text-animate";
 
 export function SiteHeader({
   admin = false,
@@ -22,11 +24,7 @@ export function SiteHeader({
           <Link className={`app-wordmark${showFluidOrb ? " app-wordmark--with-orb" : ""}`} href="/" aria-label="F&B Ad Library home">
             {showFluidOrb && <FluidOrb className="app-wordmark__orb" size={44} aria-hidden="true" />}
             {showFluidOrb ? (
-              <strong className="app-wordmark__title-reveal" aria-label="F&B Ad Library">
-                <span aria-hidden="true">F&amp;B</span>{" "}
-                <span aria-hidden="true">Ad</span>{" "}
-                <span aria-hidden="true">Library</span>
-              </strong>
+              <strong><TextAnimate text="F&B Ad Library" type="calmInUp" /></strong>
             ) : (
               <strong>F&amp;B Ad Library</strong>
             )}
@@ -46,17 +44,32 @@ export function SiteHeader({
               Back to library<ArrowUpRight aria-hidden="true" size={14} />
             </Link>
           )}
-          {!admin && onAuthAction && (
+          {!admin && onAuthAction && authenticated && (
             <button
-              className={`app-header__action${authenticated ? "" : " app-header__action--beam"}`}
+              className="app-header__action"
               type="button"
               onClick={onAuthAction}
-              aria-label={authenticated ? "Sign out" : "Sign in for free"}
-              title={authenticated ? "Sign out" : "Get full access for free"}
+              aria-label="Sign out"
+              title="Sign out"
             >
-              {authenticated ? <LogOut aria-hidden="true" size={16} /> : <LogIn aria-hidden="true" size={16} />}
-              <span className="app-header__action-label">{authenticated ? "Sign out" : "Sign in"}</span>
+              <LogOut aria-hidden="true" size={16} />
+              <span className="app-header__action-label">Sign out</span>
             </button>
+          )}
+          {!admin && onAuthAction && !authenticated && (
+            <BorderBeamButton
+              aria-label="Sign in for free"
+              beamSize="sm"
+              className="app-header__action"
+              colorVariant="sunset"
+              onClick={onAuthAction}
+              title="Get full access for free"
+              type="button"
+              variant="default"
+            >
+              <LogIn aria-hidden="true" size={16} />
+              <span className="app-header__action-label">Sign in</span>
+            </BorderBeamButton>
           )}
         </div>
       </div>
