@@ -343,7 +343,90 @@ function parseClassificationJson(value) {
   });
 }
 
-async function getClassificationMedia(env, ad) {
+function createLiveCreativeCapture(env) {
+  let browser = null;
+  let context = null;
+  let page = null;
+
+  async function ensurePage() {
+    if (!env.BROWSER) throw new Error("Cloudflare Browser binding is missing for live creative recovery");
+    if (!browser) {
+      browser = await launch(env.BROWSER, { keep_alive: 600_000 });
+      context = await browser.newContext({
+        locale: "en-IN",
+        timezoneId: "Asia/Kolkata",
+        viewport: { width: 1280, height: 1100 },
+      });
+      page = await context.newPage();
+    }
+    return page;
+  }
+
+  return {
+    async capture(ad) {
+      const livePage = await ensurePage();
+      await livePage.goto(`https://www.facebook.com/ads/library/?id=${encodeURIComponent(ad.source_ad_id)}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 60_000,
+      });
+      try {
+        await livePage.waitForFunction(
+          (sourceAdId) => document.body?.innerText.includes(`Library ID: ${sourceAdId}`),
+          ad.source_ad_id,
+          { timeout: 15_000 },
+        );
+      } catch {
+        await livePage.waitForTimeout(3_000);
+      }
+
+      const mediaHandle = await livePage.evaluateHandle((sourceAdId) => {
+        const idText = `Library ID: ${sourceAdId}`;
+        const idNode = [...document.querySelectorAll("div")]
+          .find((node) => (node.textContent || "").trim().includes(idText) && (node.textContent || "").length < 240);
+        if (!idNode) return null;
+
+        let card = idNode;
+        while (card.parentElement) {
+          const text = card.parentElement.innerText || "";
+          const idCount = (text.match(/Library ID:/gi) || []).length;
+          if (idCount !== 1 || text.length > 12_000) break;
+          card = card.parentElement;
+        }
+
+        const candidates = [...card.querySelectorAll("video, img")]
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            return { element, area: Math.max(0, rect.width) * Math.max(0, rect.height) };
+          })
+          .filter(({ area }) => area >= 10_000)
+          .sort((left, right) => right.area - left.area);
+        return candidates[0]?.element || card;
+      }, ad.source_ad_id);
+      const mediaElement = mediaHandle.asElement();
+      if (!mediaElement) {
+        await mediaHandle.dispose();
+        throw new Error("Could not find the live creative on its Ads Library page");
+      }
+
+      try {
+        await mediaElement.scrollIntoViewIfNeeded();
+        const screenshot = await mediaElement.screenshot({ type: "jpeg", quality: 82 });
+        const bytes = new Uint8Array(screenshot);
+        if (!bytes.byteLength) throw new Error("Live creative capture was empty");
+        if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Live creative capture is larger than the classification limit");
+        return { bytes, mimeType: "image/jpeg", source: "ads-library-live-capture" };
+      } finally {
+        await mediaHandle.dispose();
+      }
+    },
+    async close() {
+      if (context) await context.close();
+      if (browser) await browser.close();
+    },
+  };
+}
+
+async function getClassificationMedia(env, ad, captureLiveCreative) {
   const isVideo = /video/i.test(ad.format || "");
   const headers = { Referer: "https://www.facebook.com/", "User-Agent": "IndiaFoodAdLibrary/1.0" };
 
@@ -386,13 +469,33 @@ async function getClassificationMedia(env, ad) {
       }
     }
 
+    if (captureLiveCreative) {
+      try {
+        return await captureLiveCreative(ad);
+      } catch (captureError) {
+        const original = videoFailure instanceof Error ? videoFailure.message : "Video has no downloadable creative or thumbnail";
+        const fallback = captureError instanceof Error ? captureError.message : String(captureError);
+        throw new Error(`${original}; live creative recovery failed: ${fallback}`);
+      }
+    }
+
     throw videoFailure || new Error("Video has no downloadable creative or thumbnail");
   }
 
   const url = ad.creative_url || ad.thumbnail_url;
   if (!url) throw new Error("No usable image creative");
   const imageResponse = await fetch(url, { headers });
-  if (!imageResponse.ok) throw new Error(`Creative download failed (${imageResponse.status})`);
+  if (!imageResponse.ok) {
+    if (captureLiveCreative) {
+      try {
+        return await captureLiveCreative(ad);
+      } catch (captureError) {
+        const fallback = captureError instanceof Error ? captureError.message : String(captureError);
+        throw new Error(`Creative download failed (${imageResponse.status}); live creative recovery failed: ${fallback}`);
+      }
+    }
+    throw new Error(`Creative download failed (${imageResponse.status})`);
+  }
   const bytes = new Uint8Array(await imageResponse.arrayBuffer());
   if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Creative is larger than the classification limit");
   return {
@@ -402,11 +505,23 @@ async function getClassificationMedia(env, ad) {
   };
 }
 
-async function classifyWithWorkersAI(env, ad) {
+async function classifyWithWorkersAI(env, ad, captureLiveCreative) {
   if (!env.AI) throw new Error("Workers AI binding is missing");
-  const media = await getClassificationMedia(env, ad);
+  let media = null;
+  let mediaFailure = null;
+  try {
+    media = await getClassificationMedia(env, ad, captureLiveCreative);
+  } catch (error) {
+    mediaFailure = error instanceof Error ? error.message : String(error);
+  }
+  if (!media && !ad.headline && !ad.body_copy && !ad.category) {
+    throw new Error(mediaFailure || "Ad has neither accessible media nor usable copy");
+  }
 
-  const prompt = `Classify this Indian food advertisement for a creative research library. Use every visible video frame in the contact sheet and the ad copy together. Return JSON only with exactly these four keys. Choose exactly one value for every key. Never return multiple values, alternatives, comma-separated labels, explanations, Markdown, or prose.
+  const evidenceInstruction = media
+    ? "Use the supplied creative image or video-frame capture and the ad copy together."
+    : "The original creative is no longer downloadable. Classify conservatively from the ad copy and existing category hint.";
+  const prompt = `Classify this Indian food advertisement for a creative research library. ${evidenceInstruction} Return JSON only with exactly these four keys. Choose exactly one value for every key. Never return multiple values, alternatives, comma-separated labels, explanations, Markdown, or prose.
 product_category: Snacks, Sweets & chocolate, Beverages, Dairy, Spices & ingredients, Staples, Ready-to-eat & instant, Ready-to-cook & frozen, Health & nutrition, Meat & seafood, Fresh food, Bakery, Other
 creative_style: Product shot, Product demo, Recipe/how-to, UGC, Testimonial, Lifestyle, Founder story
 selling_angle: Taste/craving, Health, Convenience, Value, Ingredients, Tradition/emotion, Social proof
@@ -416,12 +531,11 @@ Existing product category hint: ${ad.category || "Unknown"}
 Headline: ${ad.headline || "None"}
 Copy: ${ad.body_copy || "None"}`;
 
-  const result = await env.AI.run(WORKERS_AI_MODEL, {
+  const input = {
     messages: [
       { role: "system", content: "You are a precise advertising analyst. Do not invent details that are not visible or stated." },
       { role: "user", content: prompt },
     ],
-    image: `data:${media.mimeType};base64,${base64FromBytes(media.bytes)}`,
     response_format: {
       type: "json_schema",
       json_schema: {
@@ -437,13 +551,28 @@ Copy: ${ad.body_copy || "None"}`;
     },
     max_tokens: 160,
     temperature: 0,
-  });
+  };
+  if (media) input.image = `data:${media.mimeType};base64,${base64FromBytes(media.bytes)}`;
+
+  let result = await env.AI.run(WORKERS_AI_MODEL, input);
   let labels;
   try {
     labels = parseClassificationJson(result);
-  } catch (error) {
-    const response = typeof result?.response === "string" ? result.response.slice(0, 600) : null;
-    throw new Error(`${error instanceof Error ? error.message : String(error)}${response ? `: ${response}` : ""}`);
+  } catch (firstError) {
+    result = await env.AI.run(WORKERS_AI_MODEL, {
+      ...input,
+      messages: [
+        ...input.messages,
+        { role: "assistant", content: typeof result?.response === "string" ? result.response : JSON.stringify(result) },
+        { role: "user", content: "That response did not match the required schema. Return only one valid enum value for each of the four required keys." },
+      ],
+    });
+    try {
+      labels = parseClassificationJson(result);
+    } catch (retryError) {
+      const response = typeof result?.response === "string" ? result.response.slice(0, 600) : null;
+      throw new Error(`${retryError instanceof Error ? retryError.message : String(retryError)}${response ? `: ${response}` : ""}`);
+    }
   }
   return {
     labels: {
@@ -452,13 +581,14 @@ Copy: ${ad.body_copy || "None"}`;
       selling_angle: labels.selling_angle || null,
       language: labels.language || null,
     },
-    media_source: media.source,
+    media_source: media?.source || "copy-only",
+    media_error: mediaFailure,
     usage: result.usage || null,
   };
 }
 
-function hasClassificationMedia(ad) {
-  return Boolean(ad.creative_url || ad.thumbnail_url);
+function hasClassificationEvidence(ad) {
+  return Boolean(ad.creative_url || ad.thumbnail_url || ad.headline || ad.body_copy || ad.category);
 }
 
 async function classifyAds(env, limit, offset, write, status = "approved") {
@@ -468,45 +598,51 @@ async function classifyAds(env, limit, offset, write, status = "approved") {
     env,
     `ads?status=eq.${statusFilter}&${missingClassification}&select=id,source_ad_id,format,language,category,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc,id.asc&offset=${offset}&limit=${limit}`,
   );
-  const selected = rows.filter(hasClassificationMedia).slice(0, limit);
+  const selected = rows.filter(hasClassificationEvidence).slice(0, limit);
 
   const results = [];
   let writes = 0;
-  for (const ad of selected.slice(0, limit)) {
-    try {
-      const classification = await classifyWithWorkersAI(env, ad);
-      if (write) {
-        await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
-          method: "PATCH",
-          headers: { Prefer: "return=minimal" },
-          body: JSON.stringify({
-            category: classification.labels.category,
-            creative_style: classification.labels.creative_style,
-            selling_angle: classification.labels.selling_angle,
-            language: classification.labels.language,
-            updated_at: new Date().toISOString(),
-          }),
+  const liveCreative = createLiveCreativeCapture(env);
+  try {
+    for (const ad of selected.slice(0, limit)) {
+      try {
+        const classification = await classifyWithWorkersAI(env, ad, liveCreative.capture);
+        if (write) {
+          await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
+            method: "PATCH",
+            headers: { Prefer: "return=minimal" },
+            body: JSON.stringify({
+              category: classification.labels.category,
+              creative_style: classification.labels.creative_style,
+              selling_angle: classification.labels.selling_angle,
+              language: classification.labels.language,
+              updated_at: new Date().toISOString(),
+            }),
+          });
+          writes += 1;
+        }
+        results.push({
+          id: ad.id,
+          source_ad_id: ad.source_ad_id,
+          brand: ad.brand?.name || "Unknown",
+          format: ad.format,
+          labels: classification.labels,
+          media_source: classification.media_source,
+          ...(classification.media_error ? { media_error: classification.media_error } : {}),
+          usage: classification.usage,
         });
-        writes += 1;
+      } catch (error) {
+        results.push({
+          id: ad.id,
+          source_ad_id: ad.source_ad_id,
+          brand: ad.brand?.name || "Unknown",
+          format: ad.format,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
-      results.push({
-        id: ad.id,
-        source_ad_id: ad.source_ad_id,
-        brand: ad.brand?.name || "Unknown",
-        format: ad.format,
-        labels: classification.labels,
-        media_source: classification.media_source,
-        usage: classification.usage,
-      });
-    } catch (error) {
-      results.push({
-        id: ad.id,
-        source_ad_id: ad.source_ad_id,
-        brand: ad.brand?.name || "Unknown",
-        format: ad.format,
-        error: error instanceof Error ? error.message : String(error),
-      });
     }
+  } finally {
+    await liveCreative.close();
   }
   return {
     ok: results.length > 0 && results.every((item) => !item.error),

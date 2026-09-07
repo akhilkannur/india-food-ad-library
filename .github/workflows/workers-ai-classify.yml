@@ -40,6 +40,9 @@ jobs:
             --request POST \
             --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
             "$SCRAPER_WORKER_URL/classify?status=$STATUS&limit=$LIMIT&offset=$OFFSET" | tee classification-result.json
+      - name: Verify classification result
+        run: |
+          node -e 'const report = JSON.parse(require("fs").readFileSync("classification-result.json", "utf8")); if (!report.ok) { console.error(`Classification incomplete: ${report.classified || 0}/${report.attempted || 0} succeeded`); process.exit(1) }'
       - name: Upload classification report
         if: always()
         uses: actions/upload-artifact@v4
