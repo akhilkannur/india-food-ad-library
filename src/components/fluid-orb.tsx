@@ -88,7 +88,7 @@ function hexToRgb(hex: string): [number, number, number] {
   }
 
   const parsed = Number.parseInt(value, 16);
-  if (value.length !== 6 || Number.isNaN(parsed)) return [0.72, 0.25, 0.13];
+  if (value.length !== 6 || Number.isNaN(parsed)) return [0.1, 0.45, 0.95];
 
   return [
     ((parsed >> 16) & 255) / 255,
@@ -114,7 +114,7 @@ function compile(gl: WebGLRenderingContext, type: number, source: string) {
 
 export default function FluidOrb({
   size = 240,
-  color = "#b95536",
+  color = "#1A73F2",
   className,
   style,
   ...props
