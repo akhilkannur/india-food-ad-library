@@ -108,6 +108,17 @@ export async function getApprovedAds(): Promise<Ad[]> {
   }
 }
 
+export async function getApprovedAd(id: string): Promise<Ad | null> {
+  if (!hasDatabase) {
+    return demoAds.find((ad) => ad.id === id && ad.status === "approved") || null;
+  }
+
+  const rows = await supabaseFetch<Ad[]>(
+    `ads?select=*,brand:brands(*)&id=eq.${encodeURIComponent(id)}&status=eq.approved&limit=1`,
+  );
+  return rows[0] || null;
+}
+
 export async function getApprovedAdsPage({
   limit = 36,
   offset = 0,

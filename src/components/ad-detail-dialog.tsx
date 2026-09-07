@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUpRight, X } from "lucide-react";
+import { ArrowDownToLine, ArrowUpRight, X } from "lucide-react";
 import { CreativePreview } from "@/components/creative-preview";
 import { SidePanel } from "@/components/ui/side-panel";
 import type { Ad } from "@/lib/types";
@@ -92,6 +92,17 @@ export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; 
               <a className="button button--primary" href={ad.source_url} target="_blank" rel="noreferrer">
                 View original ad <ArrowUpRight aria-hidden="true" size={15} strokeWidth={1.8} />
               </a>
+              {(ad.creative_url || ad.thumbnail_url) && (
+                <a
+                  className="button button--download"
+                  href={`/api/ads/${encodeURIComponent(ad.id)}/download`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Download ${ad.brand.name} ad creative`}
+                >
+                  <ArrowDownToLine aria-hidden="true" size={15} strokeWidth={1.8} /> Download
+                </a>
+              )}
               <button className="button" type="button" onClick={requestClose}>Back to library</button>
             </div>
             <aside className="ad-dialog__lisn-cta">
