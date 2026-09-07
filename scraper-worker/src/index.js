@@ -21,6 +21,42 @@ const CLASSIFICATION_OPTIONS = {
   language: ["English", "Hindi", "Hinglish", "Other"],
 };
 
+const CATALOG_CATEGORY_MAP = new Map([
+  ["snacks", "Snacks"],
+  ["snacks and sweets", "Snacks"],
+  ["healthy snacks", "Snacks"],
+  ["dry fruits and snacks", "Snacks"],
+  ["protein snacks", "Snacks"],
+  ["kids food", "Snacks"],
+  ["chocolate", "Sweets & chocolate"],
+  ["beverages", "Beverages"],
+  ["coffee", "Beverages"],
+  ["tea", "Beverages"],
+  ["dairy", "Dairy"],
+  ["ice cream", "Dairy"],
+  ["ingredients", "Spices & ingredients"],
+  ["dips and sauces", "Spices & ingredients"],
+  ["staples", "Staples"],
+  ["instant food", "Ready-to-eat & instant"],
+  ["packaged food", "Ready-to-eat & instant"],
+  ["regional food", "Ready-to-eat & instant"],
+  ["fresh and ready to cook", "Ready-to-cook & frozen"],
+  ["frozen food", "Ready-to-cook & frozen"],
+  ["nutrition", "Health & nutrition"],
+  ["healthy food", "Health & nutrition"],
+  ["plant based food", "Health & nutrition"],
+  ["meat and seafood", "Meat & seafood"],
+  ["fresh food", "Fresh food"],
+  ["bakery", "Bakery"],
+]);
+
+const BRAND_CATEGORY_OVERRIDES = new Map([
+  ["britannia", "Snacks"],
+  ["oreo india", "Snacks"],
+  ["parle products", "Snacks"],
+  ["sunfeast", "Snacks"],
+]);
+
 const RUN_MODES = {
   backfill: { rawAds: 80, selectedAds: 60, scrollRounds: 10, maxBrands: 12, concurrency: 2 },
   refresh: { rawAds: 40, selectedAds: 20, scrollRounds: 5, maxBrands: 24, concurrency: 3 },
@@ -49,6 +85,16 @@ function normalize(value) {
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+}
+
+function fixedCategoryHint(ad) {
+  const brandName = normalize(ad.brand?.name);
+  const brandOverride = BRAND_CATEGORY_OVERRIDES.get(brandName);
+  if (brandOverride) return brandOverride;
+  const configuredBrand = BRANDS.find((brand) => normalize(brand.name) === brandName);
+  const catalogCategory = configuredBrand?.category || ad.category;
+  if (CLASSIFICATION_OPTIONS.category.includes(catalogCategory)) return catalogCategory;
+  return CATALOG_CATEGORY_MAP.get(normalize(catalogCategory)) || "Other";
 }
 
 function pageMatchesBrand(pageName, brand) {
@@ -353,9 +399,8 @@ function parseClassificationJson(value) {
 
 function repairClassificationFromAd(ad) {
   const text = [ad.headline, ad.body_copy].filter(Boolean).join(" ");
-  const category = CLASSIFICATION_OPTIONS.category.includes(ad.category) ? ad.category : "Other";
   return {
-    product_category: category,
+    product_category: fixedCategoryHint(ad),
     creative_style: creativeStyleFor({
       headline: ad.headline,
       body: ad.body_copy,
@@ -550,7 +595,7 @@ creative_style: Product shot, Product demo, Recipe/how-to, UGC, Testimonial, Lif
 selling_angle: Taste/craving, Health, Convenience, Value, Ingredients, Tradition/emotion, Social proof
 language: English, Hindi, Hinglish, Other
 Brand: ${ad.brand?.name || "Unknown"}
-Existing product category hint: ${ad.category || "Unknown"}
+Existing product category hint: ${fixedCategoryHint(ad)}
 Headline: ${ad.headline || "None"}
 Copy: ${ad.body_copy || "None"}`;
 
@@ -599,6 +644,10 @@ Copy: ${ad.body_copy || "None"}`;
       labelSource = "schema-repair";
     }
   }
+  if (labels.product_category === "Other") {
+    const categoryHint = fixedCategoryHint(ad);
+    if (categoryHint !== "Other") labels.product_category = categoryHint;
+  }
   return {
     labels: {
       category: labels.product_category,
@@ -617,12 +666,13 @@ function hasClassificationEvidence(ad) {
   return Boolean(ad.creative_url || ad.thumbnail_url || ad.headline || ad.body_copy || ad.category);
 }
 
-async function classifyAds(env, limit, offset, write, status = "approved") {
+async function classifyAds(env, limit, offset, write, status = "approved", scope = "missing") {
   const statusFilter = ["pending", "approved"].includes(status) ? status : "approved";
   const missingClassification = "or=(category.is.null,creative_style.is.null,selling_angle.is.null,language.is.null)";
+  const classificationFilter = scope === "other" ? "category=eq.Other" : missingClassification;
   const rows = await supabase(
     env,
-    `ads?status=eq.${statusFilter}&${missingClassification}&select=id,source_ad_id,format,language,category,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=submitted_at.desc,id.asc&offset=${offset}&limit=${limit}`,
+    `ads?status=eq.${statusFilter}&${classificationFilter}&select=id,source_ad_id,format,language,category,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=updated_at.desc,id.asc&offset=${offset}&limit=${limit}`,
   );
   const selected = rows.filter(hasClassificationEvidence).slice(0, limit);
 
@@ -678,6 +728,7 @@ async function classifyAds(env, limit, offset, write, status = "approved") {
     attempted: results.length,
     classified: results.filter((item) => !item.error).length,
     offset,
+    scope,
     writes,
     results,
   };
@@ -916,8 +967,9 @@ const worker = {
       const status = ["pending", "approved"].includes(url.searchParams.get("status"))
         ? url.searchParams.get("status")
         : "approved";
+      const scope = url.searchParams.get("scope") === "other" ? "other" : "missing";
       try {
-        return Response.json(await classifyAds(env, limit, offset, true, status));
+        return Response.json(await classifyAds(env, limit, offset, true, status, scope));
       } catch (error) {
         return Response.json({ error: error instanceof Error ? error.message : String(error), writes: 0 }, { status: 500 });
       }

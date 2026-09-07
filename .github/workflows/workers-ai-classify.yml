@@ -19,6 +19,14 @@ on:
         description: "Number of selected ads to skip before this batch"
         required: true
         default: "0"
+      scope:
+        description: "Classify missing labels or revisit Other categories"
+        required: true
+        default: "missing"
+        type: choice
+        options:
+          - missing
+          - other
 
 permissions:
   contents: read
@@ -35,11 +43,12 @@ jobs:
           STATUS: ${{ inputs.status }}
           LIMIT: ${{ inputs.limit }}
           OFFSET: ${{ inputs.offset }}
+          SCOPE: ${{ inputs.scope }}
         run: |
           curl --fail-with-body --silent --show-error --max-time 1800 \
             --request POST \
             --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
-            "$SCRAPER_WORKER_URL/classify?status=$STATUS&limit=$LIMIT&offset=$OFFSET" | tee classification-result.json
+            "$SCRAPER_WORKER_URL/classify?status=$STATUS&limit=$LIMIT&offset=$OFFSET&scope=$SCOPE" | tee classification-result.json
       - name: Verify classification result
         run: |
           node -e 'const report = JSON.parse(require("fs").readFileSync("classification-result.json", "utf8")); if (!report.ok) { console.error(`Classification incomplete: ${report.classified || 0}/${report.attempted || 0} succeeded`); process.exit(1) }'
