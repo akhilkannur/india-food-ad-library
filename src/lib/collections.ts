@@ -35,7 +35,7 @@ const MIN_COLLECTION_SIZE = 3;
 function getCollectionCandidates(ads: Ad[]): CollectionDefinition[] {
   const collections = new Map<string, { name: string; count: number; value: string }>();
 
-  ads.forEach((ad) => {
+  ads.filter((ad) => Boolean(ad.classification_source)).forEach((ad) => {
     COLLECTION_FIELDS.forEach(({ field, label }) => {
       const value = ad[field]?.trim();
       if (!value) return;

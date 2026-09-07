@@ -684,6 +684,7 @@ async function classifyAds(env, limit, offset, write, status = "approved", scope
       try {
         const classification = await classifyWithWorkersAI(env, ad, liveCreative.capture);
         if (write) {
+          const classifiedAt = new Date().toISOString();
           await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
             method: "PATCH",
             headers: { Prefer: "return=minimal" },
@@ -692,7 +693,9 @@ async function classifyAds(env, limit, offset, write, status = "approved", scope
               creative_style: classification.labels.creative_style,
               selling_angle: classification.labels.selling_angle,
               language: classification.labels.language,
-              updated_at: new Date().toISOString(),
+              classification_source: classification.label_source,
+              classified_at: classifiedAt,
+              updated_at: classifiedAt,
             }),
           });
           writes += 1;
