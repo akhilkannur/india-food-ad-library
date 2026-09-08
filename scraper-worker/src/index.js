@@ -7,7 +7,7 @@ const MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN = 25;
 const SCHEDULED_BATCH_SIZE = 24;
 const WEEKLY_CRONS = [
   "30 0 * * SUN", "0 1 * * SUN", "30 1 * * SUN", "0 2 * * SUN",
-  "30 2 * * SUN", "0 3 * * SUN", "30 3 * * SUN",
+  "30 2 * * SUN", "0 3 * * SUN", "30 3 * * SUN", "0 4 * * SUN",
 ];
 
 const CLASSIFICATION_OPTIONS = {

@@ -1,6 +1,6 @@
 // Curated Indian packaged-food and DTC brands. Restaurant chains and legacy staples
 // are intentionally excluded so the library stays useful for consumer-brand research.
-// Deployed catalogue revision: 2026-09-05.
+// Deployed catalogue revision: 2026-09-08.
 export const BRANDS = [
   { name: "Amul", slug: "amul", category: "Dairy", query: "Amul", aliases: ["amul"] },
   { name: "Haldiram's", slug: "haldirams", category: "Snacks & Sweets", query: "Haldiram's", aliases: ["haldiram"] },
@@ -170,4 +170,28 @@ export const BRANDS = [
   { name: "Naagin", slug: "naagin", category: "Dips & Sauces", query: "Naagin", aliases: ["naagin"] },
   { name: "Barosi", slug: "barosi", category: "Dairy", query: "Barosi", aliases: ["barosi"] },
   { name: "Blue Tea", slug: "blue-tea", category: "Tea", query: "Blue Tea", aliases: ["blue tea"] },
+  { name: "Green Snack Co", slug: "green-snack-co", category: "Healthy Snacks", query: "Green Snack Co", aliases: ["green snack co", "green snack"] },
+  { name: "MadMix", slug: "madmix", category: "Healthy Snacks", query: "MadMix Foods", aliases: ["madmix", "eat madmix"] },
+  { name: "Munchilicious", slug: "munchilicious", category: "Healthy Snacks", query: "Munchilicious", aliases: ["munchilicious"] },
+  { name: "Sorich Organics", slug: "sorich-organics", category: "Healthy Snacks", query: "Sorich Organics", aliases: ["sorich organics", "sorich"] },
+  { name: "Makino", slug: "makino", category: "Snacks", query: "Makino Foods", aliases: ["makino", "makino foods"] },
+  { name: "PatilKaki", slug: "patilkaki", category: "Snacks & Sweets", query: "PatilKaki", aliases: ["patilkaki", "patil kaki"] },
+  { name: "Indian Snack House", slug: "indian-snack-house", category: "Snacks & Sweets", query: "Indian Snack House", aliases: ["indian snack house"] },
+  { name: "Skippi Ice Pops", slug: "skippi-ice-pops", category: "Ice Cream", query: "Skippi Ice Pops", aliases: ["skippi ice pops", "skippi"] },
+  { name: "Tiggle", slug: "tiggle", category: "Snacks & Sweets", query: "Tiggle Chocolate", aliases: ["tiggle"] },
+  { name: "TeaFit", slug: "teafit", category: "Tea", query: "TeaFit India", aliases: ["teafit", "tea fit"] },
+  { name: "Toyo Kombucha", slug: "toyo-kombucha", category: "Beverages", query: "Toyo Kombucha", aliases: ["toyo kombucha"] },
+  { name: "Sepoy & Co", slug: "sepoy-and-co", category: "Beverages", query: "Sepoy & Co", aliases: ["sepoy and co", "sepoy"] },
+  { name: "SBOOCH", slug: "sbooch", category: "Beverages", query: "SBOOCH Kombucha", aliases: ["sbooch"] },
+  { name: "Local Ferment Co", slug: "local-ferment-co", category: "Beverages", query: "Local Ferment Co", aliases: ["local ferment co", "local ferment"] },
+  { name: "Tribe Kombucha", slug: "tribe-kombucha", category: "Beverages", query: "Tribe Kombucha", aliases: ["tribe kombucha"] },
+  { name: "Impulse Coffees", slug: "impulse-coffees", category: "Coffee", query: "Impulse Coffees", aliases: ["impulse coffees", "impulse coffee"] },
+  { name: "Hugg", slug: "hugg", category: "Beverages", query: "Hugg Beverages", aliases: ["hugg beverages", "hugg"] },
+  { name: "Namhya Foods", slug: "namhya-foods", category: "Nutrition", query: "Namhya Foods", aliases: ["namhya foods", "namhya"] },
+  { name: "The Good Bug", slug: "the-good-bug", category: "Nutrition", query: "The Good Bug", aliases: ["the good bug", "good bug"] },
+  { name: "Cosmix", slug: "cosmix", category: "Nutrition", query: "Cosmix Wellness", aliases: ["cosmix"] },
+  { name: "What's Up Wellness", slug: "whats-up-wellness", category: "Nutrition", query: "What's Up Wellness", aliases: ["whats up wellness", "whatsup wellness"] },
+  { name: "Better Nutrition", slug: "better-nutrition", category: "Staples", query: "Better Nutrition India", aliases: ["better nutrition"] },
+  { name: "Urban Platter", slug: "urban-platter", category: "Ingredients", query: "Urban Platter", aliases: ["urban platter"] },
+  { name: "Troovy", slug: "troovy", category: "Kids Food", query: "Troovy", aliases: ["troovy"] },
 ];

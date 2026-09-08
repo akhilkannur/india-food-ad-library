@@ -1,124 +1,1538 @@
 [
-  { "name": "Amul", "slug": "amul", "category": "Dairy", "queries": ["Amul"] },
-  { "name": "Haldiram's", "slug": "haldirams", "category": "Snacks & Sweets", "queries": ["Haldiram's"] },
-  { "name": "Bikaji", "slug": "bikaji", "category": "Snacks & Sweets", "queries": ["Bikaji Foods"] },
-  { "name": "Paper Boat", "slug": "paper-boat", "category": "Beverages", "queries": ["Paper Boat Drinks"] },
-  { "name": "Epigamia", "slug": "epigamia", "category": "Dairy", "queries": ["Epigamia"] },
-  { "name": "The Whole Truth", "slug": "the-whole-truth", "category": "Healthy Snacks", "queries": ["The Whole Truth Foods"] },
-  { "name": "Yoga Bar", "slug": "yoga-bar", "category": "Healthy Snacks", "queries": ["Yoga Bar India"] },
-  { "name": "Slurrp Farm", "slug": "slurrp-farm", "category": "Kids Food", "queries": ["Slurrp Farm"] },
-  { "name": "Open Secret", "slug": "open-secret", "category": "Healthy Snacks", "queries": ["Open Secret Snacks"] },
-  { "name": "Happilo", "slug": "happilo", "category": "Dry Fruits & Snacks", "queries": ["Happilo"] },
-  { "name": "RiteBite Max Protein", "slug": "ritebite-max-protein", "category": "Protein Snacks", "queries": ["RiteBite Max Protein"] },
-  { "name": "Licious", "slug": "licious", "category": "Meat & Seafood", "queries": ["Licious India"] },
-  { "name": "Wingreens Farms", "slug": "wingreens-farms", "category": "Dips & Sauces", "queries": ["Wingreens Farms"] },
-  { "name": "Veeba", "slug": "veeba", "category": "Dips & Sauces", "queries": ["Veeba Foods"] },
-  { "name": "Ching's Secret", "slug": "chings-secret", "category": "Instant Food", "queries": ["Ching's Secret"] },
-  { "name": "MTR Foods", "slug": "mtr-foods", "category": "Packaged Food", "queries": ["MTR Foods"] },
-  { "name": "iD Fresh Food", "slug": "id-fresh-food", "category": "Fresh & Ready-to-Cook", "queries": ["iD Fresh Food"] },
-  { "name": "Cornitos", "slug": "cornitos", "category": "Snacks", "queries": ["Cornitos"] },
-  { "name": "Country Delight", "slug": "country-delight", "category": "Dairy", "queries": ["Country Delight"] },
-  { "name": "Naturals Ice Cream", "slug": "naturals-ice-cream", "category": "Ice Cream", "queries": ["Naturals Ice Cream"] },
-  { "name": "Snackible", "slug": "snackible", "category": "Healthy Snacks", "queries": ["Snackible"] },
-  { "name": "Nourish Organics", "slug": "nourish-organics", "category": "Healthy Snacks", "queries": ["Nourish Organics"] },
-  { "name": "Eat Better", "slug": "eat-better", "category": "Healthy Snacks", "queries": ["Eat Better Snacks"] },
-  { "name": "Raw Pressery", "slug": "raw-pressery", "category": "Beverages", "queries": ["Raw Pressery"] },
-  { "name": "Lahori", "slug": "lahori", "category": "Beverages", "queries": ["Lahori Drinks"] },
-  { "name": "FreshToHome", "slug": "freshtohome", "category": "Meat & Seafood", "queries": ["FreshToHome"] },
-  { "name": "Farmley", "slug": "farmley", "category": "Dry Fruits & Snacks", "queries": ["Farmley"] },
-  { "name": "TagZ Foods", "slug": "tagz-foods", "category": "Healthy Snacks", "queries": ["TagZ Foods"] },
-  { "name": "4700BC Popcorn", "slug": "4700bc-popcorn", "category": "Snacks", "queries": ["4700BC Popcorn"] },
-  { "name": "Anveshan", "slug": "anveshan", "category": "Staples", "queries": ["Anveshan"] },
-  { "name": "Aazol", "slug": "aazol", "category": "Regional Food", "queries": ["Aazol"] },
-  { "name": "The Gourmet Jar", "slug": "the-gourmet-jar", "category": "Dips & Sauces", "queries": ["The Gourmet Jar"] },
-  { "name": "Sprig", "slug": "sprig", "category": "Ingredients", "queries": ["Sprig Foods India"] },
-  { "name": "Bombay Sweet Shop", "slug": "bombay-sweet-shop", "category": "Snacks & Sweets", "queries": ["Bombay Sweet Shop"] },
-  { "name": "The Baker's Dozen", "slug": "the-bakers-dozen", "category": "Bakery", "queries": ["The Baker's Dozen India"] },
-  { "name": "Blue Tokai Coffee", "slug": "blue-tokai", "category": "Coffee", "queries": ["Blue Tokai Coffee"] },
-  { "name": "Sleepy Owl Coffee", "slug": "sleepy-owl", "category": "Coffee", "queries": ["Sleepy Owl Coffee"] },
-  { "name": "Rage Coffee", "slug": "rage-coffee", "category": "Coffee", "queries": ["Rage Coffee"] },
-  { "name": "Country Bean", "slug": "country-bean", "category": "Coffee", "queries": ["Country Bean Coffee"] },
-  { "name": "Bevzilla", "slug": "bevzilla", "category": "Beverages", "queries": ["Bevzilla"] },
-  { "name": "Jimmy's Cocktails", "slug": "jimmys-cocktails", "category": "Beverages", "queries": ["Jimmy's Cocktails"] },
-  { "name": "Svami", "slug": "svami", "category": "Beverages", "queries": ["Svami Drinks"] },
-  { "name": "Pluckk", "slug": "pluckk", "category": "Fresh Food", "queries": ["Pluckk"] },
-  { "name": "Akshayakalpa Organic", "slug": "akshayakalpa-organic", "category": "Dairy", "queries": ["Akshayakalpa Organic"] },
-  { "name": "Wellbeing Nutrition", "slug": "wellbeing-nutrition", "category": "Nutrition", "queries": ["Wellbeing Nutrition"] },
-  { "name": "Oziva", "slug": "oziva", "category": "Nutrition", "queries": ["Oziva"] },
-  { "name": "The Health Factory", "slug": "the-health-factory", "category": "Bakery", "queries": ["The Health Factory"] },
-  { "name": "Go Desi", "slug": "go-desi", "category": "Snacks", "queries": ["Go Desi Snacks"] },
-  { "name": "Nourish You", "slug": "nourish-you", "category": "Healthy Snacks", "queries": ["Nourish You"] },
-  { "name": "Fit & Flex", "slug": "fit-and-flex", "category": "Healthy Snacks", "queries": ["Fit & Flex"] },
-  { "name": "Masala Tokri", "slug": "masala-tokri", "category": "Ingredients", "queries": ["Masala Tokri"] },
-  { "name": "The Better Flour", "slug": "the-better-flour", "category": "Staples", "queries": ["The Better Flour"] },
-  { "name": "Millet Amma", "slug": "millet-amma", "category": "Packaged Food", "queries": ["Millet Amma"] },
-  { "name": "Organic Tattva", "slug": "organic-tattva", "category": "Staples", "queries": ["Organic Tattva"] },
-  { "name": "24 Mantra Organic", "slug": "24-mantra-organic", "category": "Staples", "queries": ["24 Mantra Organic"] },
-  { "name": "Smoor Chocolates", "slug": "smoor", "category": "Snacks & Sweets", "queries": ["Smoor Chocolates"] },
-  { "name": "Mason & Co", "slug": "mason-and-co", "category": "Snacks & Sweets", "queries": ["Mason & Co Chocolate"] },
-  { "name": "Paul and Mike", "slug": "paul-and-mike", "category": "Snacks & Sweets", "queries": ["Paul and Mike Chocolate"] },
-  { "name": "Manam Chocolate", "slug": "manam-chocolate", "category": "Snacks & Sweets", "queries": ["Manam Chocolate"] },
-  { "name": "Araku Coffee", "slug": "araku-coffee", "category": "Coffee", "queries": ["Araku Coffee"] },
-  { "name": "Third Wave Coffee", "slug": "third-wave-coffee", "category": "Coffee", "queries": ["Third Wave Coffee"] },
-  { "name": "Beanly Coffee", "slug": "beanly-coffee", "category": "Coffee", "queries": ["Beanly Coffee"] },
-  { "name": "Goodmylk", "slug": "goodmylk", "category": "Dairy", "queries": ["Goodmylk"] },
-  { "name": "Alt Co", "slug": "alt-co", "category": "Dairy", "queries": ["Alt Co India"] },
-  { "name": "Grabenord", "slug": "grabenord", "category": "Dairy", "queries": ["Grabenord"] },
-  { "name": "Let's Try", "slug": "lets-try", "category": "Snacks", "queries": ["Let's Try Snacks"] },
-  { "name": "Sweet Karam Coffee", "slug": "sweet-karam-coffee", "category": "Coffee", "queries": ["Sweet Karam Coffee"] },
-  { "name": "VS Mani & Co", "slug": "vs-mani", "category": "Snacks", "queries": ["VS Mani & Co"] },
-  { "name": "Subko Coffee", "slug": "subko-coffee", "category": "Coffee", "queries": ["Subko Coffee"] },
-  { "name": "MasterChow", "slug": "masterchow", "category": "Dips & Sauces", "queries": ["MasterChow"] },
-  { "name": "NoCap Foods", "slug": "nocap-foods", "category": "Healthy Snacks", "queries": ["NoCap Foods"] },
-  { "name": "Two Brothers Organic Farms", "slug": "two-brothers-organic-farms", "category": "Staples", "queries": ["Two Brothers Organic Farms"] },
-  { "name": "Troo Good", "slug": "troo-good", "category": "Healthy Snacks", "queries": ["Troo Good"] },
-  { "name": "Yu", "slug": "yu", "category": "Packaged Food", "queries": ["Yu Foodlabs"] },
-  { "name": "Sorrentina", "slug": "sorrentina", "category": "Packaged Food", "queries": ["Sorrentina"] },
-  { "name": "Wakao Foods", "slug": "wakao", "category": "Plant-based Food", "queries": ["Wakao Foods"] },
-  { "name": "The Divine Foods", "slug": "the-divine-foods", "category": "Healthy Food", "queries": ["The Divine Foods"] },
-  { "name": "Storia Foods", "slug": "storia", "category": "Beverages", "queries": ["Storia Foods"] },
-  { "name": "VAHDAM India", "slug": "vahdam-india", "category": "Tea", "queries": ["VAHDAM India"] },
-  { "name": "Tea Trunk", "slug": "tea-trunk", "category": "Tea", "queries": ["Tea Trunk"] },
-  { "name": "TGL Co.", "slug": "tgl-co", "category": "Tea", "queries": ["TGL Co"] },
-  { "name": "Teabox", "slug": "teabox", "category": "Tea", "queries": ["Teabox"] },
-  { "name": "SLAY Coffee", "slug": "slay-coffee", "category": "Coffee", "queries": ["SLAY Coffee"] },
-  { "name": "The Flying Squirrel", "slug": "the-flying-squirrel", "category": "Coffee", "queries": ["The Flying Squirrel Coffee"] },
-  { "name": "Dope Coffee Roasters", "slug": "dope-coffee", "category": "Coffee", "queries": ["Dope Coffee Roasters"] },
-  { "name": "Natureland Organics", "slug": "natureland-organics", "category": "Staples", "queries": ["Natureland Organics"] },
-  { "name": "Pascati", "slug": "pascati", "category": "Chocolate", "queries": ["Pascati"] },
-  { "name": "La Folie", "slug": "la-folie", "category": "Chocolate", "queries": ["La Folie Chocolate"] },
-  { "name": "Ether Atelier", "slug": "ether-atelier", "category": "Chocolate", "queries": ["Ether Atelier"] },
-  { "name": "NOTO Ice Cream", "slug": "noto-ice-cream", "category": "Ice Cream", "queries": ["NOTO Ice Cream"] },
-  { "name": "Go Zero", "slug": "go-zero", "category": "Ice Cream", "queries": ["Go Zero Ice Cream"] },
-  { "name": "Bombucha", "slug": "bombucha", "category": "Beverages", "queries": ["Bombucha"] },
-  { "name": "Bhu Kombucha", "slug": "bhu-kombucha", "category": "Beverages", "queries": ["Bhu Kombucha"] },
-  { "name": "Zissto", "slug": "zissto", "category": "Dips & Sauces", "queries": ["Zissto"] },
-  { "name": "Sirimiri", "slug": "sirimiri", "category": "Healthy Snacks", "queries": ["Sirimiri Foods"] },
-  { "name": "Snack Amor", "slug": "snack-amor", "category": "Snacks", "queries": ["Snack Amor"] },
-  { "name": "Mr. Makhana", "slug": "mr-makhana", "category": "Snacks", "queries": ["Mr Makhana"] },
-  { "name": "The Healthy Binge", "slug": "the-healthy-binge", "category": "Healthy Snacks", "queries": ["The Healthy Binge"] },
-  { "name": "LO Foods", "slug": "lo-foods", "category": "Healthy Food", "queries": ["LO Foods"] },
-  { "name": "SuperYou", "slug": "superyou", "category": "Healthy Snacks", "queries": ["SuperYou"] },
-  { "name": "Milk Mantra", "slug": "milk-mantra", "category": "Dairy", "queries": ["Milk Mantra"] },
-  { "name": "Sid's Farm", "slug": "sids-farm", "category": "Dairy", "queries": ["Sid's Farm"] },
-  { "name": "Doodhvale Farms", "slug": "doodhvale-farms", "category": "Dairy", "queries": ["Doodhvale Farms"] },
-  { "name": "OneGood", "slug": "onegood", "category": "Plant-based Food", "queries": ["OneGood"] },
-  { "name": "Aadvik Foods", "slug": "aadvik", "category": "Dairy", "queries": ["Aadvik Foods"] },
-  { "name": "Tulum Coffee", "slug": "tulum-coffee", "category": "Coffee", "queries": ["Tulum Coffee"] },
-  { "name": "Tea Origin", "slug": "tea-origin", "category": "Tea", "queries": ["Tea Origin"] },
-  { "name": "Goodwyn Tea", "slug": "goodwyn-tea", "category": "Tea", "queries": ["Goodwyn Tea"] },
-  { "name": "KC Roasters", "slug": "kc-roasters", "category": "Coffee", "queries": ["KC Roasters"] },
-  { "name": "Farmery", "slug": "farmery", "category": "Healthy Food", "queries": ["Farmery"] },
-  { "name": "Nature's Box", "slug": "natures-box", "category": "Healthy Snacks", "queries": ["Nature's Box"] },
-  { "name": "Ketofy", "slug": "ketofy", "category": "Healthy Snacks", "queries": ["Ketofy"] },
-  { "name": "Pyberry", "slug": "pyberry", "category": "Healthy Snacks", "queries": ["Pyberry"] },
-  { "name": "Eat Anytime", "slug": "eat-anytime", "category": "Healthy Snacks", "queries": ["Eat Anytime"] },
-  { "name": "Cocotrail", "slug": "cocotrail", "category": "Snacks", "queries": ["Cocotrail"] },
-  { "name": "Nutty Yogi", "slug": "nutty-yogi", "category": "Healthy Snacks", "queries": ["Nutty Yogi"] },
-  { "name": "Healthy Master", "slug": "healthy-master", "category": "Healthy Snacks", "queries": ["Healthy Master"] },
-  { "name": "WickedGüd", "slug": "wicked-gud", "category": "Frozen Food", "queries": ["WickedGüd"] },
-  { "name": "ZOFF", "slug": "zoff", "category": "Ingredients", "queries": ["ZOFF"] },
-  { "name": "Naagin", "slug": "naagin", "category": "Dips & Sauces", "queries": ["Naagin"] },
-  { "name": "Barosi", "slug": "barosi", "category": "Dairy", "queries": ["Barosi"] },
-  { "name": "Blue Tea", "slug": "blue-tea", "category": "Tea", "queries": ["Blue Tea"] }
+  {
+    "name": "Amul",
+    "slug": "amul",
+    "category": "Dairy",
+    "queries": [
+      "Amul"
+    ]
+  },
+  {
+    "name": "Haldiram's",
+    "slug": "haldirams",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Haldiram's"
+    ]
+  },
+  {
+    "name": "Bikaji",
+    "slug": "bikaji",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Bikaji Foods"
+    ]
+  },
+  {
+    "name": "Paper Boat",
+    "slug": "paper-boat",
+    "category": "Beverages",
+    "queries": [
+      "Paper Boat Drinks"
+    ]
+  },
+  {
+    "name": "Epigamia",
+    "slug": "epigamia",
+    "category": "Dairy",
+    "queries": [
+      "Epigamia"
+    ]
+  },
+  {
+    "name": "The Whole Truth",
+    "slug": "the-whole-truth",
+    "category": "Healthy Snacks",
+    "queries": [
+      "The Whole Truth Foods"
+    ]
+  },
+  {
+    "name": "Yoga Bar",
+    "slug": "yoga-bar",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Yoga Bar India"
+    ]
+  },
+  {
+    "name": "Slurrp Farm",
+    "slug": "slurrp-farm",
+    "category": "Kids Food",
+    "queries": [
+      "Slurrp Farm"
+    ]
+  },
+  {
+    "name": "Open Secret",
+    "slug": "open-secret",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Open Secret Snacks"
+    ]
+  },
+  {
+    "name": "Happilo",
+    "slug": "happilo",
+    "category": "Dry Fruits & Snacks",
+    "queries": [
+      "Happilo"
+    ]
+  },
+  {
+    "name": "RiteBite Max Protein",
+    "slug": "ritebite-max-protein",
+    "category": "Protein Snacks",
+    "queries": [
+      "RiteBite Max Protein"
+    ]
+  },
+  {
+    "name": "Licious",
+    "slug": "licious",
+    "category": "Meat & Seafood",
+    "queries": [
+      "Licious India"
+    ]
+  },
+  {
+    "name": "Wingreens Farms",
+    "slug": "wingreens-farms",
+    "category": "Dips & Sauces",
+    "queries": [
+      "Wingreens Farms"
+    ]
+  },
+  {
+    "name": "Veeba",
+    "slug": "veeba",
+    "category": "Dips & Sauces",
+    "queries": [
+      "Veeba Foods"
+    ]
+  },
+  {
+    "name": "Ching's Secret",
+    "slug": "chings-secret",
+    "category": "Instant Food",
+    "queries": [
+      "Ching's Secret"
+    ]
+  },
+  {
+    "name": "MTR Foods",
+    "slug": "mtr-foods",
+    "category": "Packaged Food",
+    "queries": [
+      "MTR Foods"
+    ]
+  },
+  {
+    "name": "iD Fresh Food",
+    "slug": "id-fresh-food",
+    "category": "Fresh & Ready-to-Cook",
+    "queries": [
+      "iD Fresh Food"
+    ]
+  },
+  {
+    "name": "Cornitos",
+    "slug": "cornitos",
+    "category": "Snacks",
+    "queries": [
+      "Cornitos"
+    ]
+  },
+  {
+    "name": "Country Delight",
+    "slug": "country-delight",
+    "category": "Dairy",
+    "queries": [
+      "Country Delight"
+    ]
+  },
+  {
+    "name": "Naturals Ice Cream",
+    "slug": "naturals-ice-cream",
+    "category": "Ice Cream",
+    "queries": [
+      "Naturals Ice Cream"
+    ]
+  },
+  {
+    "name": "Snackible",
+    "slug": "snackible",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Snackible"
+    ]
+  },
+  {
+    "name": "Nourish Organics",
+    "slug": "nourish-organics",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Nourish Organics"
+    ]
+  },
+  {
+    "name": "Eat Better",
+    "slug": "eat-better",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Eat Better Snacks"
+    ]
+  },
+  {
+    "name": "Raw Pressery",
+    "slug": "raw-pressery",
+    "category": "Beverages",
+    "queries": [
+      "Raw Pressery"
+    ]
+  },
+  {
+    "name": "Lahori",
+    "slug": "lahori",
+    "category": "Beverages",
+    "queries": [
+      "Lahori Drinks"
+    ]
+  },
+  {
+    "name": "FreshToHome",
+    "slug": "freshtohome",
+    "category": "Meat & Seafood",
+    "queries": [
+      "FreshToHome"
+    ]
+  },
+  {
+    "name": "Farmley",
+    "slug": "farmley",
+    "category": "Dry Fruits & Snacks",
+    "queries": [
+      "Farmley"
+    ]
+  },
+  {
+    "name": "TagZ Foods",
+    "slug": "tagz-foods",
+    "category": "Healthy Snacks",
+    "queries": [
+      "TagZ Foods"
+    ]
+  },
+  {
+    "name": "4700BC Popcorn",
+    "slug": "4700bc-popcorn",
+    "category": "Snacks",
+    "queries": [
+      "4700BC Popcorn"
+    ]
+  },
+  {
+    "name": "Anveshan",
+    "slug": "anveshan",
+    "category": "Staples",
+    "queries": [
+      "Anveshan"
+    ]
+  },
+  {
+    "name": "Aazol",
+    "slug": "aazol",
+    "category": "Regional Food",
+    "queries": [
+      "Aazol"
+    ]
+  },
+  {
+    "name": "The Gourmet Jar",
+    "slug": "the-gourmet-jar",
+    "category": "Dips & Sauces",
+    "queries": [
+      "The Gourmet Jar"
+    ]
+  },
+  {
+    "name": "Sprig",
+    "slug": "sprig",
+    "category": "Ingredients",
+    "queries": [
+      "Sprig Foods India"
+    ]
+  },
+  {
+    "name": "Bombay Sweet Shop",
+    "slug": "bombay-sweet-shop",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Bombay Sweet Shop"
+    ]
+  },
+  {
+    "name": "The Baker's Dozen",
+    "slug": "the-bakers-dozen",
+    "category": "Bakery",
+    "queries": [
+      "The Baker's Dozen India"
+    ]
+  },
+  {
+    "name": "Blue Tokai Coffee",
+    "slug": "blue-tokai",
+    "category": "Coffee",
+    "queries": [
+      "Blue Tokai Coffee"
+    ]
+  },
+  {
+    "name": "Sleepy Owl Coffee",
+    "slug": "sleepy-owl",
+    "category": "Coffee",
+    "queries": [
+      "Sleepy Owl Coffee"
+    ]
+  },
+  {
+    "name": "Rage Coffee",
+    "slug": "rage-coffee",
+    "category": "Coffee",
+    "queries": [
+      "Rage Coffee"
+    ]
+  },
+  {
+    "name": "Country Bean",
+    "slug": "country-bean",
+    "category": "Coffee",
+    "queries": [
+      "Country Bean Coffee"
+    ]
+  },
+  {
+    "name": "Bevzilla",
+    "slug": "bevzilla",
+    "category": "Beverages",
+    "queries": [
+      "Bevzilla"
+    ]
+  },
+  {
+    "name": "Jimmy's Cocktails",
+    "slug": "jimmys-cocktails",
+    "category": "Beverages",
+    "queries": [
+      "Jimmy's Cocktails"
+    ]
+  },
+  {
+    "name": "Svami",
+    "slug": "svami",
+    "category": "Beverages",
+    "queries": [
+      "Svami Drinks"
+    ]
+  },
+  {
+    "name": "Pluckk",
+    "slug": "pluckk",
+    "category": "Fresh Food",
+    "queries": [
+      "Pluckk"
+    ]
+  },
+  {
+    "name": "Akshayakalpa Organic",
+    "slug": "akshayakalpa-organic",
+    "category": "Dairy",
+    "queries": [
+      "Akshayakalpa Organic"
+    ]
+  },
+  {
+    "name": "Wellbeing Nutrition",
+    "slug": "wellbeing-nutrition",
+    "category": "Nutrition",
+    "queries": [
+      "Wellbeing Nutrition"
+    ]
+  },
+  {
+    "name": "Oziva",
+    "slug": "oziva",
+    "category": "Nutrition",
+    "queries": [
+      "Oziva"
+    ]
+  },
+  {
+    "name": "The Health Factory",
+    "slug": "the-health-factory",
+    "category": "Bakery",
+    "queries": [
+      "The Health Factory"
+    ]
+  },
+  {
+    "name": "Go Desi",
+    "slug": "go-desi",
+    "category": "Snacks",
+    "queries": [
+      "Go Desi Snacks"
+    ]
+  },
+  {
+    "name": "Nourish You",
+    "slug": "nourish-you",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Nourish You"
+    ]
+  },
+  {
+    "name": "Fit & Flex",
+    "slug": "fit-and-flex",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Fit & Flex"
+    ]
+  },
+  {
+    "name": "Masala Tokri",
+    "slug": "masala-tokri",
+    "category": "Ingredients",
+    "queries": [
+      "Masala Tokri"
+    ]
+  },
+  {
+    "name": "The Better Flour",
+    "slug": "the-better-flour",
+    "category": "Staples",
+    "queries": [
+      "The Better Flour"
+    ]
+  },
+  {
+    "name": "Millet Amma",
+    "slug": "millet-amma",
+    "category": "Packaged Food",
+    "queries": [
+      "Millet Amma"
+    ]
+  },
+  {
+    "name": "Organic Tattva",
+    "slug": "organic-tattva",
+    "category": "Staples",
+    "queries": [
+      "Organic Tattva"
+    ]
+  },
+  {
+    "name": "24 Mantra Organic",
+    "slug": "24-mantra-organic",
+    "category": "Staples",
+    "queries": [
+      "24 Mantra Organic"
+    ]
+  },
+  {
+    "name": "Smoor Chocolates",
+    "slug": "smoor",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Smoor Chocolates"
+    ]
+  },
+  {
+    "name": "Mason & Co",
+    "slug": "mason-and-co",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Mason & Co Chocolate"
+    ]
+  },
+  {
+    "name": "Paul and Mike",
+    "slug": "paul-and-mike",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Paul and Mike Chocolate"
+    ]
+  },
+  {
+    "name": "Manam Chocolate",
+    "slug": "manam-chocolate",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Manam Chocolate"
+    ]
+  },
+  {
+    "name": "Araku Coffee",
+    "slug": "araku-coffee",
+    "category": "Coffee",
+    "queries": [
+      "Araku Coffee"
+    ]
+  },
+  {
+    "name": "Third Wave Coffee",
+    "slug": "third-wave-coffee",
+    "category": "Coffee",
+    "queries": [
+      "Third Wave Coffee"
+    ]
+  },
+  {
+    "name": "Beanly Coffee",
+    "slug": "beanly-coffee",
+    "category": "Coffee",
+    "queries": [
+      "Beanly Coffee"
+    ]
+  },
+  {
+    "name": "Goodmylk",
+    "slug": "goodmylk",
+    "category": "Dairy",
+    "queries": [
+      "Goodmylk"
+    ]
+  },
+  {
+    "name": "Alt Co",
+    "slug": "alt-co",
+    "category": "Dairy",
+    "queries": [
+      "Alt Co India"
+    ]
+  },
+  {
+    "name": "Grabenord",
+    "slug": "grabenord",
+    "category": "Dairy",
+    "queries": [
+      "Grabenord"
+    ]
+  },
+  {
+    "name": "Let's Try",
+    "slug": "lets-try",
+    "category": "Snacks",
+    "queries": [
+      "Let's Try Snacks"
+    ]
+  },
+  {
+    "name": "Britannia",
+    "slug": "britannia",
+    "category": "Packaged Food",
+    "queries": [
+      "Britannia Industries"
+    ]
+  },
+  {
+    "name": "Parle Products",
+    "slug": "parle-products",
+    "category": "Packaged Food",
+    "queries": [
+      "Parle Products"
+    ]
+  },
+  {
+    "name": "MAGGI",
+    "slug": "maggi",
+    "category": "Instant Food",
+    "queries": [
+      "MAGGI India"
+    ]
+  },
+  {
+    "name": "Sunfeast",
+    "slug": "sunfeast",
+    "category": "Packaged Food",
+    "queries": [
+      "Sunfeast"
+    ]
+  },
+  {
+    "name": "Bingo!",
+    "slug": "bingo",
+    "category": "Snacks",
+    "queries": [
+      "Bingo Snacks India"
+    ]
+  },
+  {
+    "name": "Tata Sampann",
+    "slug": "tata-sampann",
+    "category": "Staples",
+    "queries": [
+      "Tata Sampann"
+    ]
+  },
+  {
+    "name": "Tata Soulfull",
+    "slug": "tata-soulfull",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Tata Soulfull"
+    ]
+  },
+  {
+    "name": "Saffola",
+    "slug": "saffola",
+    "category": "Healthy Food",
+    "queries": [
+      "Saffola"
+    ]
+  },
+  {
+    "name": "Lay's India",
+    "slug": "lays-india",
+    "category": "Snacks",
+    "queries": [
+      "Lay's India"
+    ]
+  },
+  {
+    "name": "Kurkure",
+    "slug": "kurkure",
+    "category": "Snacks",
+    "queries": [
+      "Kurkure India"
+    ]
+  },
+  {
+    "name": "Too Yumm!",
+    "slug": "too-yumm",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Too Yumm"
+    ]
+  },
+  {
+    "name": "Beyond Snack",
+    "slug": "beyond-snack",
+    "category": "Snacks",
+    "queries": [
+      "Beyond Snack"
+    ]
+  },
+  {
+    "name": "Cadbury Dairy Milk",
+    "slug": "cadbury-dairy-milk",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Cadbury Dairy Milk India"
+    ]
+  },
+  {
+    "name": "Oreo India",
+    "slug": "oreo-india",
+    "category": "Packaged Food",
+    "queries": [
+      "Oreo India"
+    ]
+  },
+  {
+    "name": "Coca-Cola India",
+    "slug": "coca-cola-india",
+    "category": "Beverages",
+    "queries": [
+      "Coca-Cola India"
+    ]
+  },
+  {
+    "name": "Pepsi India",
+    "slug": "pepsi-india",
+    "category": "Beverages",
+    "queries": [
+      "Pepsi India"
+    ]
+  },
+  {
+    "name": "Thums Up",
+    "slug": "thums-up",
+    "category": "Beverages",
+    "queries": [
+      "Thums Up India"
+    ]
+  },
+  {
+    "name": "Maaza",
+    "slug": "maaza",
+    "category": "Beverages",
+    "queries": [
+      "Maaza India"
+    ]
+  },
+  {
+    "name": "Real Fruit Power",
+    "slug": "real-fruit-power",
+    "category": "Beverages",
+    "queries": [
+      "Real Fruit Power"
+    ]
+  },
+  {
+    "name": "Tropicana India",
+    "slug": "tropicana-india",
+    "category": "Beverages",
+    "queries": [
+      "Tropicana India"
+    ]
+  },
+  {
+    "name": "Mother Dairy",
+    "slug": "mother-dairy",
+    "category": "Dairy",
+    "queries": [
+      "Mother Dairy"
+    ]
+  },
+  {
+    "name": "Nandini Milk",
+    "slug": "nandini-milk",
+    "category": "Dairy",
+    "queries": [
+      "Nandini Milk"
+    ]
+  },
+  {
+    "name": "Heritage Foods",
+    "slug": "heritage-foods",
+    "category": "Dairy",
+    "queries": [
+      "Heritage Foods"
+    ]
+  },
+  {
+    "name": "Milky Mist",
+    "slug": "milky-mist",
+    "category": "Dairy",
+    "queries": [
+      "Milky Mist"
+    ]
+  },
+  {
+    "name": "Kwality Wall's",
+    "slug": "kwality-walls",
+    "category": "Ice Cream",
+    "queries": [
+      "Kwality Wall's India"
+    ]
+  },
+  {
+    "name": "Havmor Ice Creams",
+    "slug": "havmor",
+    "category": "Ice Cream",
+    "queries": [
+      "Havmor Ice Creams"
+    ]
+  },
+  {
+    "name": "McCain India",
+    "slug": "mccain-india",
+    "category": "Frozen Food",
+    "queries": [
+      "McCain India"
+    ]
+  },
+  {
+    "name": "Prasuma",
+    "slug": "prasuma",
+    "category": "Frozen Food",
+    "queries": [
+      "Prasuma"
+    ]
+  },
+  {
+    "name": "Pintola",
+    "slug": "pintola",
+    "category": "Healthy Food",
+    "queries": [
+      "Pintola"
+    ]
+  },
+  {
+    "name": "Alpino",
+    "slug": "alpino",
+    "category": "Healthy Food",
+    "queries": [
+      "Alpino Foods"
+    ]
+  },
+  {
+    "name": "MyFitness",
+    "slug": "myfitness",
+    "category": "Healthy Food",
+    "queries": [
+      "MyFitness Peanut Butter"
+    ]
+  },
+  {
+    "name": "True Elements",
+    "slug": "true-elements",
+    "category": "Healthy Snacks",
+    "queries": [
+      "True Elements"
+    ]
+  },
+  {
+    "name": "Timios",
+    "slug": "timios",
+    "category": "Kids Food",
+    "queries": [
+      "Timios"
+    ]
+  },
+  {
+    "name": "Early Foods",
+    "slug": "early-foods",
+    "category": "Kids Food",
+    "queries": [
+      "Early Foods"
+    ]
+  },
+  {
+    "name": "Kapiva",
+    "slug": "kapiva",
+    "category": "Nutrition",
+    "queries": [
+      "Kapiva"
+    ]
+  },
+  {
+    "name": "Plix",
+    "slug": "plix",
+    "category": "Nutrition",
+    "queries": [
+      "Plix Life"
+    ]
+  },
+  {
+    "name": "Gits Food",
+    "slug": "gits-food",
+    "category": "Instant Food",
+    "queries": [
+      "Gits Food"
+    ]
+  },
+  {
+    "name": "Aashirvaad",
+    "slug": "aashirvaad",
+    "category": "Staples",
+    "queries": [
+      "Aashirvaad"
+    ]
+  },
+  {
+    "name": "Fortune Foods",
+    "slug": "fortune-foods",
+    "category": "Staples",
+    "queries": [
+      "Fortune Foods"
+    ]
+  },
+  {
+    "name": "Catch Foods",
+    "slug": "catch-foods",
+    "category": "Ingredients",
+    "queries": [
+      "Catch Foods"
+    ]
+  },
+  {
+    "name": "Everest Spices",
+    "slug": "everest-spices",
+    "category": "Ingredients",
+    "queries": [
+      "Everest Spices"
+    ]
+  },
+  {
+    "name": "MDH Spices",
+    "slug": "mdh-spices",
+    "category": "Ingredients",
+    "queries": [
+      "MDH Spices"
+    ]
+  },
+  {
+    "name": "Tata Tea",
+    "slug": "tata-tea",
+    "category": "Tea",
+    "queries": [
+      "Tata Tea"
+    ]
+  },
+  {
+    "name": "Brooke Bond Red Label",
+    "slug": "red-label-tea",
+    "category": "Tea",
+    "queries": [
+      "Brooke Bond Red Label"
+    ]
+  },
+  {
+    "name": "Nescafé India",
+    "slug": "nescafe-india",
+    "category": "Coffee",
+    "queries": [
+      "Nescafe India"
+    ]
+  },
+  {
+    "name": "BRU Coffee",
+    "slug": "bru-coffee",
+    "category": "Coffee",
+    "queries": [
+      "BRU Coffee India"
+    ]
+  },
+  {
+    "name": "Sweet Karam Coffee",
+    "slug": "sweet-karam-coffee",
+    "category": "Coffee",
+    "queries": [
+      "Sweet Karam Coffee"
+    ]
+  },
+  {
+    "name": "VS Mani & Co",
+    "slug": "vs-mani",
+    "category": "Snacks",
+    "queries": [
+      "VS Mani & Co"
+    ]
+  },
+  {
+    "name": "Subko Coffee",
+    "slug": "subko-coffee",
+    "category": "Coffee",
+    "queries": [
+      "Subko Coffee"
+    ]
+  },
+  {
+    "name": "MasterChow",
+    "slug": "masterchow",
+    "category": "Dips & Sauces",
+    "queries": [
+      "MasterChow"
+    ]
+  },
+  {
+    "name": "NoCap Foods",
+    "slug": "nocap-foods",
+    "category": "Healthy Snacks",
+    "queries": [
+      "NoCap Foods"
+    ]
+  },
+  {
+    "name": "Two Brothers Organic Farms",
+    "slug": "two-brothers-organic-farms",
+    "category": "Staples",
+    "queries": [
+      "Two Brothers Organic Farms"
+    ]
+  },
+  {
+    "name": "Troo Good",
+    "slug": "troo-good",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Troo Good"
+    ]
+  },
+  {
+    "name": "Yu",
+    "slug": "yu",
+    "category": "Packaged Food",
+    "queries": [
+      "Yu Foodlabs"
+    ]
+  },
+  {
+    "name": "Sorrentina",
+    "slug": "sorrentina",
+    "category": "Packaged Food",
+    "queries": [
+      "Sorrentina"
+    ]
+  },
+  {
+    "name": "Wakao Foods",
+    "slug": "wakao",
+    "category": "Plant-based Food",
+    "queries": [
+      "Wakao Foods"
+    ]
+  },
+  {
+    "name": "The Divine Foods",
+    "slug": "the-divine-foods",
+    "category": "Healthy Food",
+    "queries": [
+      "The Divine Foods"
+    ]
+  },
+  {
+    "name": "Storia Foods",
+    "slug": "storia",
+    "category": "Beverages",
+    "queries": [
+      "Storia Foods"
+    ]
+  },
+  {
+    "name": "VAHDAM India",
+    "slug": "vahdam-india",
+    "category": "Tea",
+    "queries": [
+      "VAHDAM India"
+    ]
+  },
+  {
+    "name": "Tea Trunk",
+    "slug": "tea-trunk",
+    "category": "Tea",
+    "queries": [
+      "Tea Trunk"
+    ]
+  },
+  {
+    "name": "TGL Co.",
+    "slug": "tgl-co",
+    "category": "Tea",
+    "queries": [
+      "TGL Co"
+    ]
+  },
+  {
+    "name": "Teabox",
+    "slug": "teabox",
+    "category": "Tea",
+    "queries": [
+      "Teabox"
+    ]
+  },
+  {
+    "name": "SLAY Coffee",
+    "slug": "slay-coffee",
+    "category": "Coffee",
+    "queries": [
+      "SLAY Coffee"
+    ]
+  },
+  {
+    "name": "The Flying Squirrel",
+    "slug": "the-flying-squirrel",
+    "category": "Coffee",
+    "queries": [
+      "The Flying Squirrel Coffee"
+    ]
+  },
+  {
+    "name": "Dope Coffee Roasters",
+    "slug": "dope-coffee",
+    "category": "Coffee",
+    "queries": [
+      "Dope Coffee Roasters"
+    ]
+  },
+  {
+    "name": "Natureland Organics",
+    "slug": "natureland-organics",
+    "category": "Staples",
+    "queries": [
+      "Natureland Organics"
+    ]
+  },
+  {
+    "name": "Pascati",
+    "slug": "pascati",
+    "category": "Chocolate",
+    "queries": [
+      "Pascati"
+    ]
+  },
+  {
+    "name": "La Folie",
+    "slug": "la-folie",
+    "category": "Chocolate",
+    "queries": [
+      "La Folie Chocolate"
+    ]
+  },
+  {
+    "name": "Ether Atelier",
+    "slug": "ether-atelier",
+    "category": "Chocolate",
+    "queries": [
+      "Ether Atelier"
+    ]
+  },
+  {
+    "name": "NOTO Ice Cream",
+    "slug": "noto-ice-cream",
+    "category": "Ice Cream",
+    "queries": [
+      "NOTO Ice Cream"
+    ]
+  },
+  {
+    "name": "Go Zero",
+    "slug": "go-zero",
+    "category": "Ice Cream",
+    "queries": [
+      "Go Zero Ice Cream"
+    ]
+  },
+  {
+    "name": "Bombucha",
+    "slug": "bombucha",
+    "category": "Beverages",
+    "queries": [
+      "Bombucha"
+    ]
+  },
+  {
+    "name": "Bhu Kombucha",
+    "slug": "bhu-kombucha",
+    "category": "Beverages",
+    "queries": [
+      "Bhu Kombucha"
+    ]
+  },
+  {
+    "name": "Zissto",
+    "slug": "zissto",
+    "category": "Dips & Sauces",
+    "queries": [
+      "Zissto"
+    ]
+  },
+  {
+    "name": "Sirimiri",
+    "slug": "sirimiri",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Sirimiri Foods"
+    ]
+  },
+  {
+    "name": "Snack Amor",
+    "slug": "snack-amor",
+    "category": "Snacks",
+    "queries": [
+      "Snack Amor"
+    ]
+  },
+  {
+    "name": "Mr. Makhana",
+    "slug": "mr-makhana",
+    "category": "Snacks",
+    "queries": [
+      "Mr Makhana"
+    ]
+  },
+  {
+    "name": "The Healthy Binge",
+    "slug": "the-healthy-binge",
+    "category": "Healthy Snacks",
+    "queries": [
+      "The Healthy Binge"
+    ]
+  },
+  {
+    "name": "LO Foods",
+    "slug": "lo-foods",
+    "category": "Healthy Food",
+    "queries": [
+      "LO Foods"
+    ]
+  },
+  {
+    "name": "SuperYou",
+    "slug": "superyou",
+    "category": "Healthy Snacks",
+    "queries": [
+      "SuperYou"
+    ]
+  },
+  {
+    "name": "Milk Mantra",
+    "slug": "milk-mantra",
+    "category": "Dairy",
+    "queries": [
+      "Milk Mantra"
+    ]
+  },
+  {
+    "name": "Sid's Farm",
+    "slug": "sids-farm",
+    "category": "Dairy",
+    "queries": [
+      "Sid's Farm"
+    ]
+  },
+  {
+    "name": "Doodhvale Farms",
+    "slug": "doodhvale-farms",
+    "category": "Dairy",
+    "queries": [
+      "Doodhvale Farms"
+    ]
+  },
+  {
+    "name": "OneGood",
+    "slug": "onegood",
+    "category": "Plant-based Food",
+    "queries": [
+      "OneGood"
+    ]
+  },
+  {
+    "name": "Aadvik Foods",
+    "slug": "aadvik",
+    "category": "Dairy",
+    "queries": [
+      "Aadvik Foods"
+    ]
+  },
+  {
+    "name": "Tulum Coffee",
+    "slug": "tulum-coffee",
+    "category": "Coffee",
+    "queries": [
+      "Tulum Coffee"
+    ]
+  },
+  {
+    "name": "Tea Origin",
+    "slug": "tea-origin",
+    "category": "Tea",
+    "queries": [
+      "Tea Origin"
+    ]
+  },
+  {
+    "name": "Goodwyn Tea",
+    "slug": "goodwyn-tea",
+    "category": "Tea",
+    "queries": [
+      "Goodwyn Tea"
+    ]
+  },
+  {
+    "name": "KC Roasters",
+    "slug": "kc-roasters",
+    "category": "Coffee",
+    "queries": [
+      "KC Roasters"
+    ]
+  },
+  {
+    "name": "Farmery",
+    "slug": "farmery",
+    "category": "Healthy Food",
+    "queries": [
+      "Farmery"
+    ]
+  },
+  {
+    "name": "Nature's Box",
+    "slug": "natures-box",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Nature's Box"
+    ]
+  },
+  {
+    "name": "Ketofy",
+    "slug": "ketofy",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Ketofy"
+    ]
+  },
+  {
+    "name": "Pyberry",
+    "slug": "pyberry",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Pyberry"
+    ]
+  },
+  {
+    "name": "Eat Anytime",
+    "slug": "eat-anytime",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Eat Anytime"
+    ]
+  },
+  {
+    "name": "Cocotrail",
+    "slug": "cocotrail",
+    "category": "Snacks",
+    "queries": [
+      "Cocotrail"
+    ]
+  },
+  {
+    "name": "Nutty Yogi",
+    "slug": "nutty-yogi",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Nutty Yogi"
+    ]
+  },
+  {
+    "name": "Healthy Master",
+    "slug": "healthy-master",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Healthy Master"
+    ]
+  },
+  {
+    "name": "WickedGüd",
+    "slug": "wicked-gud",
+    "category": "Frozen Food",
+    "queries": [
+      "WickedGüd"
+    ]
+  },
+  {
+    "name": "ZOFF",
+    "slug": "zoff",
+    "category": "Ingredients",
+    "queries": [
+      "ZOFF"
+    ]
+  },
+  {
+    "name": "Naagin",
+    "slug": "naagin",
+    "category": "Dips & Sauces",
+    "queries": [
+      "Naagin"
+    ]
+  },
+  {
+    "name": "Barosi",
+    "slug": "barosi",
+    "category": "Dairy",
+    "queries": [
+      "Barosi"
+    ]
+  },
+  {
+    "name": "Blue Tea",
+    "slug": "blue-tea",
+    "category": "Tea",
+    "queries": [
+      "Blue Tea"
+    ]
+  },
+  {
+    "name": "Green Snack Co",
+    "slug": "green-snack-co",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Green Snack Co"
+    ]
+  },
+  {
+    "name": "MadMix",
+    "slug": "madmix",
+    "category": "Healthy Snacks",
+    "queries": [
+      "MadMix Foods"
+    ]
+  },
+  {
+    "name": "Munchilicious",
+    "slug": "munchilicious",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Munchilicious"
+    ]
+  },
+  {
+    "name": "Sorich Organics",
+    "slug": "sorich-organics",
+    "category": "Healthy Snacks",
+    "queries": [
+      "Sorich Organics"
+    ]
+  },
+  {
+    "name": "Makino",
+    "slug": "makino",
+    "category": "Snacks",
+    "queries": [
+      "Makino Foods"
+    ]
+  },
+  {
+    "name": "PatilKaki",
+    "slug": "patilkaki",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "PatilKaki"
+    ]
+  },
+  {
+    "name": "Indian Snack House",
+    "slug": "indian-snack-house",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Indian Snack House"
+    ]
+  },
+  {
+    "name": "Skippi Ice Pops",
+    "slug": "skippi-ice-pops",
+    "category": "Ice Cream",
+    "queries": [
+      "Skippi Ice Pops"
+    ]
+  },
+  {
+    "name": "Tiggle",
+    "slug": "tiggle",
+    "category": "Snacks & Sweets",
+    "queries": [
+      "Tiggle Chocolate"
+    ]
+  },
+  {
+    "name": "TeaFit",
+    "slug": "teafit",
+    "category": "Tea",
+    "queries": [
+      "TeaFit India"
+    ]
+  },
+  {
+    "name": "Toyo Kombucha",
+    "slug": "toyo-kombucha",
+    "category": "Beverages",
+    "queries": [
+      "Toyo Kombucha"
+    ]
+  },
+  {
+    "name": "Sepoy & Co",
+    "slug": "sepoy-and-co",
+    "category": "Beverages",
+    "queries": [
+      "Sepoy & Co"
+    ]
+  },
+  {
+    "name": "SBOOCH",
+    "slug": "sbooch",
+    "category": "Beverages",
+    "queries": [
+      "SBOOCH Kombucha"
+    ]
+  },
+  {
+    "name": "Local Ferment Co",
+    "slug": "local-ferment-co",
+    "category": "Beverages",
+    "queries": [
+      "Local Ferment Co"
+    ]
+  },
+  {
+    "name": "Tribe Kombucha",
+    "slug": "tribe-kombucha",
+    "category": "Beverages",
+    "queries": [
+      "Tribe Kombucha"
+    ]
+  },
+  {
+    "name": "Impulse Coffees",
+    "slug": "impulse-coffees",
+    "category": "Coffee",
+    "queries": [
+      "Impulse Coffees"
+    ]
+  },
+  {
+    "name": "Hugg",
+    "slug": "hugg",
+    "category": "Beverages",
+    "queries": [
+      "Hugg Beverages"
+    ]
+  },
+  {
+    "name": "Namhya Foods",
+    "slug": "namhya-foods",
+    "category": "Nutrition",
+    "queries": [
+      "Namhya Foods"
+    ]
+  },
+  {
+    "name": "The Good Bug",
+    "slug": "the-good-bug",
+    "category": "Nutrition",
+    "queries": [
+      "The Good Bug"
+    ]
+  },
+  {
+    "name": "Cosmix",
+    "slug": "cosmix",
+    "category": "Nutrition",
+    "queries": [
+      "Cosmix Wellness"
+    ]
+  },
+  {
+    "name": "What's Up Wellness",
+    "slug": "whats-up-wellness",
+    "category": "Nutrition",
+    "queries": [
+      "What's Up Wellness"
+    ]
+  },
+  {
+    "name": "Better Nutrition",
+    "slug": "better-nutrition",
+    "category": "Staples",
+    "queries": [
+      "Better Nutrition India"
+    ]
+  },
+  {
+    "name": "Urban Platter",
+    "slug": "urban-platter",
+    "category": "Ingredients",
+    "queries": [
+      "Urban Platter"
+    ]
+  },
+  {
+    "name": "Troovy",
+    "slug": "troovy",
+    "category": "Kids Food",
+    "queries": [
+      "Troovy"
+    ]
+  }
 ]
