@@ -12,7 +12,7 @@ import { FilterPanel } from "@/components/filter-panel";
 import { ResultsToolbar, type ActiveFilter } from "@/components/results-toolbar";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { getCollectionAds, getCollectionDefinitions } from "@/lib/collections";
+import { getCollectionAds, getCollectionDefinitions, type CollectionPreview } from "@/lib/collections";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import type { Ad } from "@/lib/types";
 import { isVideoCreative, type MediaFilter } from "@/lib/media";
@@ -38,6 +38,7 @@ function getOpenedAdIds() {
 export function LibraryExplorer({
   ads,
   initialTotal,
+  initialCollections,
   demoMode,
   showCollections = true,
   pageTitle,
@@ -45,6 +46,7 @@ export function LibraryExplorer({
 }: {
   ads: Ad[];
   initialTotal?: number;
+  initialCollections?: CollectionPreview[];
   demoMode: boolean;
   showCollections?: boolean;
   pageTitle?: string;
@@ -147,11 +149,12 @@ export function LibraryExplorer({
   }, [category, format, sellingAngle, language, search]);
 
   const collections = useMemo(() => {
+    if (initialCollections) return initialCollections.filter((collection) => collection.ads.length >= 2);
     return getCollectionDefinitions(ads).map((definition) => {
       const matches = getCollectionAds(ads, definition);
       return { ...definition, ads: matches.slice(0, 3) };
     }).filter((collection) => collection.ads.length >= 2);
-  }, [ads]);
+  }, [ads, initialCollections]);
 
   function clearFilters() {
     setMediaFilter("all");
@@ -278,7 +281,7 @@ export function LibraryExplorer({
             onOpenFilters={() => setFiltersOpen(true)}
           />
 
-          {showCollections && collections.length > 0 && (
+          {showCollections && collections.length >= 2 && (
             <section id="collections" className="collections-area" aria-label="Ad format collections">
               <div className="collections-heading">
                 <h2>Formats</h2>

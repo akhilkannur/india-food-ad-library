@@ -1,10 +1,17 @@
 import { LibraryExplorer } from "@/components/library-explorer";
 import { isDemoMode } from "@/lib/config";
-import { getApprovedAdsPage } from "@/lib/data";
+import { getApprovedAds, getApprovedAdsPage } from "@/lib/data";
+import { getCuratedCollections } from "@/lib/collections";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const { ads, total } = await getApprovedAdsPage({ diverse: true });
-  return <LibraryExplorer ads={ads} initialTotal={total} demoMode={isDemoMode} />;
+  const [{ ads, total }, allAds] = await Promise.all([
+    getApprovedAdsPage({ diverse: true }),
+    getApprovedAds(),
+  ]);
+  const initialCollections = getCuratedCollections(allAds);
+  return (
+    <LibraryExplorer ads={ads} initialTotal={total} initialCollections={initialCollections} demoMode={isDemoMode} />
+  );
 }

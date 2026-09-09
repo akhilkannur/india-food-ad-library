@@ -30,7 +30,50 @@ const COLLECTION_FIELDS: Array<{
 ];
 
 const MAX_COLLECTIONS = 6;
-const MIN_COLLECTION_SIZE = 3;
+const MIN_COLLECTION_SIZE = 2;
+
+// Fixed homepage rail: three named creative styles plus an "Others" catch-all
+// for everything else. Smaller styles (Lifestyle, UGC, Testimonial, …) graduate
+// to their own tile by joining CURATED_STYLES once they have a sizable pool.
+const CURATED_STYLES = ["Product demo", "Product shot", "Recipe/how-to"];
+const OTHERS_NAME = "Others";
+
+function styleKey(value: string | null | undefined) {
+  return normalizeCollectionValue(value);
+}
+
+export function curatedDefinitions(): CollectionDefinition[] {
+  const named: CollectionDefinition[] = CURATED_STYLES.map((name) => ({
+    slug: slugifyCollectionName(`creative-style-${name}`),
+    name,
+    field: "creative_style" as const,
+    match: (ad) => styleKey(ad.creative_style) === styleKey(name),
+  }));
+  const others: CollectionDefinition = {
+    slug: slugifyCollectionName("creative-style-others"),
+    name: OTHERS_NAME,
+    field: "creative_style" as const,
+    match: (ad) => !CURATED_STYLES.some((name) => styleKey(ad.creative_style) === styleKey(name)),
+  };
+  return [...named, others];
+}
+
+export type CollectionPreview = {
+  slug: string;
+  name: string;
+  ads: Ad[];
+};
+
+/** Build the homepage rail from AI-classified creative styles. */
+export function getCuratedCollections(ads: Ad[]): CollectionPreview[] {
+  const dynamic = getCollectionCandidates(ads).slice(0, MAX_COLLECTIONS);
+  const pool = dynamic.length > 0 ? dynamic : curatedDefinitions();
+  return pool
+    .map((definition) => ({ ...definition, ads: getCollectionAds(ads, definition) }))
+    .filter((collection) => collection.ads.length >= MIN_COLLECTION_SIZE)
+    .slice(0, MAX_COLLECTIONS)
+    .map(({ slug, name, ads }) => ({ slug, name, ads: ads.slice(0, 3) }));
+}
 
 function getCollectionCandidates(ads: Ad[]): CollectionDefinition[] {
   const collections = new Map<string, { name: string; count: number; value: string }>();
@@ -57,9 +100,17 @@ function getCollectionCandidates(ads: Ad[]): CollectionDefinition[] {
     }));
 }
 
-/** Build a short, classified-ad-format list for the homepage. */
+/** Dynamic AI-classified definitions; falls back to curated styles when nothing is classified yet. */
 export function getCollectionDefinitions(ads: Ad[]): CollectionDefinition[] {
-  return getCollectionCandidates(ads).slice(0, MAX_COLLECTIONS);
+  const dynamic = getCollectionCandidates(ads).slice(0, MAX_COLLECTIONS);
+  if (dynamic.length > 0) {
+    return dynamic.filter(
+      (definition) => getCollectionAds(ads, definition).length >= MIN_COLLECTION_SIZE,
+    );
+  }
+  return curatedDefinitions().filter(
+    (definition) => getCollectionAds(ads, definition).length >= MIN_COLLECTION_SIZE,
+  );
 }
 
 export function diversifyByBrand(items: Ad[]) {
@@ -172,6 +223,9 @@ export function getCollectionAds(ads: Ad[], definition: CollectionDefinition) {
 }
 
 export function getCollectionDefinition(slug: string, ads: Ad[]) {
+  const curated = curatedDefinitions().find((candidate) => candidate.slug === slug);
+  if (curated && getCollectionAds(ads, curated).length >= 2) return curated;
+  // Legacy AI-gated collections (e.g. creative-style-lifestyle) stay reachable.
   const candidates = getCollectionCandidates(ads);
   const definition = candidates.find((candidate) => candidate.slug === slug);
   return definition && getCollectionAds(ads, definition).length >= 2 ? definition : undefined;
