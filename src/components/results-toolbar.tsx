@@ -26,6 +26,7 @@ export function ResultsToolbar({
   onSearchChange,
   onSortChange,
   onOpenFilters,
+  onClearAll,
 }: {
   search: string;
   mediaFilter: MediaFilter;
@@ -37,6 +38,7 @@ export function ResultsToolbar({
   onSearchChange: (value: string) => void;
   onSortChange: (value: "newest" | "oldest") => void;
   onOpenFilters: () => void;
+  onClearAll?: () => void;
 }) {
   return (
     <div className="results-toolbar" role="search" aria-label="Search and filter ads">
@@ -85,6 +87,11 @@ export function ResultsToolbar({
                 {filter.label}<X aria-hidden="true" size={13} />
               </button>
             ))}
+            {activeFilters.length > 1 && onClearAll && (
+              <button type="button" className="active-filters__clear-all" onClick={onClearAll}>
+                Clear all
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -279,12 +279,16 @@ export function LibraryExplorer({
             onSearchChange={setSearch}
             onSortChange={setSortOrder}
             onOpenFilters={() => setFiltersOpen(true)}
+            onClearAll={clearFilters}
           />
 
           {showCollections && collections.length >= 2 && (
             <section id="collections" className="collections-area" aria-label="Ad format collections">
               <div className="collections-heading">
-                <h2>Formats</h2>
+                <div>
+                  <h2>Browse by Format</h2>
+                  <p>Curated creative frameworks, hooks, and styles</p>
+                </div>
               </div>
               <div className="collections-rail" aria-label="Browse ad formats">
                 {collections.map((collection) => (
