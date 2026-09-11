@@ -602,7 +602,7 @@ Creative style definitions, pick the single best fit:
 - Testimonial: a customer quote, review text, star rating or before/after proof as the focus.
 - Lifestyle: people, occasions or settings carry the story; the product sits inside a real moment.
 - Founder story: the founder speaks or the brand story / behind-the-scenes is the focus.
-Choose Product shot only when the creative is primarily a static product display. When people, a setting or an occasion are central, prefer Lifestyle, UGC, Testimonial or Founder story. When preparation or tasting action is central, prefer Product demo or Recipe/how-to.
+Choose Product shot only when the creative is primarily a static product display. Product shot applies to still images only; for video, choose by the action shown (usually Product demo, UGC, Recipe/how-to or Lifestyle). When people, a setting or an occasion are central, prefer Lifestyle, UGC, Testimonial or Founder story. When preparation or tasting action is central, prefer Product demo or Recipe/how-to.
 Brand: ${ad.brand?.name || "Unknown"}
 Existing product category hint: ${fixedCategoryHint(ad)}
 Headline: ${ad.headline || "None"}
