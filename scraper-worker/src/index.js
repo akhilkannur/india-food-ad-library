@@ -628,7 +628,7 @@ Copy: ${ad.body_copy || "None"}`;
       },
     },
     max_tokens: 220,
-    temperature: 0.2,
+    temperature: 0,
   };
   if (media) input.image = `data:${media.mimeType};base64,${base64FromBytes(media.bytes)}`;
 
