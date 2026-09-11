@@ -32,7 +32,7 @@ export type Ad = {
   creative_theme?: string | null;
   creative_style?: string | null;
   selling_angle?: string | null;
-  classification_source?: "workers-ai" | "workers-ai-retry" | "schema-repair" | null;
+  classification_source?: "workers-ai" | "workers-ai-retry" | "schema-repair" | "workers-ai-v2" | "workers-ai-v2-retry" | "schema-repair-v2" | null;
   classified_at?: string | null;
   status: AdStatus;
   started_at?: string | null;

@@ -20,13 +20,14 @@ on:
         required: true
         default: "0"
       scope:
-        description: "Classify missing labels or revisit Other categories"
+        description: "Classify missing labels, revisit Other categories, or review v1 shot/demo labels"
         required: true
         default: "missing"
         type: choice
         options:
           - missing
           - other
+          - review
 
 permissions:
   contents: read

@@ -594,6 +594,15 @@ product_category: Snacks, Sweets & chocolate, Beverages, Dairy, Spices & ingredi
 creative_style: Product shot, Product demo, Recipe/how-to, UGC, Testimonial, Lifestyle, Founder story
 selling_angle: Taste/craving, Health, Convenience, Value, Ingredients, Tradition/emotion, Social proof
 language: English, Hindi, Hinglish, Other
+Creative style definitions, pick the single best fit:
+- Product shot: a static pack or product display with no people and no setting or story (studio, graphic or shelf-style layouts).
+- Product demo: the product shown in use or preparation; pouring, cooking, serving or tasting action.
+- Recipe/how-to: step-by-step cooking, ingredients or method; teaches the viewer to make something.
+- UGC: creator-style selfie, unboxing, taste test or day-in-life footage; informal, phone-shot feel.
+- Testimonial: a customer quote, review text, star rating or before/after proof as the focus.
+- Lifestyle: people, occasions or settings carry the story; the product sits inside a real moment.
+- Founder story: the founder speaks or the brand story / behind-the-scenes is the focus.
+Choose Product shot only when the creative is primarily a static product display. When people, a setting or an occasion are central, prefer Lifestyle, UGC, Testimonial or Founder story. When preparation or tasting action is central, prefer Product demo or Recipe/how-to.
 Brand: ${ad.brand?.name || "Unknown"}
 Existing product category hint: ${fixedCategoryHint(ad)}
 Headline: ${ad.headline || "None"}
@@ -624,7 +633,7 @@ Copy: ${ad.body_copy || "None"}`;
 
   let result = await env.AI.run(WORKERS_AI_MODEL, input);
   let labels;
-  let labelSource = "workers-ai";
+  let labelSource = "workers-ai-v2";
   try {
     labels = parseClassificationJson(result);
   } catch (firstError) {
@@ -638,10 +647,10 @@ Copy: ${ad.body_copy || "None"}`;
     });
     try {
       labels = parseClassificationJson(result);
-      labelSource = "workers-ai-retry";
+      labelSource = "workers-ai-v2-retry";
     } catch (retryError) {
       labels = validateWorkersLabels(repairClassificationFromAd(ad));
-      labelSource = "schema-repair";
+      labelSource = "schema-repair-v2";
     }
   }
   if (labels.product_category === "Other") {
@@ -671,7 +680,12 @@ async function classifyAds(env, limit, offset, write, status = "approved", scope
   // The collector always fills heuristic labels, so null labels alone never match.
   // Include never-AI-classified ads so every record eventually gets a vision pass.
   const missingClassification = "or=(classification_source.is.null,category.is.null,creative_style.is.null,selling_angle.is.null,language.is.null)";
-  const classificationFilter = scope === "other" ? "category=eq.Other" : missingClassification;
+  // One-off review scope: re-run the improved prompt over ads labeled with the
+  // first prompt version that defaulted to Product shot / Product demo.
+  const reviewFilter = `and=(classification_source=in.(workers-ai,workers-ai-retry,schema-repair),creative_style=in.(${encodeURIComponent('"Product shot","Product demo"')}))`;
+  const classificationFilter = scope === "other"
+    ? "category=eq.Other"
+    : scope === "review" ? reviewFilter : missingClassification;
   const rows = await supabase(
     env,
     `ads?status=eq.${statusFilter}&${classificationFilter}&select=id,source_ad_id,format,language,category,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=updated_at.desc,id.asc&offset=${offset}&limit=${limit}`,
@@ -972,7 +986,8 @@ const worker = {
       const status = ["pending", "approved"].includes(url.searchParams.get("status"))
         ? url.searchParams.get("status")
         : "approved";
-      const scope = url.searchParams.get("scope") === "other" ? "other" : "missing";
+      const scopeParam = url.searchParams.get("scope");
+      const scope = scopeParam === "other" || scopeParam === "review" ? scopeParam : "missing";
       try {
         return Response.json(await classifyAds(env, limit, offset, true, status, scope));
       } catch (error) {
