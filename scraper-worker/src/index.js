@@ -16,7 +16,7 @@ const CLASSIFICATION_OPTIONS = {
     "Ready-to-eat & instant", "Ready-to-cook & frozen", "Health & nutrition", "Meat & seafood",
     "Fresh food", "Bakery", "Other",
   ],
-  creative_style: ["Product demo", "Recipe/how-to", "UGC", "Testimonial", "Lifestyle", "Founder story", "Product shot"],
+  creative_style: ["Product shot", "Product demo", "Recipe/how-to", "UGC", "Testimonial", "Lifestyle", "Founder story"],
   selling_angle: ["Taste/craving", "Health", "Convenience", "Value", "Ingredients", "Tradition/emotion", "Social proof"],
   language: ["English", "Hindi", "Hinglish", "Other"],
 };
@@ -589,20 +589,20 @@ async function classifyWithWorkersAI(env, ad, captureLiveCreative) {
   const evidenceInstruction = media
     ? "Use the supplied creative image or video-frame capture and the ad copy together."
     : "The original creative is no longer downloadable. Classify conservatively from the ad copy and existing category hint.";
-  const prompt = `Classify this Indian food advertisement for a creative research library. ${evidenceInstruction} First describe what you see in one or two sentences in a "reason" key, then choose the labels. Return JSON only with exactly these five keys. Choose exactly one value for every label key. Never return multiple values, alternatives, comma-separated labels, explanations, Markdown, or prose outside the reason.
+  const prompt = `Classify this Indian food advertisement for a creative research library. ${evidenceInstruction} Return JSON only with exactly these four keys. Choose exactly one value for every key. Never return multiple values, alternatives, comma-separated labels, explanations, Markdown, or prose.
 product_category: Snacks, Sweets & chocolate, Beverages, Dairy, Spices & ingredients, Staples, Ready-to-eat & instant, Ready-to-cook & frozen, Health & nutrition, Meat & seafood, Fresh food, Bakery, Other
-creative_style: Product demo, Recipe/how-to, UGC, Testimonial, Lifestyle, Founder story, Product shot
+creative_style: Product shot, Product demo, Recipe/how-to, UGC, Testimonial, Lifestyle, Founder story
 selling_angle: Taste/craving, Health, Convenience, Value, Ingredients, Tradition/emotion, Social proof
 language: English, Hindi, Hinglish, Other
 Creative style definitions, pick the single best fit:
+- Product shot: a static pack or product display with no people and no setting or story (studio, graphic or shelf-style layouts). Still images only, never video.
 - Product demo: the product shown in use or preparation; pouring, cooking, serving or tasting action.
 - Recipe/how-to: step-by-step cooking, ingredients or method; teaches the viewer to make something.
 - UGC: creator-style selfie, unboxing, taste test or day-in-life footage; informal, phone-shot feel.
 - Testimonial: a customer quote, review text, star rating or before/after proof as the focus.
 - Lifestyle: people, occasions or settings carry the story; the product sits inside a real moment.
 - Founder story: the founder speaks or the brand story / behind-the-scenes is the focus.
-- Product shot: a static pack or product display with no people and no setting or story (studio, graphic or shelf-style layouts). Still images only.
-Never choose Product shot for a video. For video, choose by the action shown (usually Product demo, UGC, Recipe/how-to or Lifestyle). Choose Product shot only when the creative is primarily a static product display. When people, a setting or an occasion are central, prefer Lifestyle, UGC, Testimonial or Founder story. When preparation or tasting action is central, prefer Product demo or Recipe/how-to.
+Choose Product shot only when the creative is primarily a static product display. Never choose Product shot for a video. When people, a setting or an occasion are central, prefer Lifestyle, UGC, Testimonial or Founder story. When preparation or tasting action is central, prefer Product demo or Recipe/how-to.
 Brand: ${ad.brand?.name || "Unknown"}
 Existing product category hint: ${fixedCategoryHint(ad)}
 Headline: ${ad.headline || "None"}
@@ -618,16 +618,15 @@ Copy: ${ad.body_copy || "None"}`;
       json_schema: {
         type: "object",
         properties: {
-          reason: { type: "string" },
           product_category: { type: "string", enum: CLASSIFICATION_OPTIONS.category },
           creative_style: { type: "string", enum: CLASSIFICATION_OPTIONS.creative_style },
           selling_angle: { type: "string", enum: CLASSIFICATION_OPTIONS.selling_angle },
           language: { type: "string", enum: CLASSIFICATION_OPTIONS.language },
         },
-        required: ["reason", "product_category", "creative_style", "selling_angle", "language"],
+        required: ["product_category", "creative_style", "selling_angle", "language"],
       },
     },
-    max_tokens: 220,
+    max_tokens: 160,
     temperature: 0,
   };
   if (media) input.image = `data:${media.mimeType};base64,${base64FromBytes(media.bytes)}`;
@@ -643,7 +642,7 @@ Copy: ${ad.body_copy || "None"}`;
       messages: [
         ...input.messages,
         { role: "assistant", content: typeof result?.response === "string" ? result.response : JSON.stringify(result) },
-        { role: "user", content: "That response did not match the required schema. Return the reason plus only one valid enum value for each of the four label keys." },
+        { role: "user", content: "That response did not match the required schema. Return only one valid enum value for each of the four required keys." },
       ],
     });
     try {
@@ -657,6 +656,11 @@ Copy: ${ad.body_copy || "None"}`;
   if (labels.product_category === "Other") {
     const categoryHint = fixedCategoryHint(ad);
     if (categoryHint !== "Other") labels.product_category = categoryHint;
+  }
+  // Correctness invariant, not judgment: a video creative can never be a still
+  // product display, but the model still reaches for Product shot on video frames.
+  if (/video/i.test(ad.format || "") && labels.creative_style === "Product shot") {
+    labels.creative_style = "Product demo";
   }
   return {
     labels: {
