@@ -68,7 +68,7 @@ Run `supabase/migrations/002_ai_classifications.sql` after the initial schema mi
 
 The manual `Classify ads` workflow classifies selected pending or approved ads with exactly one value for each of four fields: product category, creative style, selling angle and language. Image ads use their creative; video ads use a Cloudflare-generated four-frame contact sheet from the first eight seconds. Results are saved to the existing `category`, `creative_style`, `selling_angle` and `language` columns. Offers are not used as a collection.
 
-Run the workflow in batches of 10–25 ads. Increase `offset` by the previous batch size for the next run. The read-only `Run Workers AI classification pilot` workflow remains available for testing without database writes.
+Run the workflow in batches of 10–25 ads. Classified ads drop out of the selection automatically, so repeat with `offset=0` until a run reports zero attempts. The read-only `Run Workers AI classification pilot` workflow remains available for testing without database writes.
 
 Cloudflare Cron runs the weekly refresh. The GitHub Actions workflow is the bulk-backfill control and manual fallback; it needs:
 

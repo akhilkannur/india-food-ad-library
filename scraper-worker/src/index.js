@@ -668,7 +668,9 @@ function hasClassificationEvidence(ad) {
 
 async function classifyAds(env, limit, offset, write, status = "approved", scope = "missing") {
   const statusFilter = ["pending", "approved"].includes(status) ? status : "approved";
-  const missingClassification = "or=(category.is.null,creative_style.is.null,selling_angle.is.null,language.is.null)";
+  // The collector always fills heuristic labels, so null labels alone never match.
+  // Include never-AI-classified ads so every record eventually gets a vision pass.
+  const missingClassification = "or=(classification_source.is.null,category.is.null,creative_style.is.null,selling_angle.is.null,language.is.null)";
   const classificationFilter = scope === "other" ? "category=eq.Other" : missingClassification;
   const rows = await supabase(
     env,
