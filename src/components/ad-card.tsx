@@ -25,9 +25,6 @@ export function AdCard({
   onOpen?: () => void;
   onUnavailable?: () => void;
 }) {
-  const format = ad.creative_style || ad.format;
-  const secondaryTag = ad.selling_angle;
-
   return (
     <article className="ad-card">
       <div className="ad-card__media">
@@ -50,12 +47,11 @@ export function AdCard({
 
         <h2 className="ad-card__headline">{ad.headline || ad.hook || "Headline not available"}</h2>
 
-        <div className="ad-card__meta">
-          {!/^(image|video)$/i.test(format) && <span>{format}</span>}
-          <span>{ad.language}</span>
-          {secondaryTag && <span>{secondaryTag}</span>}
-          {onOpen && <button className="ad-card__inspect" type="button" onClick={onOpen} aria-haspopup="dialog" aria-label={`Details for ${ad.brand.name} ad`}>Details <Eye aria-hidden="true" size={15} /></button>}
-        </div>
+        {onOpen && (
+          <div className="ad-card__meta">
+            <button className="ad-card__inspect" type="button" onClick={onOpen} aria-haspopup="dialog" aria-label={`Details for ${ad.brand.name} ad`}>Details <Eye aria-hidden="true" size={15} /></button>
+          </div>
+        )}
       </div>
 
     </article>
