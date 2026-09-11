@@ -589,7 +589,7 @@ async function classifyWithWorkersAI(env, ad, captureLiveCreative) {
   const evidenceInstruction = media
     ? "Use the supplied creative image or video-frame capture and the ad copy together."
     : "The original creative is no longer downloadable. Classify conservatively from the ad copy and existing category hint.";
-  const prompt = `Classify this Indian food advertisement for a creative research library. ${evidenceInstruction} Return JSON only with exactly these four keys. Choose exactly one value for every key. Never return multiple values, alternatives, comma-separated labels, explanations, Markdown, or prose.
+  const prompt = `Classify this Indian food advertisement for a creative research library. ${evidenceInstruction} First describe what you see in one or two sentences in a "reason" key, then choose the labels. Return JSON only with exactly these five keys. Choose exactly one value for every label key. Never return multiple values, alternatives, comma-separated labels, explanations, Markdown, or prose outside the reason.
 product_category: Snacks, Sweets & chocolate, Beverages, Dairy, Spices & ingredients, Staples, Ready-to-eat & instant, Ready-to-cook & frozen, Health & nutrition, Meat & seafood, Fresh food, Bakery, Other
 creative_style: Product demo, Recipe/how-to, UGC, Testimonial, Lifestyle, Founder story, Product shot
 selling_angle: Taste/craving, Health, Convenience, Value, Ingredients, Tradition/emotion, Social proof
@@ -618,16 +618,17 @@ Copy: ${ad.body_copy || "None"}`;
       json_schema: {
         type: "object",
         properties: {
+          reason: { type: "string" },
           product_category: { type: "string", enum: CLASSIFICATION_OPTIONS.category },
           creative_style: { type: "string", enum: CLASSIFICATION_OPTIONS.creative_style },
           selling_angle: { type: "string", enum: CLASSIFICATION_OPTIONS.selling_angle },
           language: { type: "string", enum: CLASSIFICATION_OPTIONS.language },
         },
-        required: ["product_category", "creative_style", "selling_angle", "language"],
+        required: ["reason", "product_category", "creative_style", "selling_angle", "language"],
       },
     },
-    max_tokens: 160,
-    temperature: 0,
+    max_tokens: 220,
+    temperature: 0.2,
   };
   if (media) input.image = `data:${media.mimeType};base64,${base64FromBytes(media.bytes)}`;
 
@@ -642,7 +643,7 @@ Copy: ${ad.body_copy || "None"}`;
       messages: [
         ...input.messages,
         { role: "assistant", content: typeof result?.response === "string" ? result.response : JSON.stringify(result) },
-        { role: "user", content: "That response did not match the required schema. Return only one valid enum value for each of the four required keys." },
+        { role: "user", content: "That response did not match the required schema. Return the reason plus only one valid enum value for each of the four label keys." },
       ],
     });
     try {
