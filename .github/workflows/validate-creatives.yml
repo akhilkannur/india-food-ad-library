@@ -1,0 +1,56 @@
+name: Validate ad creatives
+
+on:
+  schedule:
+    # Nightly CDN-only check via the scraper worker. HEAD/range requests to
+    # stored creative URLs only — no Ads Library scraping, no browser/AI.
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report only, hide nothing"
+        required: true
+        default: true
+        type: boolean
+      limit:
+        description: "Max approved ads to check (1-500)"
+        required: false
+        default: "200"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: creative-health-check
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check creative URLs and hide dead previews
+        env:
+          SCRAPER_WORKER_URL: ${{ secrets.SCRAPER_WORKER_URL }}
+          SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
+          DRY_RUN_INPUT: ${{ inputs.dry_run }}
+          LIMIT_INPUT: ${{ inputs.limit }}
+        run: |
+          # Scheduled runs have no inputs: default to a live check of 200 ads.
+          DRY_RUN="${DRY_RUN_INPUT:-false}"
+          LIMIT="${LIMIT_INPUT:-200}"
+          curl --fail-with-body --silent --show-error --max-time 600 \
+            --request POST \
+            --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
+            "$SCRAPER_WORKER_URL/validate?limit=$LIMIT&dry_run=$DRY_RUN" | tee validation-result.json
+      - name: Verify validation result
+        run: |
+          node -e 'const r = JSON.parse(require("fs").readFileSync("validation-result.json", "utf8")); if (!r.ok || typeof r.checked !== "number") { console.error("Validation failed"); process.exit(1) } console.log(`Checked ${r.checked}; broken ${r.broken}; hidden ${r.hidden}${r.dry_run ? " (dry run)" : ""}.`)'
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: creative-validation-${{ github.run_id }}
+          path: validation-result.json
+          if-no-files-found: warn
+          retention-days: 30

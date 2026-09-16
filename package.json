@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "import:queue": "node scripts/import-queue.mjs",
+    "validate:creatives": "node scripts/validate-creatives.mjs",
     "scrape:dry": "cd scraper && DRY_RUN=1 python3 scrape.py",
     "test:scraper": "node --test scraper-worker/src/*.test.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",

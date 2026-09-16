@@ -762,8 +762,89 @@ async function pilotClassify(env, limit, offset) {
   return classifyAds(env, limit, offset, false, "approved");
 }
 
-async function publishPendingAds(env) {
-  const now = new Date().toISOString();
+const MAX_VALIDATIONS_PER_RUN = 500;
+const VALIDATE_CONCURRENCY = 5;
+
+async function fetchWithTimeoutFallback(url, options = {}, timeoutMs = 10_000) {
+  const signal = typeof AbortSignal !== "undefined" && AbortSignal.timeout
+    ? AbortSignal.timeout(timeoutMs)
+    : undefined;
+  return fetch(url, signal ? { ...options, signal } : options);
+}
+
+// CDN-only liveness check: HEAD, then a 1-byte range GET for CDNs that
+// reject HEAD. Never touches the Ads Library search UI.
+async function creativeUrlAlive(url) {
+  if (!url || !/^https:\/\//i.test(url)) return false;
+  const headers = {
+    Referer: "https://www.facebook.com/",
+    "User-Agent": "IndiaFoodAdLibrary/1.0 (creative-health-check)",
+  };
+  try {
+    const head = await fetchWithTimeoutFallback(url, { method: "HEAD", headers, redirect: "follow" });
+    if (head.ok) return true;
+    if (![400, 401, 403, 405, 429, 500, 502, 503].includes(head.status)) return false;
+  } catch {
+    // Fall through to the range GET below.
+  }
+  try {
+    const get = await fetchWithTimeoutFallback(
+      url,
+      { headers: { ...headers, Range: "bytes=0-0" }, redirect: "follow" },
+    );
+    return get.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function validateCreatives(env, limit, dryRun) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase secrets are missing");
+  const rows = await supabase(
+    env,
+    `ads?status=eq.approved&select=id,source_ad_id,creative_url,thumbnail_url&order=updated_at.asc&limit=${limit}`,
+  );
+  const broken = [];
+  let cursor = 0;
+  async function checkNext() {
+    while (cursor < rows.length) {
+      const index = cursor;
+      cursor += 1;
+      const ad = rows[index];
+      const alive = await creativeUrlAlive(ad.creative_url) || await creativeUrlAlive(ad.thumbnail_url);
+      if (!alive) broken.push(ad);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(VALIDATE_CONCURRENCY, rows.length) }, () => checkNext()));
+
+  let hidden = 0;
+  if (!dryRun && broken.length) {
+    const now = new Date().toISOString();
+    for (const ad of broken) {
+      await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          status: "rejected",
+          reviewer_notes: "Auto-hidden: creative no longer loads from its original source",
+          reviewed_at: now,
+          updated_at: now,
+        }),
+      });
+      hidden += 1;
+    }
+  }
+  return {
+    ok: true,
+    checked: rows.length,
+    broken: broken.length,
+    hidden,
+    dry_run: dryRun,
+    sample: broken.slice(0, 20).map((ad) => ({ id: ad.id, source_ad_id: ad.source_ad_id })),
+  };
+}
+
+async function publishPendingAds(env) {  const now = new Date().toISOString();
   const rows = await supabase(
     env,
     "ads?status=eq.pending&source_ad_id=not.is.null&creative_url=not.is.null&select=id",
@@ -997,6 +1078,17 @@ const worker = {
         return Response.json(await classifyAds(env, limit, offset, true, status, scope));
       } catch (error) {
         return Response.json({ error: error instanceof Error ? error.message : String(error), writes: 0 }, { status: 500 });
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/validate") {
+      if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
+      const limit = boundedInteger(url.searchParams.get("limit"), 200, 1, MAX_VALIDATIONS_PER_RUN);
+      const dryRun = (url.searchParams.get("dry_run") || "").toLowerCase();
+      const isDryRun = dryRun === "" ? false : ["1", "true"].includes(dryRun);
+      try {
+        return Response.json(await validateCreatives(env, limit, isDryRun));
+      } catch (error) {
+        return Response.json({ error: error instanceof Error ? error.message : String(error), hidden: 0 }, { status: 500 });
       }
     }
     if (request.method !== "POST" || url.pathname !== "/run") return new Response("Not found", { status: 404 });
