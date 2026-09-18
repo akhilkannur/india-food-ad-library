@@ -802,7 +802,7 @@ async function validateCreatives(env, limit, dryRun) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase secrets are missing");
   const rows = await supabase(
     env,
-    `ads?status=eq.approved&select=id,source_ad_id,creative_url,thumbnail_url&order=updated_at.asc&limit=${limit}`,
+    `ads?status=eq.approved&select=id,source_ad_id,creative_url,thumbnail_url&reviewer_notes=not.like.Auto-hidden:creative%20no%20longer%20loads%20from%20its%20original%20source&order=updated_at.asc&limit=${limit}`,
   );
   const broken = [];
   let cursor = 0;
@@ -825,7 +825,9 @@ async function validateCreatives(env, limit, dryRun) {
         method: "PATCH",
         headers: { Prefer: "return=minimal" },
         body: JSON.stringify({
-          status: "rejected",
+          // Soft-hide: keep the ad approved and surfaced (ranked last via
+          // isPreviewUnavailable) but flag it so the UI can show "Expired"
+          // rather than silently dropping it from the catalogue.
           reviewer_notes: "Auto-hidden: creative no longer loads from its original source",
           reviewed_at: now,
           updated_at: now,

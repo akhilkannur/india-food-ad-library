@@ -3,6 +3,7 @@ import { diversifyByBrandAndMedia } from "@/lib/collections";
 import { isFoodCreative } from "@/lib/curation";
 import { demoAds, demoBrands } from "@/lib/demo-data";
 import { hasDatabase } from "@/lib/config";
+import { isPreviewUnavailable } from "@/lib/media";
 import type { Ad, AdStatus, Brand } from "@/lib/types";
 
 export type AdPage = {
@@ -78,11 +79,23 @@ const getCachedApprovedAds = unstable_cache(
       ads.push(...page.rows);
       total = page.total;
     }
-    return ads.filter(isFoodCreative);
+    return sortAdsByAvailability(ads.filter(isFoodCreative));
   },
   ["approved-food-ads-v2"],
   { revalidate: 300 },
 );
+
+/**
+ * Sort approved ads so that expired/unavailable creatives sink below live ones,
+ * while preserving the source ordering (newest submitted first) within each group.
+ */
+export function sortAdsByAvailability<T extends Ad>(ads: T[]) {
+  return [...ads].sort((left, right) => {
+    const leftUnavailable = isPreviewUnavailable(left) ? 1 : 0;
+    const rightUnavailable = isPreviewUnavailable(right) ? 1 : 0;
+    return leftUnavailable - rightUnavailable;
+  });
+}
 
 export async function getAds(status?: AdStatus): Promise<Ad[]> {
   if (!hasDatabase) {
@@ -90,13 +103,14 @@ export async function getAds(status?: AdStatus): Promise<Ad[]> {
   }
 
   const statusFilter = status ? `&status=eq.${status}` : "";
-  return supabaseFetch<Ad[]>(
+  const rows = await supabaseFetch<Ad[]>(
     `ads?select=*,brand:brands(*)&order=submitted_at.desc${statusFilter}`,
   );
+  return sortAdsByAvailability(rows);
 }
 
 export async function getApprovedAds(): Promise<Ad[]> {
-  if (!hasDatabase) return demoAds.filter((ad) => ad.status === "approved" && isFoodCreative(ad));
+  if (!hasDatabase) return sortAdsByAvailability(demoAds.filter((ad) => ad.status === "approved" && isFoodCreative(ad)));
 
   try {
     return await getCachedApprovedAds();

@@ -1,8 +1,9 @@
-// Nightly hygiene (local alternative): hide approved ads whose creative no longer loads.
-// CI uses POST /validate on the scraper worker instead, so no extra GitHub
-// secrets are needed. This script is for local runs with .env.local.
-// Only hits the CDN URLs stored on the ad (fbcdn etc). Never touches the
-// Meta Ads Library search, so no scraping load and no browser/AI cost.
+// Nightly hygiene (local alternative): soft-flag approved ads whose creative no
+// longer loads so they sink to the bottom of listings. CI uses POST /validate on
+// the scraper worker instead, so no extra GitHub secrets are needed. This
+// script is for local runs with .env.local. Only hits the CDN URLs stored on the
+// ad (fbcdn etc). Never touches the Meta Ads Library search, so no scraping
+// load and no browser/AI cost.
 import { setTimeout as sleep } from "node:timers/promises";
 
 const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
@@ -86,12 +87,14 @@ async function runPool(items, worker) {
   return results;
 }
 
-// Page through approved ads (PostgREST default caps at 1000 rows).
+// Page through approved ads (PostgREST default caps at 1000 rows). Skip ads
+// already soft-flagged so the nightly run only re-checks candidates.
+const FLAG_NOTE = "Auto-hidden: creative no longer loads from its original source";
 const ads = [];
 const PAGE = 500;
 for (let offset = 0; ; offset += PAGE) {
   const rows = await supabaseGet(
-    `ads?status=eq.approved&select=id,source_ad_id,creative_url,thumbnail_url&order=updated_at.asc&limit=${PAGE}&offset=${offset}`,
+    `ads?status=eq.approved&select=id,source_ad_id,creative_url,thumbnail_url&reviewer_notes=not.like.${encodeURIComponent(FLAG_NOTE)}&order=updated_at.asc&limit=${PAGE}&offset=${offset}`,
   );
   ads.push(...rows);
   if (rows.length < PAGE || ads.length >= LIMIT) break;
@@ -109,36 +112,37 @@ await runPool(scope, async (ad) => {
 console.log(`Alive: ${scope.length - broken.length}; broken: ${broken.length}.`);
 
 if (!broken.length) {
-  console.log("Nothing to hide.");
+  console.log("Nothing to flag.");
   process.exit(0);
 }
 
 if (DRY_RUN) {
   for (const ad of broken.slice(0, 20)) {
-    console.log(`would hide: ${ad.id} (source_ad_id=${ad.source_ad_id || "n/a"})`);
+    console.log(`would soft-flag: ${ad.id} (source_ad_id=${ad.source_ad_id || "n/a"})`);
   }
   if (broken.length > 20) console.log(`...and ${broken.length - 20} more`);
   process.exit(0);
 }
 
 const now = new Date().toISOString();
-let hidden = 0;
+let flagged = 0;
 for (const ad of broken) {
   const response = await fetch(`${baseUrl}/rest/v1/ads?id=eq.${encodeURIComponent(ad.id)}`, {
     method: "PATCH",
     headers: { ...dbHeaders, Prefer: "return=minimal" },
     body: JSON.stringify({
-      status: "rejected",
-      reviewer_notes: "Auto-hidden: creative no longer loads from its original source",
+      // Soft-hide: keep status=approved so the ad stays in the catalogue but is
+      // ranked last via isPreviewUnavailable + shown with an "Expired" badge.
+      reviewer_notes: FLAG_NOTE,
       reviewed_at: now,
       updated_at: now,
     }),
   });
   if (!response.ok) {
-    console.error(`Failed to hide ${ad.id}: ${response.status} ${(await response.text()).slice(0, 200)}`);
+    console.error(`Failed to flag ${ad.id}: ${response.status} ${(await response.text()).slice(0, 200)}`);
     continue;
   }
-  hidden += 1;
+  flagged += 1;
 }
 
-console.log(`Hidden ${hidden}/${broken.length} ad(s) with dead previews.`);
+console.log(`Soft-flagged ${flagged}/${broken.length} ad(s) with dead previews (kept approved, ranked last).`);

@@ -15,7 +15,7 @@ on:
       limit:
         description: "Max approved ads to check (1-500)"
         required: false
-        default: "200"
+        default: "500"
 
 permissions:
   contents: read

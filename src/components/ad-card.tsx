@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { CreativePreview } from "@/components/creative-preview";
+import { isPreviewUnavailable } from "@/lib/media";
 import type { Ad } from "@/lib/types";
 import { isVideoCreative } from "@/lib/media";
 
@@ -43,6 +44,9 @@ export function AdCard({
           )}
           <Link className="ad-card__brand" href={`/brands/${ad.brand.slug}`}>{ad.brand.name}</Link>
           <time dateTime={ad.first_seen_at}>{formatDate(ad.first_seen_at)}</time>
+          {isPreviewUnavailable(ad) && (
+            <span className="ad-card__expired" aria-label="Creative no longer available" title="Creative no longer available">Expired</span>
+          )}
         </div>
 
         <h2 className="ad-card__headline">{ad.headline || ad.hook || "Headline not available"}</h2>

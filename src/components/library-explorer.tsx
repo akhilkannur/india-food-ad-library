@@ -14,6 +14,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { getCollectionAds, getCollectionDefinitions, type CollectionPreview } from "@/lib/collections";
 import { supabaseBrowser } from "@/lib/supabase-browser";
+import { isPreviewUnavailable } from "@/lib/media";
 import type { Ad } from "@/lib/types";
 import { isVideoCreative, type MediaFilter } from "@/lib/media";
 
@@ -55,6 +56,7 @@ export function LibraryExplorer({
 }) {
   const [loadedAds, setLoadedAds] = useState(ads);
   const [totalAds, setTotalAds] = useState(initialTotal ?? ads.length);
+  const [unavailableIds, setUnavailableIds] = useState<Set<string>>(new Set());
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -81,7 +83,7 @@ export function LibraryExplorer({
 
   const visibleAds = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const filteredAds = loadedAds
+    const sorted = loadedAds
       .filter(ad => mediaFilter === "all" || (mediaFilter === "video" ? isVideoCreative(ad) : !isVideoCreative(ad)))
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => format === "All" || ad.creative_style === format)
@@ -94,11 +96,16 @@ export function LibraryExplorer({
           .some((value) => value!.toLowerCase().includes(query));
       })
       .sort((left, right) => {
+        // Expired/unavailable creatives sink below live ones regardless of recency.
+        const leftUnavailable = isPreviewUnavailable(left) || unavailableIds.has(left.id) ? 1 : 0;
+        const rightUnavailable = isPreviewUnavailable(right) || unavailableIds.has(right.id) ? 1 : 0;
+        if (leftUnavailable !== rightUnavailable) return leftUnavailable - rightUnavailable;
+
         const delta = new Date(right.first_seen_at).getTime() - new Date(left.first_seen_at).getTime();
         return sortOrder === "newest" ? delta : -delta;
       });
-    return filteredAds;
-  }, [loadedAds, category, format, sellingAngle, language, search, sortOrder, mediaFilter]);
+    return sorted;
+  }, [loadedAds, category, format, sellingAngle, language, search, sortOrder, mediaFilter, unavailableIds]);
 
   const activeFilterCount = [category, format, sellingAngle, language].filter((value) => value !== "All").length
     + (search.trim() ? 1 : 0) + (mediaFilter !== "all" ? 1 : 0);
@@ -341,6 +348,13 @@ export function LibraryExplorer({
                       key={ad.id}
                       priority={index < 4}
                       onOpen={() => openAd(ad)}
+                      onUnavailable={() => {
+                        // A creative that just failed to load client-side should
+                        // sink to the end of the listing rather than stay first.
+                        setUnavailableIds((current) =>
+                          current.has(ad.id) ? current : new Set(current).add(ad.id),
+                        );
+                      }}
                     />
                   ))}
                 </MasonryGrid>
