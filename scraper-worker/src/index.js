@@ -762,8 +762,8 @@ async function pilotClassify(env, limit, offset) {
   return classifyAds(env, limit, offset, false, "approved");
 }
 
-const MAX_VALIDATIONS_PER_RUN = 500;
-const VALIDATE_CONCURRENCY = 5;
+const MAX_VALIDATIONS_PER_RUN = 2000;
+const VALIDATE_CONCURRENCY = 8;
 
 async function fetchWithTimeoutFallback(url, options = {}, timeoutMs = 10_000) {
   const signal = typeof AbortSignal !== "undefined" && AbortSignal.timeout

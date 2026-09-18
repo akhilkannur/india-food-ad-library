@@ -13,9 +13,9 @@ on:
         default: true
         type: boolean
       limit:
-        description: "Max approved ads to check (1-500)"
+        description: "Max approved ads to check (1-2000)"
         required: false
-        default: "500"
+        default: "2000"
 
 permissions:
   contents: read
@@ -35,10 +35,11 @@ jobs:
           SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
           DRY_RUN_INPUT: ${{ inputs.dry_run }}
           LIMIT_INPUT: ${{ inputs.limit }}
-        run: |
-          # Scheduled runs have no inputs: default to a live check of 200 ads.
+         run: |
+          # Scheduled runs have no inputs: default to checking the full
+          # approved catalogue each night (worker caps at 2000).
           DRY_RUN="${DRY_RUN_INPUT:-false}"
-          LIMIT="${LIMIT_INPUT:-200}"
+          LIMIT="${LIMIT_INPUT:-2000}"
           curl --fail-with-body --silent --show-error --max-time 600 \
             --request POST \
             --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
