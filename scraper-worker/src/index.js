@@ -1,5 +1,6 @@
 import { launch } from "@cloudflare/playwright";
 import { BRANDS } from "./brands.js";
+import { creativeUrlStatus, previewUrlForValidation } from "./creative-validation.js";
 import { selectDiverseCandidates } from "./diversity.js";
 
 const WORKERS_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
@@ -765,54 +766,23 @@ async function pilotClassify(env, limit, offset) {
 const MAX_VALIDATIONS_PER_RUN = 2000;
 const VALIDATE_CONCURRENCY = 8;
 
-async function fetchWithTimeoutFallback(url, options = {}, timeoutMs = 10_000) {
-  const signal = typeof AbortSignal !== "undefined" && AbortSignal.timeout
-    ? AbortSignal.timeout(timeoutMs)
-    : undefined;
-  return fetch(url, signal ? { ...options, signal } : options);
-}
-
-// CDN-only liveness check: HEAD, then a 1-byte range GET for CDNs that
-// reject HEAD. Never touches the Ads Library search UI.
-async function creativeUrlAlive(url) {
-  if (!url || !/^https:\/\//i.test(url)) return false;
-  const headers = {
-    Referer: "https://www.facebook.com/",
-    "User-Agent": "IndiaFoodAdLibrary/1.0 (creative-health-check)",
-  };
-  try {
-    const head = await fetchWithTimeoutFallback(url, { method: "HEAD", headers, redirect: "follow" });
-    if (head.ok) return true;
-    if (![400, 401, 403, 405, 429, 500, 502, 503].includes(head.status)) return false;
-  } catch {
-    // Fall through to the range GET below.
-  }
-  try {
-    const get = await fetchWithTimeoutFallback(
-      url,
-      { headers: { ...headers, Range: "bytes=0-0" }, redirect: "follow" },
-    );
-    return get.ok;
-  } catch {
-    return false;
-  }
-}
-
 async function validateCreatives(env, limit, dryRun) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase secrets are missing");
   const rows = await supabase(
     env,
-    `ads?status=eq.approved&select=id,source_ad_id,creative_url,thumbnail_url&reviewer_notes=not.like.Auto-hidden:creative%20no%20longer%20loads%20from%20its%20original%20source&order=updated_at.asc&limit=${limit}`,
+    `ads?status=eq.approved&select=id,source_ad_id,format,creative_url,thumbnail_url&order=updated_at.asc&limit=${limit}`,
   );
   const broken = [];
+  const unresolved = [];
   let cursor = 0;
   async function checkNext() {
     while (cursor < rows.length) {
       const index = cursor;
       cursor += 1;
       const ad = rows[index];
-      const alive = await creativeUrlAlive(ad.creative_url) || await creativeUrlAlive(ad.thumbnail_url);
-      if (!alive) broken.push(ad);
+      const status = await creativeUrlStatus(previewUrlForValidation(ad));
+      if (status === "dead") broken.push(ad);
+      if (status === "unresolved") unresolved.push(ad);
     }
   }
   await Promise.all(Array.from({ length: Math.min(VALIDATE_CONCURRENCY, rows.length) }, () => checkNext()));
@@ -827,12 +797,14 @@ async function validateCreatives(env, limit, dryRun) {
     }
   }
   return {
-    ok: true,
+    ok: unresolved.length === 0,
     checked: rows.length,
     broken: broken.length,
     purged,
+    unresolved: unresolved.length,
     dry_run: dryRun,
     sample: broken.slice(0, 20).map((ad) => ({ id: ad.id, source_ad_id: ad.source_ad_id })),
+    unresolved_sample: unresolved.slice(0, 20).map((ad) => ({ id: ad.id, source_ad_id: ad.source_ad_id })),
   };
 }
 
@@ -1080,7 +1052,7 @@ const worker = {
       try {
         return Response.json(await validateCreatives(env, limit, isDryRun));
       } catch (error) {
-        return Response.json({ error: error instanceof Error ? error.message : String(error), hidden: 0 }, { status: 500 });
+        return Response.json({ error: error instanceof Error ? error.message : String(error), purged: 0 }, { status: 500 });
       }
     }
     if (request.method !== "POST" || url.pathname !== "/run") return new Response("Not found", { status: 404 });

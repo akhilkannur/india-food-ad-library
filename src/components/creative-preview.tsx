@@ -90,6 +90,7 @@ export function CreativePreview({ ad, compact = false, inlinePlayback = false, p
           }}
           onError={() => {
             setFailedUrl(ad.creative_url!);
+            onUnavailable?.();
           }}
         >
           Your browser does not support embedded video.

@@ -1,3 +1,4 @@
+import "server-only";
 import { unstable_cache } from "next/cache";
 import { diversifyByBrandAndMedia } from "@/lib/collections";
 import { isFoodCreative } from "@/lib/curation";

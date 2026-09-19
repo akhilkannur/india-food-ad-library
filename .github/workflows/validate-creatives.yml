@@ -8,7 +8,7 @@ name: Validate ad creatives
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Report only, hide nothing"
+        description: "Report only, purge nothing"
         required: true
         default: true
         type: boolean
@@ -46,7 +46,7 @@ jobs:
             "$SCRAPER_WORKER_URL/validate?limit=$LIMIT&dry_run=$DRY_RUN" | tee validation-result.json
       - name: Verify validation result
         run: |
-          node -e 'const r = JSON.parse(require("fs").readFileSync("validation-result.json", "utf8")); if (!r.ok || typeof r.checked !== "number") { console.error("Validation failed"); process.exit(1) } console.log(`Checked ${r.checked}; broken ${r.broken}; purged ${r.purged}${r.dry_run ? " (dry run)" : ""}.`)'
+          node -e 'const r = JSON.parse(require("fs").readFileSync("validation-result.json", "utf8")); if (!r.ok || typeof r.checked !== "number") { console.error(`Validation incomplete: ${r.unresolved || 0} unresolved creative(s).`); process.exit(1) } console.log(`Checked ${r.checked}; broken ${r.broken}; purged ${r.purged}${r.dry_run ? " (dry run)" : ""}.`)'
       - name: Upload validation report
         if: always()
         uses: actions/upload-artifact@v4

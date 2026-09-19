@@ -9,7 +9,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
 
   const { id } = await context.params;
-  const body = (await request.json()) as { status?: AdStatus; reviewerNotes?: string };
+  let body: { status?: AdStatus; reviewerNotes?: string };
+  try {
+    body = await request.json() as { status?: AdStatus; reviewerNotes?: string };
+  } catch {
+    return new NextResponse("Request body must be valid JSON.", { status: 400 });
+  }
   if (!body.status || !AD_STATUSES.includes(body.status)) {
     return new NextResponse("Choose pending, approved or rejected.", { status: 400 });
   }
