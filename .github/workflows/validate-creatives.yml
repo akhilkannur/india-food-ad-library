@@ -1,6 +1,6 @@
 name: Validate ad creatives
 
-on:
+"on":
   schedule:
     # Nightly CDN-only check via the scraper worker. HEAD/range requests to
     # stored creative URLs only — no Ads Library scraping, no browser/AI.
@@ -35,7 +35,7 @@ jobs:
           SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
           DRY_RUN_INPUT: ${{ inputs.dry_run }}
           LIMIT_INPUT: ${{ inputs.limit }}
-         run: |
+        run: |
           # Scheduled runs have no inputs: default to checking the full
           # approved catalogue each night (worker caps at 2000).
           DRY_RUN="${DRY_RUN_INPUT:-false}"
