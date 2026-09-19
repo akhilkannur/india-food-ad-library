@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Check creative URLs and hide dead previews
+      - name: Check creative URLs and purge dead previews
         env:
           SCRAPER_WORKER_URL: ${{ secrets.SCRAPER_WORKER_URL }}
           SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
@@ -46,7 +46,7 @@ jobs:
             "$SCRAPER_WORKER_URL/validate?limit=$LIMIT&dry_run=$DRY_RUN" | tee validation-result.json
       - name: Verify validation result
         run: |
-          node -e 'const r = JSON.parse(require("fs").readFileSync("validation-result.json", "utf8")); if (!r.ok || typeof r.checked !== "number") { console.error("Validation failed"); process.exit(1) } console.log(`Checked ${r.checked}; broken ${r.broken}; hidden ${r.hidden}${r.dry_run ? " (dry run)" : ""}.`)'
+          node -e 'const r = JSON.parse(require("fs").readFileSync("validation-result.json", "utf8")); if (!r.ok || typeof r.checked !== "number") { console.error("Validation failed"); process.exit(1) } console.log(`Checked ${r.checked}; broken ${r.broken}; purged ${r.purged}${r.dry_run ? " (dry run)" : ""}.`)'
       - name: Upload validation report
         if: always()
         uses: actions/upload-artifact@v4

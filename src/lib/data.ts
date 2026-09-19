@@ -93,7 +93,8 @@ export function sortAdsByAvailability<T extends Ad>(ads: T[]) {
   return [...ads].sort((left, right) => {
     const leftUnavailable = isPreviewUnavailable(left) ? 1 : 0;
     const rightUnavailable = isPreviewUnavailable(right) ? 1 : 0;
-    return leftUnavailable - rightUnavailable;
+    if (leftUnavailable !== rightUnavailable) return leftUnavailable - rightUnavailable;
+    return new Date(right.submitted_at).getTime() - new Date(left.submitted_at).getTime();
   });
 }
 
@@ -142,7 +143,15 @@ export async function getApprovedAdsPage({
   const safeOffset = Math.max(offset, 0);
 
   const approvedAds = await getApprovedAds();
-  const ordered = diverse ? diversifyByBrandAndMedia(approvedAds) : approvedAds;
+
+  let ordered: Ad[];
+  if (diverse) {
+    const available = approvedAds.filter((ad) => !isPreviewUnavailable(ad));
+    const unavailable = approvedAds.filter(isPreviewUnavailable);
+    ordered = [...diversifyByBrandAndMedia(available), ...unavailable];
+  } else {
+    ordered = approvedAds;
+  }
   return { ads: ordered.slice(safeOffset, safeOffset + safeLimit), total: ordered.length };
 }
 

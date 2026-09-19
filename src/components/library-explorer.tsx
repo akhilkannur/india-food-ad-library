@@ -101,7 +101,7 @@ export function LibraryExplorer({
         const rightUnavailable = isPreviewUnavailable(right) || unavailableIds.has(right.id) ? 1 : 0;
         if (leftUnavailable !== rightUnavailable) return leftUnavailable - rightUnavailable;
 
-        const delta = new Date(right.first_seen_at).getTime() - new Date(left.first_seen_at).getTime();
+        const delta = new Date(right.submitted_at).getTime() - new Date(left.submitted_at).getTime();
         return sortOrder === "newest" ? delta : -delta;
       });
     return sorted;

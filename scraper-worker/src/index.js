@@ -817,30 +817,20 @@ async function validateCreatives(env, limit, dryRun) {
   }
   await Promise.all(Array.from({ length: Math.min(VALIDATE_CONCURRENCY, rows.length) }, () => checkNext()));
 
-  let hidden = 0;
+  let purged = 0;
   if (!dryRun && broken.length) {
-    const now = new Date().toISOString();
     for (const ad of broken) {
       await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({
-          // Soft-hide: keep the ad approved and surfaced (ranked last via
-          // isPreviewUnavailable) but flag it so the UI can show "Expired"
-          // rather than silently dropping it from the catalogue.
-          reviewer_notes: "Auto-hidden: creative no longer loads from its original source",
-          reviewed_at: now,
-          updated_at: now,
-        }),
+        method: "DELETE",
       });
-      hidden += 1;
+      purged += 1;
     }
   }
   return {
     ok: true,
     checked: rows.length,
     broken: broken.length,
-    hidden,
+    purged,
     dry_run: dryRun,
     sample: broken.slice(0, 20).map((ad) => ({ id: ad.id, source_ad_id: ad.source_ad_id })),
   };
