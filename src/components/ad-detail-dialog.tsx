@@ -92,6 +92,9 @@ export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; 
               <a className="button button--primary" href={ad.source_url} target="_blank" rel="noreferrer">
                 View original ad <ArrowUpRight aria-hidden="true" size={15} strokeWidth={1.8} />
               </a>
+              <a className="button" href={`/ads/${encodeURIComponent(ad.id)}`}>
+                Shareable page <ArrowUpRight aria-hidden="true" size={15} strokeWidth={1.8} />
+              </a>
               {(ad.creative_url || ad.thumbnail_url) && (
                 <a
                   className="button button--download"

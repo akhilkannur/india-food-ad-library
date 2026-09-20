@@ -17,8 +17,14 @@ export async function generateMetadata({
   const definition = getCollectionDefinition(slug, ads);
   if (!definition) return { title: "Collection not found" };
   return {
-    title: `${definition.name} — India Food Ad Library`,
-    description: `Browse ${definition.name.toLowerCase()} advertising creative from Indian food and beverage brands.`,
+    title: `${definition.name} Food Ads — Creative Format Inspiration for DTC Teams`,
+    description: `Steal inspiration from ${definition.name.toLowerCase()} Meta ad creatives from Indian food & beverage brands — hooks, angles and examples brand teams can reuse.`,
+    alternates: { canonical: `/collections/${slug}` },
+    openGraph: {
+      title: `${definition.name} Food Ads — Creative Format Inspiration | F&B Ad Library`,
+      description: `Browse ${definition.name.toLowerCase()} advertising creative from Indian food & beverage brands for your next campaign.`,
+      url: `/collections/${slug}`,
+    },
   };
 }
 
@@ -38,7 +44,8 @@ export default async function CollectionPage({
       ads={collectionAds}
       demoMode={isDemoMode}
       showCollections={false}
-      pageTitle={definition.name}
+      pageTitle={`${definition.name} ads`}
+      pageDescription={`${collectionAds.length} ${definition.name.toLowerCase()} creatives from Indian food & beverage brands — compare hooks, angles and execution styles before your next brief.`}
     />
   );
 }

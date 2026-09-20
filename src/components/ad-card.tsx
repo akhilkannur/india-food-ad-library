@@ -54,6 +54,7 @@ export function AdCard({
         {onOpen && (
           <div className="ad-card__meta">
             <button className="ad-card__inspect" type="button" onClick={onOpen} aria-haspopup="dialog" aria-label={`Details for ${ad.brand.name} ad`}>Details <Eye aria-hidden="true" size={15} /></button>
+            <Link className="ad-card__permalink" href={`/ads/${ad.id}`} aria-label={`Shareable page for ${ad.brand.name} ad: ${ad.headline || ad.hook || ad.format}`}>Permalink</Link>
           </div>
         )}
       </div>

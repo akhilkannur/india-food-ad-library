@@ -43,6 +43,7 @@ export function LibraryExplorer({
   demoMode,
   showCollections = true,
   pageTitle,
+  pageDescription,
   backLabel = "All collections",
 }: {
   ads: Ad[];
@@ -51,6 +52,7 @@ export function LibraryExplorer({
   demoMode: boolean;
   showCollections?: boolean;
   pageTitle?: string;
+  pageDescription?: string;
   backLabel?: string;
   initialBrandTotal?: number;
 }) {
@@ -270,10 +272,19 @@ export function LibraryExplorer({
             <header className="collection-page-heading">
               <Link href="/">← {backLabel}</Link>
               <h1>{pageTitle}</h1>
+              {pageDescription && <p>{pageDescription}</p>}
             </header>
           )}
 
-          {showCollections && <h1 className="visually-hidden">India Food Ad Library</h1>}
+          {showCollections && (
+            <>
+              <h1 className="visually-hidden">F&amp;B Ad Library — Indian food &amp; beverage ad inspiration for DTC teams</h1>
+              <p className="visually-hidden">
+                A swipe file of Indian food and beverage Meta ads. Browse creatives by brand, format, hook and
+                selling angle for campaign inspiration.
+              </p>
+            </>
+          )}
 
           <ResultsToolbar
             search={search}
@@ -308,7 +319,9 @@ export function LibraryExplorer({
                       ))}
                     </div>
                     <div className="collection-row__heading"><h3>{collection.name}</h3></div>
-                    <Link className="collection-row__link" href={`/collections/${collection.slug}`} aria-label={`Browse ${collection.name} ads`} />
+                    <Link className="collection-row__link" href={`/collections/${collection.slug}`} aria-label={`Browse ${collection.name} ads`}>
+                      <span className="visually-hidden">Browse {collection.name} food ad examples</span>
+                    </Link>
                   </div>
                 ))}
               </div>

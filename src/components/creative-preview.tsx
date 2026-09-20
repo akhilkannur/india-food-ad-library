@@ -32,13 +32,14 @@ export function CreativePreview({ ad, compact = false, inlinePlayback = false, p
     ? ad.thumbnail_url
     : undefined;
   const label = video ? "Video creative" : "Image creative";
+  const videoAlt = `${ad.brand.name} ${ad.format} video ad${ad.headline ? `: ${ad.headline}` : ""} (${ad.category})`;
 
   if (!failed && video && compact && !inlinePlayback) {
     return (
       <figure className={`creative creative--media creative--video creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
         {poster && posterFailed !== poster ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="creative__media" src={poster} alt={`${ad.brand.name} video preview`} loading={priority ? "eager" : "lazy"} onLoad={event => { event.currentTarget.dataset.loaded = "true"; }} onError={() => setPosterFailed(poster)} />
+          <img className="creative__media" src={poster} alt={videoAlt} loading={priority ? "eager" : "lazy"} onLoad={event => { event.currentTarget.dataset.loaded = "true"; }} onError={() => setPosterFailed(poster)} />
         ) : (
           <div className="creative__video-cover">
             <Play aria-hidden="true" size={28} />
@@ -56,7 +57,7 @@ export function CreativePreview({ ad, compact = false, inlinePlayback = false, p
       <figure className={`creative creative--media creative--video creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
         {poster && posterFailed !== poster ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="creative__media" src={poster} alt={`${ad.brand.name} video preview`} loading={priority ? "eager" : "lazy"} onLoad={event => { event.currentTarget.dataset.loaded = "true"; }} onError={() => setPosterFailed(poster)} />
+          <img className="creative__media" src={poster} alt={videoAlt} loading={priority ? "eager" : "lazy"} onLoad={event => { event.currentTarget.dataset.loaded = "true"; }} onError={() => setPosterFailed(poster)} />
         ) : (
           <div className="creative__video-cover">
             <strong>{ad.brand.name}</strong>
@@ -101,6 +102,7 @@ export function CreativePreview({ ad, compact = false, inlinePlayback = false, p
   }
 
   if (!failed && imageUrl) {
+    const richAlt = `${ad.brand.name} ${ad.format} ad${ad.headline ? `: ${ad.headline}` : ad.hook ? ` — ${ad.hook}` : ""} (${ad.category}, ${ad.language})`;
     return (
       <figure className={`creative creative--media creative--image creative--${theme}`} aria-label={`${label} for ${ad.brand.name}`}>
         {/* Dynamic advertiser media is rendered as-is; production URLs come from the approved record. */}
@@ -108,7 +110,7 @@ export function CreativePreview({ ad, compact = false, inlinePlayback = false, p
         <img
           className="creative__media"
           src={imageUrl}
-          alt={`${ad.brand.name} advertising creative`}
+          alt={richAlt}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           onLoad={event => { event.currentTarget.dataset.loaded = "true"; }}

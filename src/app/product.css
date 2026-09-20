@@ -351,3 +351,19 @@
   .library-app .workspace-nav { display: none; }
   .library-app .app-header__actions { margin-inline-start: auto; }
 }
+/* SEO: indexable ad pages, breadcrumbs, permalinks */
+.library-app .ad-breadcrumb { max-width: 70rem; margin: 0 auto; padding: var(--space-lg) clamp(var(--space-md),3vw,var(--space-xl)) 0; color: var(--product-muted); font-size: var(--text-sm); }
+.library-app .ad-breadcrumb a { color: var(--color-library-ink); text-underline-offset: .2em; }
+.library-app .ad-page__layout { display: grid; grid-template-columns: minmax(0,5fr) minmax(0,6fr); gap: var(--space-xl); max-width: 70rem; margin: 0 auto; padding: var(--space-lg) clamp(var(--space-md),3vw,var(--space-xl)); }
+.library-app .ad-page__creative img, .library-app .ad-page__creative video { width: 100%; height: auto; border-radius: var(--radius-sm); background: var(--product-card); }
+.library-app .ad-page__kicker { color: var(--product-muted); font-size: var(--text-sm); }
+.library-app .ad-page__copy h1 { margin-block: var(--space-xs) var(--space-sm); font-size: clamp(1.8rem,3vw,2.6rem); line-height: 1.15; }
+.library-app .ad-page__body { max-width: 60ch; }
+.library-app .ad-page__hook { max-width: 60ch; color: var(--product-muted); }
+.library-app .ad-page__related { max-width: 70rem; margin: 0 auto; padding: 0 clamp(var(--space-md),3vw,var(--space-xl)) var(--space-xl); }
+.library-app .ad-page__related ul { display: grid; gap: var(--space-xs); padding: 0; list-style: none; }
+.library-app .ad-card__permalink { color: var(--product-muted); font-size: var(--text-xs); text-underline-offset: .2em; }
+.library-app .site-footer nav { margin-block: var(--space-xs); }
+@media (max-width:48rem) {
+  .library-app .ad-page__layout { grid-template-columns: minmax(0,1fr); }
+}
