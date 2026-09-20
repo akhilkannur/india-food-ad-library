@@ -1,5 +1,5 @@
 export const SITE_URL = (
-  process.env["NEXT_PUBLIC_SITE_URL"] || "https://indian-food-ad-library.workers.dev"
+  process.env["NEXT_PUBLIC_SITE_URL"] || "https://adlibrary.store"
 ).replace(/\/$/, "");
 
 export const SITE_NAME = "F&B Ad Library";
