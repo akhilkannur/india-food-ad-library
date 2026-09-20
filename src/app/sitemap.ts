@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getApprovedAds, getBrands } from "@/lib/data";
 import { getCollectionDefinitions } from "@/lib/collections";
+import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const home: MetadataRoute.Sitemap = [
     {
-      url: "/",
+      url: `${SITE_URL}/`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 1,
@@ -31,19 +32,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
       ...home,
       ...Array.from(brandSlugs).map((slug) => ({
-        url: `/brands/${slug}`,
+        url: `${SITE_URL}/brands/${slug}`,
         lastModified: now,
         changeFrequency: "weekly" as const,
         priority: 0.7,
       })),
       ...collections.map((collection) => ({
-        url: `/collections/${collection.slug}`,
+        url: `${SITE_URL}/collections/${collection.slug}`,
         lastModified: now,
         changeFrequency: "weekly" as const,
         priority: 0.7,
       })),
       ...ads.slice(0, MAX_AD_URLS).map((ad) => ({
-        url: `/ads/${ad.id}`,
+        url: `${SITE_URL}/ads/${ad.id}`,
         lastModified: ad.last_seen_at ? new Date(ad.last_seen_at) : now,
         changeFrequency: "monthly" as const,
         priority: 0.6,
