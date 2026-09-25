@@ -336,11 +336,13 @@
   .library-app .mobile-filter-button { grid-column: 2; grid-row: 1; justify-self: end; margin-inline-start: 0; }
   .library-app .sort-control { grid-column: 2; grid-row: 2; }
   .library-app .collections-rail { grid-auto-columns: 70vw; gap: var(--space-md); }
-  .library-app .collection-row__cards { height: clamp(10rem, 45vw, 13rem); }
-  .library-app .collection-row__creative { width: 70%; inset-inline-start: 15%; }
-  .library-app .collection-row__creative:nth-child(1) { transform: rotate(-2deg) translateY(5%); }
-  .library-app .collection-row__creative:nth-child(2) { transform: rotate(4deg) translate(12%, 1%); }
-  .library-app .collection-row__creative:nth-child(3) { transform: rotate(-6deg) translate(-12%, -1%); }
+  /* The fanned stack (width x 1.25 aspect x 1.05 translateY + rotation lean) must stay inside
+     this box, otherwise it paints over the collection title that sits directly below it. */
+  .library-app .collection-row__cards { height: min(66vw, 16rem); }
+  .library-app .collection-row__creative { width: min(70%, 12rem); }
+  .library-app .collection-row__creative:nth-child(1) { transform: translateX(-50%) rotate(-2deg) translateY(5%); }
+  .library-app .collection-row__creative:nth-child(2) { transform: translateX(calc(-50% + 12%)) rotate(4deg) translateY(1%); }
+  .library-app .collection-row__creative:nth-child(3) { transform: translateX(calc(-50% - 12%)) rotate(-6deg) translateY(-1%); }
 }
 @media (prefers-reduced-motion:reduce) {
   .library-app .border-beam__light { animation: none; transform: rotate(.12turn); }
