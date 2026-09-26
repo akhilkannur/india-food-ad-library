@@ -6,9 +6,12 @@ import { selectDiverseCandidates } from "./diversity.js";
 const WORKERS_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 const MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN = 25;
 const SCHEDULED_BATCH_SIZE = 24;
+// Twice a week (Monday + Thursday, UTC). Each slot refreshes one batch of
+// SCHEDULED_BATCH_SIZE brands, so 8 slots cover the whole brand list (192).
+// Must stay in sync with triggers.crons in scraper-worker/wrangler.jsonc.
 const WEEKLY_CRONS = [
-  "30 0 * * SUN", "0 1 * * SUN", "30 1 * * SUN", "0 2 * * SUN",
-  "30 2 * * SUN", "0 3 * * SUN", "30 3 * * SUN", "0 4 * * SUN",
+  "30 0 * * MON,THU", "0 1 * * MON,THU", "30 1 * * MON,THU", "0 2 * * MON,THU",
+  "30 2 * * MON,THU", "0 3 * * MON,THU", "30 3 * * MON,THU", "0 4 * * MON,THU",
 ];
 
 const CLASSIFICATION_OPTIONS = {
@@ -1080,7 +1083,16 @@ const worker = {
     const slot = Math.max(WEEKLY_CRONS.indexOf(controller.cron), 0);
     const offset = slot * SCHEDULED_BATCH_SIZE;
     const selected = BRANDS.slice(offset, offset + SCHEDULED_BATCH_SIZE);
-    if (selected.length) ctx.waitUntil(run(env, selected, { mode: "refresh", publishPending: false }));
+    // Auto-publish: scraped ads are media-backed Meta records, so they go live
+    // without manual approval. Without this the site only ever shrinks, because
+    // expired creatives are purged nightly but nothing new gets approved.
+    if (selected.length) {
+      ctx.waitUntil(
+        run(env, selected, { mode: "refresh", publishPending: true })
+          .then((report) => console.log("scheduled scrape", JSON.stringify({ cron: controller.cron, offset, ...report, results: undefined })))
+          .catch((error) => console.error("scheduled scrape failed", controller.cron, error)),
+      );
+    }
   },
 };
 

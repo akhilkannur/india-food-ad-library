@@ -26,7 +26,7 @@ on:
       publish:
         description: "Publish all media-backed pending ads after this run"
         required: true
-        default: false
+        default: true
         type: boolean
 
 permissions:
