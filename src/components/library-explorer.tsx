@@ -86,6 +86,9 @@ export function LibraryExplorer({
   const visibleAds = useMemo(() => {
     const query = search.trim().toLowerCase();
     const sorted = loadedAds
+      // Creatives that failed to load in this browser are hidden outright; the
+      // nightly validation job deletes them from the catalogue.
+      .filter((ad) => !unavailableIds.has(ad.id))
       .filter(ad => mediaFilter === "all" || (mediaFilter === "video" ? isVideoCreative(ad) : !isVideoCreative(ad)))
       .filter((ad) => category === "All" || ad.category === category)
       .filter((ad) => format === "All" || ad.creative_style === format)
@@ -99,8 +102,8 @@ export function LibraryExplorer({
       })
       .sort((left, right) => {
         // Expired/unavailable creatives sink below live ones regardless of recency.
-        const leftUnavailable = isPreviewUnavailable(left) || unavailableIds.has(left.id) ? 1 : 0;
-        const rightUnavailable = isPreviewUnavailable(right) || unavailableIds.has(right.id) ? 1 : 0;
+        const leftUnavailable = isPreviewUnavailable(left) ? 1 : 0;
+        const rightUnavailable = isPreviewUnavailable(right) ? 1 : 0;
         if (leftUnavailable !== rightUnavailable) return leftUnavailable - rightUnavailable;
 
         const delta = new Date(right.submitted_at).getTime() - new Date(left.submitted_at).getTime();
@@ -362,8 +365,8 @@ export function LibraryExplorer({
                       priority={index < 4}
                       onOpen={() => openAd(ad)}
                       onUnavailable={() => {
-                        // A creative that just failed to load client-side should
-                        // sink to the end of the listing rather than stay first.
+                        // A creative that just failed to load client-side is
+                        // removed from the grid so visitors never see a broken card.
                         setUnavailableIds((current) =>
                           current.has(ad.id) ? current : new Set(current).add(ad.id),
                         );
