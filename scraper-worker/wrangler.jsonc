@@ -23,7 +23,8 @@
       "30 2 * * MON,THU",
       "0 3 * * MON,THU",
       "30 3 * * MON,THU",
-      "0 4 * * MON,THU"
+      "0 4 * * MON,THU",
+      "15 5-9 * * *"
     ]
   },
   "browser": {

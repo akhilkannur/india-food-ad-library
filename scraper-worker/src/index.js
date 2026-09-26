@@ -5,6 +5,10 @@ import { selectDiverseCandidates } from "./diversity.js";
 
 const WORKERS_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 const MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN = 25;
+// Daily AI labelling: 5 runs x 50 ads ~= 250 ads/day, which keeps Workers AI
+// usage inside the daily free neuron allocation (~33 neurons per ad).
+const CLASSIFY_CRON = "15 5-9 * * *";
+const SCHEDULED_CLASSIFY_BATCH = 50;
 const SCHEDULED_BATCH_SIZE = 24;
 // Twice a week (Monday + Thursday, UTC). Each slot refreshes one batch of
 // SCHEDULED_BATCH_SIZE brands, so 8 slots cover the whole brand list (192).
@@ -695,9 +699,11 @@ async function classifyAds(env, limit, offset, write, status = "approved", scope
   const classificationFilter = scope === "other"
     ? "category=eq.Other"
     : scope === "review" ? reviewFilter : missingClassification;
+  // Never-attempted ads first; ads whose last attempt failed (classified_at set,
+  // classification_source still null) go to the back so they cannot block a batch.
   const rows = await supabase(
     env,
-    `ads?status=eq.${statusFilter}&${classificationFilter}&select=id,source_ad_id,format,language,category,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=updated_at.desc,id.asc&offset=${offset}&limit=${limit}`,
+    `ads?status=eq.${statusFilter}&${classificationFilter}&select=id,source_ad_id,format,language,category,creative_style,selling_angle,headline,body_copy,creative_url,thumbnail_url,brand:brands(name)&order=classified_at.asc.nullsfirst,updated_at.desc,id.asc&offset=${offset}&limit=${limit}`,
   );
   const selected = rows.filter(hasClassificationEvidence).slice(0, limit);
 
@@ -737,6 +743,14 @@ async function classifyAds(env, limit, offset, write, status = "approved", scope
           usage: classification.usage,
         });
       } catch (error) {
+        if (write) {
+          // Record the failed attempt so the next batch moves on to other ads.
+          await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
+            method: "PATCH",
+            headers: { Prefer: "return=minimal" },
+            body: JSON.stringify({ classified_at: new Date().toISOString() }),
+          }).catch(() => {});
+        }
         results.push({
           id: ad.id,
           source_ad_id: ad.source_ad_id,
@@ -1080,6 +1094,15 @@ const worker = {
   },
 
   async scheduled(controller, env, ctx) {
+    if (controller.cron === CLASSIFY_CRON) {
+      ctx.waitUntil(
+        classifyAds(env, SCHEDULED_CLASSIFY_BATCH, 0, true, "approved", "missing")
+          .then((report) => console.log("scheduled classify", JSON.stringify({ ...report, results: undefined })))
+          .catch((error) => console.error("scheduled classify failed", error)),
+      );
+      return;
+    }
+    if (!WEEKLY_CRONS.includes(controller.cron)) return;
     const slot = Math.max(WEEKLY_CRONS.indexOf(controller.cron), 0);
     const offset = slot * SCHEDULED_BATCH_SIZE;
     const selected = BRANDS.slice(offset, offset + SCHEDULED_BATCH_SIZE);
