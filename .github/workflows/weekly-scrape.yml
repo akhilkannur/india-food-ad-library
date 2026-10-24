@@ -1,16 +1,19 @@
 name: Run Indian food ad scraper
 
 on:
+  schedule:
+    # Run twice weekly at 03:00 UTC on Mondays and Thursdays
+    - cron: "0 3 * * 1,4"
   workflow_dispatch:
     inputs:
       mode:
         description: "Collection mode"
         required: true
-        default: "backfill"
+        default: "refresh"
         type: choice
         options:
-          - backfill
           - refresh
+          - backfill
       brand:
         description: "Brand slug (blank runs a batch)"
         required: false
@@ -18,11 +21,11 @@ on:
       limit:
         description: "Batch size: backfill max 12, refresh max 24"
         required: false
-        default: "12"
+        default: "24"
       offset:
         description: "Start position in the brand list when brand is blank"
         required: false
-        default: "0"
+        default: ""
       publish:
         description: "Publish all media-backed pending ads after this run"
         required: true
@@ -39,33 +42,63 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Ask the protected Cloudflare scraper to run
         env:
           SCRAPER_WORKER_URL: ${{ secrets.SCRAPER_WORKER_URL }}
           SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
-          MODE: ${{ inputs.mode }}
-          BRAND: ${{ inputs.brand }}
-          LIMIT: ${{ inputs.limit }}
-          OFFSET: ${{ inputs.offset }}
-          PUBLISH: ${{ inputs.publish }}
+          MODE_INPUT: ${{ inputs.mode }}
+          BRAND_INPUT: ${{ inputs.brand }}
+          LIMIT_INPUT: ${{ inputs.limit }}
+          OFFSET_INPUT: ${{ inputs.offset }}
+          PUBLISH_INPUT: ${{ inputs.publish }}
         run: |
-          query="?mode=$MODE&publish=$PUBLISH"
-          if [ -n "$BRAND" ]; then
-            query="$query&brand=$BRAND"
+          MODE="${MODE_INPUT:-refresh}"
+          PUBLISH="${PUBLISH_INPUT:-true}"
+          LIMIT="${LIMIT_INPUT:-24}"
+
+          if [ -n "$BRAND_INPUT" ]; then
+            echo "Scraping brand: $BRAND_INPUT"
+            curl --fail-with-body --silent --show-error --max-time 600 \
+              --request POST \
+              --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
+              "$SCRAPER_WORKER_URL/run?mode=$MODE&publish=$PUBLISH&brand=$BRAND_INPUT" | tee scraper-result.json
+          elif [ -n "$OFFSET_INPUT" ]; then
+            echo "Scraping batch at offset: $OFFSET_INPUT (limit $LIMIT)"
+            curl --fail-with-body --silent --show-error --max-time 600 \
+              --request POST \
+              --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
+              "$SCRAPER_WORKER_URL/run?mode=$MODE&publish=$PUBLISH&limit=$LIMIT&offset=$OFFSET_INPUT" | tee scraper-result.json
           else
-            query="$query&limit=$LIMIT&offset=$OFFSET"
+            DAY=$(date -u +%u)
+            if [ "$DAY" -eq 1 ]; then
+              BATCH_OFFSETS="0 24 48 72"
+            elif [ "$DAY" -eq 4 ]; then
+              BATCH_OFFSETS="96 120 144 168"
+            else
+              BATCH_OFFSETS="0 24 48 72 96 120 144 168"
+            fi
+            echo "Running refresh for offsets: $BATCH_OFFSETS"
+            mkdir -p reports
+            for off in $BATCH_OFFSETS; do
+              echo "Refreshing offset $off (limit $LIMIT)..."
+              curl --fail-with-body --silent --show-error --max-time 600 \
+                --request POST \
+                --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
+                "$SCRAPER_WORKER_URL/run?mode=$MODE&publish=$PUBLISH&limit=$LIMIT&offset=$off" | tee "reports/scraper-result-$off.json"
+              sleep 5
+            done
+            FIRST_OFF=$(echo $BATCH_OFFSETS | awk '{print $1}')
+            cp "reports/scraper-result-$FIRST_OFF.json" scraper-result.json
           fi
-          curl --fail-with-body --silent --show-error --max-time 600 \
-            --request POST \
-            --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
-            "$SCRAPER_WORKER_URL/run$query" | tee scraper-result.json
       - name: Upload run report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: scraper-report-${{ github.run_id }}
-          path: scraper-result.json
+          path: |
+            scraper-result.json
+            reports/*.json
           if-no-files-found: warn
           retention-days: 14

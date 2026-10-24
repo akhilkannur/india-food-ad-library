@@ -2,7 +2,11 @@
 // scraper worker instead, so no extra GitHub secrets are needed. This script is
 // for local runs with .env.local and only checks stored CDN URLs.
 import { setTimeout as sleep } from "node:timers/promises";
-import { creativeUrlStatus, previewUrlForValidation } from "../scraper-worker/src/creative-validation.js";
+import {
+  creativeUrlStatus,
+  previewUrlForValidation,
+  shouldTripCircuitBreaker,
+} from "../scraper-worker/src/creative-validation.js";
 
 const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -67,6 +71,12 @@ await runPool(scope, async (ad) => {
 });
 
 console.log(`Alive: ${scope.length - broken.length - unresolved.length}; broken: ${broken.length}; unresolved: ${unresolved.length}.`);
+
+if (shouldTripCircuitBreaker(broken.length, scope.length)) {
+  console.error(`Circuit breaker tripped: ${broken.length}/${scope.length} ads (${Math.round((broken.length / scope.length) * 100)}%) reported broken. Purge aborted to protect catalogue.`);
+  process.exitCode = 1;
+  process.exit();
+}
 
 if (!broken.length) {
   console.log("Nothing to purge.");

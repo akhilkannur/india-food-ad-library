@@ -1,5 +1,16 @@
 const DEAD_GET_STATUSES = new Set([400, 401, 403, 404, 410]);
 
+export const DEFAULT_MAX_PURGE_RATIO = 0.20;
+export const MIN_ADS_FOR_CIRCUIT_BREAKER = 20;
+
+export function shouldTripCircuitBreaker(brokenCount, totalCount, {
+  maxRatio = DEFAULT_MAX_PURGE_RATIO,
+  minTotal = MIN_ADS_FOR_CIRCUIT_BREAKER,
+} = {}) {
+  if (totalCount < minTotal) return false;
+  return (brokenCount / totalCount) > maxRatio;
+}
+
 export function previewUrlForValidation(ad) {
   const creativeUrl = ad.creative_url || null;
   const isVideo = /video/i.test(ad.format || "") || /\.(mp4|webm|mov)(?:\?|$)/i.test(creativeUrl || "");

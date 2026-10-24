@@ -1,6 +1,10 @@
 import { launch } from "@cloudflare/playwright";
 import { BRANDS } from "./brands.js";
-import { creativeUrlStatus, previewUrlForValidation } from "./creative-validation.js";
+import {
+  creativeUrlStatus,
+  previewUrlForValidation,
+  shouldTripCircuitBreaker,
+} from "./creative-validation.js";
 import { selectDiverseCandidates } from "./diversity.js";
 
 const WORKERS_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
@@ -804,8 +808,10 @@ async function validateCreatives(env, limit, dryRun) {
   }
   await Promise.all(Array.from({ length: Math.min(VALIDATE_CONCURRENCY, rows.length) }, () => checkNext()));
 
+  const circuitBreakerTripped = shouldTripCircuitBreaker(broken.length, rows.length);
+
   let purged = 0;
-  if (!dryRun && broken.length) {
+  if (!dryRun && broken.length && !circuitBreakerTripped) {
     for (const ad of broken) {
       await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
         method: "DELETE",
@@ -813,11 +819,18 @@ async function validateCreatives(env, limit, dryRun) {
       purged += 1;
     }
   }
+
+  const failureReason = circuitBreakerTripped
+    ? `Circuit breaker tripped: ${broken.length}/${rows.length} ads (${Math.round((broken.length / rows.length) * 100)}%) reported broken. Purge aborted to protect catalogue.`
+    : undefined;
+
   return {
-    ok: unresolved.length === 0,
+    ok: unresolved.length === 0 && !circuitBreakerTripped,
     checked: rows.length,
     broken: broken.length,
     purged,
+    circuit_breaker: circuitBreakerTripped,
+    ...(failureReason ? { error: failureReason } : {}),
     unresolved: unresolved.length,
     dry_run: dryRun,
     sample: broken.slice(0, 20).map((ad) => ({ id: ad.id, source_ad_id: ad.source_ad_id })),

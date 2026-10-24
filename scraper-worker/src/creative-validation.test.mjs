@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { creativeUrlStatus, previewUrlForValidation } from "./creative-validation.js";
+import {
+  creativeUrlStatus,
+  previewUrlForValidation,
+  shouldTripCircuitBreaker,
+} from "./creative-validation.js";
 
 test("validation checks the same asset selected by the preview", () => {
   assert.equal(
@@ -44,4 +48,19 @@ test("network and CDN availability failures are not treated as deletable", async
     },
   });
   assert.equal(status, "unresolved");
+});
+
+test("circuit breaker does not trip below minimum sample threshold", () => {
+  assert.equal(shouldTripCircuitBreaker(10, 15), false);
+  assert.equal(shouldTripCircuitBreaker(1, 1), false);
+});
+
+test("circuit breaker does not trip when broken percentage is within acceptable limit", () => {
+  assert.equal(shouldTripCircuitBreaker(10, 100), false);
+  assert.equal(shouldTripCircuitBreaker(20, 100), false);
+});
+
+test("circuit breaker trips when broken percentage exceeds threshold", () => {
+  assert.equal(shouldTripCircuitBreaker(21, 100), true);
+  assert.equal(shouldTripCircuitBreaker(688, 688), true);
 });
