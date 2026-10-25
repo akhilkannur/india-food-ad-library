@@ -9,18 +9,20 @@ import { selectDiverseCandidates } from "./diversity.js";
 
 const WORKERS_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 const MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN = 25;
-// Daily AI labelling: 5 runs x 50 ads ~= 250 ads/day, which keeps Workers AI
-// usage inside the daily free neuron allocation (~33 neurons per ad).
-const CLASSIFY_CRON = "15 5-9 * * *";
+// Daily AI labelling: 50 ads/day, which keeps Workers AI usage inside the daily
+// free neuron allocation (~33 neurons per ad). Cron slots are scarce (Free plan
+// caps triggers at 5, shared with the daily scrape crons below).
+const CLASSIFY_CRON = "15 5 * * *";
 const SCHEDULED_CLASSIFY_BATCH = 50;
-const SCHEDULED_BATCH_SIZE = 24;
-// Twice a week (Monday + Thursday, UTC). Each slot refreshes one batch of
-// SCHEDULED_BATCH_SIZE brands, so 8 slots cover the whole brand list (192).
+// Each scheduled slot refreshes SCHEDULED_BATCH_SIZE brands. 4 slots/day x 6
+// brands covers the whole brand list (192) in 8 days, well inside the ~30-day
+// window before Meta CDN links expire. Batches must stay small because the
+// Workers Free plan caps browser time at 10 minutes/day and heavy invocations
+// die with resource-limit errors.
+const SCHEDULED_BATCH_SIZE = 6;
+// Exactly 4 scrape crons + 1 classify cron = 5 cron triggers, the Free plan max.
 // Must stay in sync with triggers.crons in scraper-worker/wrangler.jsonc.
-const WEEKLY_CRONS = [
-  "30 0 * * MON,THU", "0 1 * * MON,THU", "30 1 * * MON,THU", "0 2 * * MON,THU",
-  "30 2 * * MON,THU", "0 3 * * MON,THU", "30 3 * * MON,THU", "0 4 * * MON,THU",
-];
+const DAILY_CRONS = ["30 1 * * *", "30 7 * * *", "30 13 * * *", "30 19 * * *"];
 
 const CLASSIFICATION_OPTIONS = {
   category: [
@@ -71,7 +73,7 @@ const BRAND_CATEGORY_OVERRIDES = new Map([
 
 const RUN_MODES = {
   backfill: { rawAds: 80, selectedAds: 60, scrollRounds: 10, maxBrands: 12, concurrency: 2 },
-  refresh: { rawAds: 40, selectedAds: 20, scrollRounds: 5, maxBrands: 24, concurrency: 3 },
+  refresh: { rawAds: 40, selectedAds: 20, scrollRounds: 5, maxBrands: 24, concurrency: 2 },
 };
 
 const HIGH_VOLUME_BRANDS = new Set([
@@ -969,12 +971,29 @@ async function queueAds(env, discoveries) {
   };
 }
 
+/**
+ * Browser Rendering throttles launches on the Free plan (1 new browser per 20s,
+ * plus a hard daily quota of 10 browser minutes) and both surface as the same
+ * generic 429. A short retry loop rides out the launch throttle; the daily
+ * quota exhausts every retry and throws, which scheduled runs log.
+ */
+async function launchBrowser(env) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await launch(env.BROWSER, { keep_alive: 600_000 });
+    } catch (error) {
+      if (attempt >= 3 || !/code: 429/.test(String(error))) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 20_000 * attempt));
+    }
+  }
+}
+
 async function run(env, selectedBrands, options) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase secrets are missing");
   const startedAt = Date.now();
   const mode = options.mode;
   const config = RUN_MODES[mode];
-  const browser = await launch(env.BROWSER, { keep_alive: 600_000 });
+  const browser = await launchBrowser(env);
   const discoveries = new Array(selectedBrands.length);
   const failures = [];
   let cursor = 0;
@@ -1115,9 +1134,9 @@ const worker = {
       );
       return;
     }
-    if (!WEEKLY_CRONS.includes(controller.cron)) return;
-    const slot = Math.max(WEEKLY_CRONS.indexOf(controller.cron), 0);
-    const offset = slot * SCHEDULED_BATCH_SIZE;
+  if (!DAILY_CRONS.includes(controller.cron)) return;
+  const slot = DAILY_CRONS.indexOf(controller.cron);
+  const offset = (slot * SCHEDULED_BATCH_SIZE) % BRANDS.length;
     const selected = BRANDS.slice(offset, offset + SCHEDULED_BATCH_SIZE);
     // Auto-publish: scraped ads are media-backed Meta records, so they go live
     // without manual approval. Without this the site only ever shrinks, because

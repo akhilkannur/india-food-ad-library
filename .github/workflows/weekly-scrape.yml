@@ -1,9 +1,10 @@
 name: Run Indian food ad scraper
 
+# Automatic scraping is driven by the worker's own cron triggers (see
+# scraper-worker/wrangler.jsonc). This workflow is dispatch-only for manual
+# backfills: the Free plan's daily browser quota cannot support both this and
+# the scheduled worker crons, and back-to-back batch runs get rate limited.
 on:
-  schedule:
-    # Run twice weekly at 03:00 UTC on Mondays and Thursdays
-    - cron: "0 3 * * 1,4"
   workflow_dispatch:
     inputs:
       mode:
@@ -19,9 +20,9 @@ on:
         required: false
         default: ""
       limit:
-        description: "Batch size: backfill max 12, refresh max 24"
+        description: "Batch size: recommended 6-12 to stay under browser time limits"
         required: false
-        default: "24"
+        default: "8"
       offset:
         description: "Start position in the brand list when brand is blank"
         required: false
@@ -56,7 +57,7 @@ jobs:
         run: |
           MODE="${MODE_INPUT:-refresh}"
           PUBLISH="${PUBLISH_INPUT:-true}"
-          LIMIT="${LIMIT_INPUT:-24}"
+          LIMIT="${LIMIT_INPUT:-8}"
 
           if [ -n "$BRAND_INPUT" ]; then
             echo "Scraping brand: $BRAND_INPUT"
@@ -87,7 +88,9 @@ jobs:
                 --request POST \
                 --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
                 "$SCRAPER_WORKER_URL/run?mode=$MODE&publish=$PUBLISH&limit=$LIMIT&offset=$off" | tee "reports/scraper-result-$off.json"
-              sleep 5
+              # Spread batches out: the Free plan throttles browser launches
+              # and exhausts its daily quota quickly on back-to-back runs.
+              sleep 60
             done
             FIRST_OFF=$(echo $BATCH_OFFSETS | awk '{print $1}')
             cp "reports/scraper-result-$FIRST_OFF.json" scraper-result.json
