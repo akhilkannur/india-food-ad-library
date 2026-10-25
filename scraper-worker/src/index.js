@@ -14,19 +14,11 @@ const MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN = 25;
 // caps triggers at 5, shared with the daily scrape crons below).
 const CLASSIFY_CRON = "15 5 * * *";
 const SCHEDULED_CLASSIFY_BATCH = 50;
-// Each scheduled slot refreshes SCHEDULED_BATCH_SIZE brands. 4 slots/day x 6
-// brands covers the whole brand list (192) in 8 days, well inside the ~30-day
-// window before Meta CDN links expire. Batches must stay small because the
-// Workers Free plan caps browser time at 10 minutes/day and heavy invocations
-// die with resource-limit errors.
-const SCHEDULED_BATCH_SIZE = 6;
-// One recurring cron fires 4x/day (01:30, 07:30, 13:30, 19:30 UTC). One rule
-// instead of four, because the Free plan caps the whole ACCOUNT at 5 cron
-// triggers (this worker uses 2 total, with the classify cron below). The batch
-// offset is derived from UTC time instead of the cron string; with 4 slots/day
-// the 32-slot brand cycle repeats every 8 days.
-const SCRAPE_CRON = "30 1,7,13,19 * * *";
-const SCRAPE_SLOTS_PER_DAY = 4;
+// NOTE: scheduled scraping is driven by the weekly-scrape GitHub workflow
+// (dispatch + schedule; see .github/workflows/weekly-scrape.yml), NOT by cron
+// triggers here. The Free plan caps this account at 5 cron triggers in total,
+// and other projects already hold 4 of them — only this one classify trigger
+// fits.
 
 const CLASSIFICATION_OPTIONS = {
   category: [
@@ -1060,19 +1052,6 @@ function boundedInteger(value, fallback, minimum, maximum) {
   return Number.isFinite(parsed) ? Math.min(Math.max(Math.trunc(parsed), minimum), maximum) : fallback;
 }
 
-/**
- * Rotate through the brand list deterministically from the fire time. With 4
- * fires/day and SCHEDULED_BATCH_SIZE brands per fire, the whole brand list is
- * covered once every (brand count / batch size / 4) days before repeating.
- */
-function scheduledScrapeBrands(date) {
-  const dayIndex = Math.floor(date.getTime() / 86_400_000);
-  const slotOfDay = date.getUTCHours() >= 19 ? 3 : date.getUTCHours() >= 13 ? 2 : date.getUTCHours() >= 7 ? 1 : 0;
-  const slotTotal = Math.ceil(BRANDS.length / SCHEDULED_BATCH_SIZE);
-  const slot = (dayIndex * SCRAPE_SLOTS_PER_DAY + slotOfDay) % slotTotal;
-  return BRANDS.slice(slot * SCHEDULED_BATCH_SIZE, slot * SCHEDULED_BATCH_SIZE + SCHEDULED_BATCH_SIZE);
-}
-
 const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -1082,7 +1061,7 @@ const worker = {
         service: "india-food-ad-scraper",
         brands: BRANDS.length,
         modes: Object.keys(RUN_MODES),
-        schedule: "weekly",
+        schedule: "https://github.com/akhilkannur/india-food-ad-library/actions/workflows/weekly-scrape.yml",
       });
     }
     if (request.method === "POST" && url.pathname === "/pilot") {
@@ -1148,19 +1127,6 @@ const worker = {
         classifyAds(env, SCHEDULED_CLASSIFY_BATCH, 0, true, "approved", "missing")
           .then((report) => console.log("scheduled classify", JSON.stringify({ ...report, results: undefined })))
           .catch((error) => console.error("scheduled classify failed", error)),
-      );
-      return;
-    }
-    if (controller.cron !== SCRAPE_CRON) return;
-    const selected = scheduledScrapeBrands(new Date(controller.scheduledTime));
-    // Auto-publish: scraped ads are media-backed Meta records, so they go live
-    // without manual approval. Without this the site only ever shrinks, because
-    // expired creatives are purged nightly but nothing new gets approved.
-    if (selected.length) {
-      ctx.waitUntil(
-        run(env, selected, { mode: "refresh", publishPending: true })
-          .then((report) => console.log("scheduled scrape", JSON.stringify({ cron: controller.cron, offset: BRANDS.indexOf(selected[0]), ...report, results: undefined })))
-          .catch((error) => console.error("scheduled scrape failed", controller.cron, error)),
       );
     }
   },

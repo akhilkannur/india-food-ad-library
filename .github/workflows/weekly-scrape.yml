@@ -1,10 +1,15 @@
 name: Run Indian food ad scraper
 
-# Automatic scraping is driven by the worker's own cron triggers (see
-# scraper-worker/wrangler.jsonc). This workflow is dispatch-only for manual
-# backfills: the Free plan's daily browser quota cannot support both this and
-# the scheduled worker crons, and back-to-back batch runs get rate limited.
+# Scheduled scraping runs here, not in worker Cron Triggers: the Workers Free
+# plan caps the whole Cloudflare ACCOUNT at 5 cron triggers and other projects
+# already hold 4, so only one trigger (the scraper's daily classify cron) fits.
+# 4 batches/day x 6 brands rotates deterministically through the brand list -
+# the batch offset is derived from the fire time, so no shared state is needed.
+# One Workers Free browser-rendering quota (10 minutes/day) fits ~4 slots of
+# ~2 browser minutes each; the dispatch inputs stay for manual backfills.
 on:
+  schedule:
+    - cron: "30 1,7,13,19 * * *"
   workflow_dispatch:
     inputs:
       mode:
@@ -72,28 +77,21 @@ jobs:
               --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
               "$SCRAPER_WORKER_URL/run?mode=$MODE&publish=$PUBLISH&limit=$LIMIT&offset=$OFFSET_INPUT" | tee scraper-result.json
           else
-            DAY=$(date -u +%u)
-            if [ "$DAY" -eq 1 ]; then
-              BATCH_OFFSETS="0 24 48 72"
-            elif [ "$DAY" -eq 4 ]; then
-              BATCH_OFFSETS="96 120 144 168"
-            else
-              BATCH_OFFSETS="0 24 48 72 96 120 144 168"
-            fi
-            echo "Running refresh for offsets: $BATCH_OFFSETS"
-            mkdir -p reports
-            for off in $BATCH_OFFSETS; do
-              echo "Refreshing offset $off (limit $LIMIT)..."
-              curl --fail-with-body --silent --show-error --max-time 600 \
-                --request POST \
-                --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
-                "$SCRAPER_WORKER_URL/run?mode=$MODE&publish=$PUBLISH&limit=$LIMIT&offset=$off" | tee "reports/scraper-result-$off.json"
-              # Spread batches out: the Free plan throttles browser launches
-              # and exhausts its daily quota quickly on back-to-back runs.
-              sleep 60
-            done
-            FIRST_OFF=$(echo $BATCH_OFFSETS | awk '{print $1}')
-            cp "reports/scraper-result-$FIRST_OFF.json" scraper-result.json
+            # Scheduled fire: rotate through the brand list deterministically.
+            # 6 brands/batch x 4 fires/day x 8 days = the full 192-brand list.
+            EPOCH_DAY=$(( $(date -u +%s) / 86400 ))
+            HOUR=$(date -u +%H)
+            if [ "$HOUR" -ge 19 ]; then SLOT_OF_DAY=3
+            elif [ "$HOUR" -ge 13 ]; then SLOT_OF_DAY=2
+            elif [ "$HOUR" -ge 7 ]; then SLOT_OF_DAY=1
+            else SLOT_OF_DAY=0; fi
+            OFF=$(( ( (EPOCH_DAY * 4 + SLOT_OF_DAY) % 32 ) * 6 ))
+            BATCH_LIMIT=6
+            echo "Scraping rotated batch at offset $OFF (limit $BATCH_LIMIT)"
+            curl --fail-with-body --silent --show-error --max-time 600 \
+              --request POST \
+              --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
+              "$SCRAPER_WORKER_URL/run?mode=$MODE&publish=$PUBLISH&limit=$BATCH_LIMIT&offset=$OFF" | tee scraper-result.json
           fi
       - name: Upload run report
         if: always()
