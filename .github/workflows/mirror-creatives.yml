@@ -38,6 +38,7 @@ jobs:
           MAX_CALLS="${MAX_CALLS_INPUT:-60}"
           TOTAL_STORED=0
           FAILURES=0
+          IDLE=0
           DEADLINE=$(( $(date +%s) + 40 * 60 ))
           : > mirror-results.jsonl
           for CALL in $(seq 1 "$MAX_CALLS"); do
@@ -63,6 +64,10 @@ jobs:
             TOTAL_STORED=$((TOTAL_STORED + STORED))
             echo "Call $CALL: stored $STORED; storage $((BYTES / 1048576)) MB; more waiting: $REMAINING"
             [ "$REMAINING" = "0" ] && break
+            # Leftover ads whose sources are dead or unreachable store nothing;
+            # stop retrying them and let the nightly validator clear them.
+            if [ "$STORED" = "0" ]; then IDLE=$((IDLE + 1)); else IDLE=0; fi
+            [ "$IDLE" -ge 2 ] && { echo "Only unreachable sources left; stopping."; break; }
           done
           echo "Stored $TOTAL_STORED ads this run."
       - name: Upload mirror report
