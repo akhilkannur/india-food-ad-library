@@ -111,11 +111,31 @@ export async function getAds(status?: AdStatus): Promise<Ad[]> {
   return sortAdsByAvailability(rows);
 }
 
+// OpenNext is deployed without a persistent incremental cache, so
+// unstable_cache alone refetches the full catalogue on every request. Keep a
+// per-isolate copy (and share the in-flight fetch) to cut response times.
+const MEMORY_TTL_MS = 5 * 60 * 1000;
+let memoryAds: { ads: Ad[]; expiresAt: number } | null = null;
+let pendingAds: Promise<Ad[]> | null = null;
+
+async function getMemoizedApprovedAds() {
+  if (memoryAds && memoryAds.expiresAt > Date.now()) return memoryAds.ads;
+  pendingAds ??= getCachedApprovedAds()
+    .then((ads) => {
+      memoryAds = { ads, expiresAt: Date.now() + MEMORY_TTL_MS };
+      return ads;
+    })
+    .finally(() => {
+      pendingAds = null;
+    });
+  return pendingAds;
+}
+
 export async function getApprovedAds(): Promise<Ad[]> {
   if (!hasDatabase) return sortAdsByAvailability(demoAds.filter((ad) => ad.status === "approved" && isFoodCreative(ad)));
 
   try {
-    return await getCachedApprovedAds();
+    return await getMemoizedApprovedAds();
   } catch (error) {
     // A source outage should not take the public catalogue offline. Moderation
     // routes still fail loudly so ingestion/configuration problems are visible.

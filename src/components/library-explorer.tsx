@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { AdCard } from "@/components/ad-card";
@@ -45,6 +45,8 @@ export function LibraryExplorer({
   pageTitle,
   pageDescription,
   backLabel = "All collections",
+  intro,
+  seoContent,
 }: {
   ads: Ad[];
   initialTotal?: number;
@@ -54,6 +56,8 @@ export function LibraryExplorer({
   pageTitle?: string;
   pageDescription?: string;
   backLabel?: string;
+  intro?: ReactNode;
+  seoContent?: ReactNode;
   initialBrandTotal?: number;
 }) {
   const [loadedAds, setLoadedAds] = useState(ads);
@@ -276,6 +280,7 @@ export function LibraryExplorer({
               <Link href="/">← {backLabel}</Link>
               <h1>{pageTitle}</h1>
               {pageDescription && <p>{pageDescription}</p>}
+              {intro}
             </header>
           )}
 
@@ -408,6 +413,7 @@ export function LibraryExplorer({
               </div>
             )}
           </section>
+          {seoContent}
         </div>
         </div>
       </main>

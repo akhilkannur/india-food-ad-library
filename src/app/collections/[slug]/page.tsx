@@ -1,11 +1,22 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LibraryExplorer } from "@/components/library-explorer";
+import { SeoLinks } from "@/components/seo-links";
 import { isDemoMode } from "@/lib/config";
 import { getCollectionAds, getCollectionDefinition } from "@/lib/collections";
 import { getApprovedAds } from "@/lib/data";
+import { browseGroups, landingCopy } from "@/lib/seo";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
+
+async function getCollection(slug: string) {
+  const ads = await getApprovedAds();
+  const definition = getCollectionDefinition(slug, ads);
+  if (!definition) return null;
+  const collectionAds = getCollectionAds(ads, definition);
+  return { ads, definition, collectionAds, copy: landingCopy(definition, collectionAds) };
+}
 
 export async function generateMetadata({
   params,
@@ -13,16 +24,16 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const ads = await getApprovedAds();
-  const definition = getCollectionDefinition(slug, ads);
-  if (!definition) return { title: "Collection not found" };
+  const collection = await getCollection(slug);
+  if (!collection) return { title: "Collection not found", robots: { index: false, follow: true } };
+  const { copy } = collection;
   return {
-    title: `${definition.name} Food Ads — Creative Format Inspiration for DTC Teams`,
-    description: `Steal inspiration from ${definition.name.toLowerCase()} Meta ad creatives from Indian food & beverage brands — hooks, angles and examples brand teams can reuse.`,
+    title: copy.title,
+    description: copy.description,
     alternates: { canonical: `/collections/${slug}` },
     openGraph: {
-      title: `${definition.name} Food Ads — Creative Format Inspiration | F&B Ad Library`,
-      description: `Browse ${definition.name.toLowerCase()} advertising creative from Indian food & beverage brands for your next campaign.`,
+      title: `${copy.title} | ${SITE_NAME}`,
+      description: copy.description,
       url: `/collections/${slug}`,
     },
   };
@@ -34,18 +45,44 @@ export default async function CollectionPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const ads = await getApprovedAds();
-  const definition = getCollectionDefinition(slug, ads);
-  if (!definition) notFound();
+  const collection = await getCollection(slug);
+  if (!collection) notFound();
 
-  const collectionAds = getCollectionAds(ads, definition);
+  const { ads, collectionAds, copy } = collection;
+  const canonical = `${SITE_URL}/collections/${slug}`;
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: copy.heading,
+    description: copy.description,
+    url: canonical,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: collectionAds.length,
+      itemListElement: collectionAds.slice(0, 30).map((ad, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `${SITE_URL}/ads/${ad.id}`,
+      })),
+    },
+  };
+  const brandLinks = copy.summary.brands.slice(0, 12).map((brand) => ({
+    href: `/brands/${brand.slug}`,
+    label: `${brand.name} (${brand.count})`,
+  }));
+
   return (
-    <LibraryExplorer
-      ads={collectionAds}
-      demoMode={isDemoMode}
-      showCollections={false}
-      pageTitle={`${definition.name} ads`}
-      pageDescription={`${collectionAds.length} ${definition.name.toLowerCase()} creatives from Indian food & beverage brands — compare hooks, angles and execution styles before your next brief.`}
-    />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
+      <LibraryExplorer
+        ads={collectionAds}
+        demoMode={isDemoMode}
+        showCollections={false}
+        pageTitle={copy.heading}
+        pageDescription={copy.intro}
+        intro={<SeoLinks groups={[{ title: "Brands in this collection", links: brandLinks }]} />}
+        seoContent={<SeoLinks heading="Explore more food & beverage ads" groups={browseGroups(ads, { exclude: slug })} />}
+      />
+    </>
   );
 }

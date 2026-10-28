@@ -6,12 +6,13 @@ import { SiteFooter } from "@/components/site-footer";
 import { getApprovedAd, getApprovedAds } from "@/lib/data";
 import { isVideoCreative } from "@/lib/media";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { adLandingLinks, clampText } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
 function adTitle(ad: NonNullable<Awaited<ReturnType<typeof getApprovedAd>>>) {
-  const hook = ad.headline || ad.hook || ad.format;
-  return `${hook} — ${ad.brand.name} Meta ad`;
+  const hook = clampText(ad.headline || ad.hook || ad.format, 48);
+  return `${hook} — ${ad.brand.name} ad`;
 }
 
 function adDescription(ad: NonNullable<Awaited<ReturnType<typeof getApprovedAd>>>) {
@@ -21,8 +22,10 @@ function adDescription(ad: NonNullable<Awaited<ReturnType<typeof getApprovedAd>>
     ad.selling_angle ? `with a ${ad.selling_angle} angle` : null,
     ad.language ? `in ${ad.language}` : null,
   ].filter(Boolean);
-  const base = `Steal inspiration from this ${parts.join(" ")} (${ad.category}) for your Indian DTC food & beverage campaigns.`;
-  return ad.hook && ad.headline !== ad.hook ? `${base} Hook: ${ad.hook}.` : base;
+  const base = `${parts.join(" ")} (${ad.category}).`;
+  const copy = ad.body_copy || (ad.hook && ad.headline !== ad.hook ? ad.hook : "");
+  const room = 155 - base.length;
+  return copy && room > 30 ? `${base} “${clampText(copy, room)}”` : clampText(`${base} See the hook, angle and CTA.`, 158);
 }
 
 export async function generateMetadata({
@@ -80,6 +83,7 @@ export default async function AdPage({ params }: { params: Promise<{ id: string 
         candidate.brand.slug === ad.brand.slug || candidate.creative_style === ad.creative_style,
     )
     .slice(0, 6);
+  const landingLinks = adLandingLinks(ad, allAds);
 
   const video = isVideoCreative(ad);
   const image = ad.thumbnail_url || ad.creative_url;
@@ -169,6 +173,17 @@ export default async function AdPage({ params }: { params: Promise<{ id: string 
             </div>
           </div>
         </div>
+
+        {landingLinks.length > 0 && (
+          <section aria-labelledby="ad-collections" className="ad-page__related">
+            <h2 id="ad-collections">Browse similar ads</h2>
+            <ul>
+              {landingLinks.map((link) => (
+                <li key={link.href}><Link href={link.href}>{link.label}</Link></li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {related.length > 0 && (
           <section aria-labelledby="related-ads" className="ad-page__related">

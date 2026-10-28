@@ -3,6 +3,8 @@ import { LibraryExplorer } from "@/components/library-explorer";
 import { isDemoMode } from "@/lib/config";
 import { getApprovedAds, getApprovedAdsPage } from "@/lib/data";
 import { getCuratedCollections } from "@/lib/collections";
+import { SeoLinks } from "@/components/seo-links";
+import { browseGroups } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,12 @@ export default async function HomePage() {
   ]);
   const initialCollections = getCuratedCollections(allAds);
   return (
-    <LibraryExplorer ads={ads} initialTotal={total} initialCollections={initialCollections} demoMode={isDemoMode} />
+    <LibraryExplorer
+      ads={ads}
+      initialTotal={total}
+      initialCollections={initialCollections}
+      demoMode={isDemoMode}
+      seoContent={<SeoLinks heading="Browse Indian food & beverage ads" groups={browseGroups(allAds)} />}
+    />
   );
 }

@@ -3,9 +3,11 @@ import type { Ad } from "@/lib/types";
 export type CollectionDefinition = {
   slug: string;
   name: string;
-  field: "creative_style";
+  field: LandingField;
   match: (ad: Ad) => boolean;
 };
+
+export type LandingField = "creative_style" | "category" | "selling_angle" | "format" | "language";
 
 type GalleryRecord = Pick<Ad, "brand_id" | "format"> & { creative_url?: string | null };
 
@@ -222,7 +224,45 @@ export function getCollectionAds(ads: Ad[], definition: CollectionDefinition) {
   return diversifyByBrand(distinctAds);
 }
 
+// Search-facing landing pages, one per value of each classified field. A value
+// only gets a page once it has enough distinct ads to be worth indexing.
+export const MIN_LANDING_SIZE = 6;
+// A value covering most of the library (e.g. English) would duplicate the homepage.
+const MAX_LANDING_SHARE = 0.8;
+
+const LANDING_FIELDS: Array<{ field: LandingField; prefix: string }> = [
+  { field: "category", prefix: "category" },
+  { field: "selling_angle", prefix: "angle" },
+  { field: "creative_style", prefix: "creative-style" },
+  { field: "format", prefix: "format" },
+  { field: "language", prefix: "language" },
+];
+
+export function getLandingDefinitions(ads: Ad[]): CollectionDefinition[] {
+  return LANDING_FIELDS.flatMap(({ field, prefix }) => {
+    const values = new Map<string, string>();
+    ads.forEach((ad) => {
+      const value = ad[field]?.trim();
+      if (value && !values.has(normalizeCollectionValue(value))) values.set(normalizeCollectionValue(value), value);
+    });
+    return Array.from(values.entries())
+      .map(([key, value]) => ({
+        slug: slugifyCollectionName(`${prefix}-${value}`),
+        name: value,
+        field,
+        match: (ad: Ad) => normalizeCollectionValue(ad[field]) === key,
+      }))
+      .filter((definition) => {
+        const size = getCollectionAds(ads, definition).length;
+        return size >= MIN_LANDING_SIZE && size <= ads.length * MAX_LANDING_SHARE;
+      })
+      .sort((left, right) => getCollectionAds(ads, right).length - getCollectionAds(ads, left).length);
+  });
+}
+
 export function getCollectionDefinition(slug: string, ads: Ad[]) {
+  const landing = getLandingDefinitions(ads).find((candidate) => candidate.slug === slug);
+  if (landing) return landing;
   const curated = curatedDefinitions().find((candidate) => candidate.slug === slug);
   if (curated && getCollectionAds(ads, curated).length >= 2) return curated;
   // Legacy AI-gated collections (e.g. creative-style-lifestyle) stay reachable.

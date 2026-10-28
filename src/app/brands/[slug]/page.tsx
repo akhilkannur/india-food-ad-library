@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LibraryExplorer } from "@/components/library-explorer";
+import { SeoLinks } from "@/components/seo-links";
 import { isDemoMode } from "@/lib/config";
 import { getApprovedAds } from "@/lib/data";
+import { brandCopy, browseGroups, MIN_INDEXABLE_BRAND_ADS, summarizeAds } from "@/lib/seo";
+import { SITE_NAME } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
 async function getBrandAds(slug: string) {
   const ads = await getApprovedAds();
-  return ads.filter((ad) => ad.brand.slug === slug);
+  return { ads, brandAds: ads.filter((ad) => ad.brand.slug === slug) };
 }
 
 export async function generateMetadata({
@@ -16,17 +19,21 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const ads = await getBrandAds((await params).slug);
-  const brand = ads[0]?.brand;
-  if (!brand) return { title: "Brand not found" };
+  const { brandAds } = await getBrandAds((await params).slug);
+  const brand = brandAds[0]?.brand;
+  if (!brand) return { title: "Brand not found", robots: { index: false, follow: true } };
 
+  const { description } = brandCopy(brandAds);
+  const title = `${brand.name} Ads — ${brandAds.length} Meta Ad Examples & Creatives`;
   return {
-    title: `${brand.name} Meta Ads & Creatives — Inspiration, Hooks & Formats`,
-    description: `Steal inspiration from ${ads.length} ${brand.name} Meta ad creatives — hooks, formats, angles and languages Indian DTC & food brand teams can reuse.`,
+    title,
+    description,
     alternates: { canonical: `/brands/${brand.slug}` },
+    // Very small brand pages are thin content; keep them crawlable but unindexed.
+    ...(brandAds.length < MIN_INDEXABLE_BRAND_ADS ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
-      title: `${brand.name} Meta Ads & Creatives — Inspiration, Hooks & Formats | F&B Ad Library`,
-      description: `Browse ${ads.length} ${brand.name} food & beverage ad creatives for hooks, formats and campaign ideas.`,
+      title: `${title} | ${SITE_NAME}`,
+      description,
       url: `/brands/${brand.slug}`,
     },
   };
@@ -37,18 +44,25 @@ export default async function BrandPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const ads = await getBrandAds((await params).slug);
-  if (!ads.length) notFound();
+  const { ads, brandAds } = await getBrandAds((await params).slug);
+  if (!brandAds.length) notFound();
 
-  const styles = Array.from(new Set(ads.map((ad) => ad.creative_style).filter(Boolean))).slice(0, 3);
+  const brand = brandAds[0].brand;
+  const { intro } = brandCopy(brandAds);
+  const peers = summarizeAds(ads.filter((ad) => ad.brand.category === brand.category && ad.brand.slug !== brand.slug))
+    .brands.filter((peer) => peer.count >= MIN_INDEXABLE_BRAND_ADS)
+    .slice(0, 10)
+    .map((peer) => ({ href: `/brands/${peer.slug}`, label: `${peer.name} ads` }));
 
   return (
     <LibraryExplorer
-      ads={ads}
+      ads={brandAds}
       demoMode={isDemoMode}
       showCollections={false}
-      pageTitle={`${ads[0].brand.name} ads`}
-      pageDescription={`${ads.length} Meta creatives from ${ads[0].brand.name} — ${styles.length ? `featuring ${styles.join(", ")} formats` : "across formats"} — for DTC & food brand teams looking for hooks, angles and inspiration.`}
+      pageTitle={`${brand.name} ads`}
+      pageDescription={intro}
+      intro={<SeoLinks groups={[{ title: `Other ${brand.category.toLowerCase()} brands`, links: peers }]} />}
+      seoContent={<SeoLinks heading="Explore more food & beverage ads" groups={browseGroups(ads)} />}
       backLabel="All ads"
     />
   );
