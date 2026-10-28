@@ -111,11 +111,12 @@ async function ensureBucket(env) {
   if (!/already exists|duplicate/i.test(text)) throw new Error(`Storage bucket ${response.status}: ${text.slice(0, 300)}`);
 }
 
+/** Returns null when the usage file is missing (first run or no bucket yet). */
 async function readUsage(env) {
   const response = await storageRequest(env, `object/${MIRROR_BUCKET}/${USAGE_PATH}`);
   if (!response.ok) {
     await response.body?.cancel();
-    return 0;
+    return null;
   }
   const usage = await response.json().catch(() => ({}));
   return Number.isFinite(usage.bytes) ? usage.bytes : 0;
@@ -191,8 +192,13 @@ export async function mirrorCreatives(env, supabase, limit) {
     .slice(0, batch);
   if (!work.length) return { ok: true, processed: 0, stored: 0, remaining: 0, results: [] };
 
-  await ensureBucket(env);
+  // The usage file only exists once the bucket does, so skip the bucket
+  // call (which hits the storage database) on every run after the first.
   let usage = await readUsage(env);
+  if (usage === null) {
+    await ensureBucket(env);
+    usage = 0;
+  }
   const startingUsage = usage;
   const results = [];
   const startedAt = Date.now();
