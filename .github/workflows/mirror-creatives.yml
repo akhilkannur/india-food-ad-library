@@ -27,7 +27,7 @@ concurrency:
 jobs:
   mirror:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - name: Copy pending creatives into storage
         env:
@@ -38,8 +38,12 @@ jobs:
           MAX_CALLS="${MAX_CALLS_INPUT:-60}"
           TOTAL_STORED=0
           FAILURES=0
+          DEADLINE=$(( $(date +%s) + 40 * 60 ))
           : > mirror-results.jsonl
           for CALL in $(seq 1 "$MAX_CALLS"); do
+            # Leave a large backlog for the next hourly run rather than hitting
+            # the job timeout.
+            if [ "$(date +%s)" -ge "$DEADLINE" ]; then echo "Time budget used; continuing next run."; break; fi
             if ! curl --fail-with-body --silent --show-error --max-time 300 \
               --request POST \
               --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
