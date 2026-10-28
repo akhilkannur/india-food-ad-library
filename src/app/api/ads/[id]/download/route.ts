@@ -4,10 +4,23 @@ const MEDIA_HOSTS = ["fbcdn.net", "fbsbx.com", "cdninstagram.com", "facebook.com
 const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
 const MEDIA_TIMEOUT_MS = 15_000;
 
+// Creatives copied out of the Meta CDN live in this project's public bucket.
+function isStoredCreativeUrl(url: URL) {
+  const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
+  if (!supabaseUrl) return false;
+  try {
+    const origin = new URL(supabaseUrl);
+    return url.host === origin.host && url.pathname.startsWith("/storage/v1/object/public/creatives/");
+  } catch {
+    return false;
+  }
+}
+
 function isTrustedMediaUrl(value: string) {
   try {
     const url = new URL(value);
     const hostname = url.hostname.toLowerCase();
+    if (url.protocol === "https:" && isStoredCreativeUrl(url)) return true;
     return url.protocol === "https:" && MEDIA_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`));
   } catch {
     return false;

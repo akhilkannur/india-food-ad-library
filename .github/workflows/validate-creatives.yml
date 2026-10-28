@@ -36,22 +36,49 @@ jobs:
           DRY_RUN_INPUT: ${{ inputs.dry_run }}
           LIMIT_INPUT: ${{ inputs.limit }}
         run: |
-          # Scheduled runs have no inputs: default to checking the full
-          # approved catalogue each night (worker caps at 2000).
+          # Only ads still served from the Meta CDN are checked; stored copies
+          # never expire. The worker checks 14 ads per call (Workers Free caps
+          # subrequests), so this pages through the set. A report-only sweep
+          # runs first and the real pass is skipped if more than 20% look
+          # broken, which protects the catalogue from a CDN outage.
           DRY_RUN="${DRY_RUN_INPUT:-false}"
           LIMIT="${LIMIT_INPUT:-2000}"
-          curl --fail-with-body --silent --show-error --max-time 600 \
-            --request POST \
-            --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
-            "$SCRAPER_WORKER_URL/validate?limit=$LIMIT&dry_run=$DRY_RUN" | tee validation-result.json
-      - name: Verify validation result
-        run: |
-          node -e 'const r = JSON.parse(require("fs").readFileSync("validation-result.json", "utf8")); if (r.error || typeof r.checked !== "number") { console.error(`Validation did not run: ${r.error || "unexpected response"}`); process.exit(1) } console.log(`Checked ${r.checked}; broken ${r.broken}; purged ${r.purged}; unresolved ${r.unresolved || 0} (retried next night)${r.dry_run ? " (dry run)" : ""}.`)'
+          sweep() {
+            local dry="$1" offset=0 checked=0 output="$2"
+            : > "$output"
+            while [ "$checked" -lt "$LIMIT" ]; do
+              curl --fail-with-body --silent --show-error --max-time 120 \
+                --request POST \
+                --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
+                "$SCRAPER_WORKER_URL/validate?offset=$offset&dry_run=$dry" > validate-call.json || { cat validate-call.json; return 1; }
+              cat validate-call.json >> "$output"; echo >> "$output"
+              read -r FETCHED NEXT DONE <<< "$(node -e 'const r = JSON.parse(require("fs").readFileSync("validate-call.json", "utf8")); if (r.error && typeof r.checked !== "number") { console.error(r.error); process.exit(1) } console.log(r.checked, r.next_offset, r.done)')" || return 1
+              checked=$((checked + FETCHED))
+              offset="$NEXT"
+              [ "$DONE" = "true" ] && break
+            done
+          }
+          summarize() {
+            node -e 'const rows = require("fs").readFileSync(process.argv[1], "utf8").trim().split("\n").filter(Boolean).map(JSON.parse); const sum = (key) => rows.reduce((total, row) => total + (row[key] || 0), 0); console.log(JSON.stringify({ checked: sum("checked"), broken: sum("broken"), purged: sum("purged"), fell_back_to_poster: sum("fell_back_to_poster"), unresolved: sum("unresolved") }))' "$1"
+          }
+          sweep true dry-run.jsonl
+          DRY=$(summarize dry-run.jsonl); echo "Report-only sweep: $DRY"
+          if [ "$DRY_RUN" = "true" ]; then echo "$DRY" > validation-result.json; exit 0; fi
+          if node -e 'const r = JSON.parse(process.argv[1]); process.exit(r.checked >= 20 && r.broken / r.checked > 0.2 ? 0 : 1)' "$DRY"; then
+            echo "$DRY" > validation-result.json
+            echo "Circuit breaker: over 20% of checked ads look broken. Nothing purged."
+            exit 1
+          fi
+          sweep false live-run.jsonl
+          summarize live-run.jsonl | tee validation-result.json
       - name: Upload validation report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: creative-validation-${{ github.run_id }}
-          path: validation-result.json
+          path: |
+            validation-result.json
+            dry-run.jsonl
+            live-run.jsonl
           if-no-files-found: warn
           retention-days: 30

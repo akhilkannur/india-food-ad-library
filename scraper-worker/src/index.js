@@ -6,6 +6,7 @@ import {
   shouldTripCircuitBreaker,
 } from "./creative-validation.js";
 import { selectDiverseCandidates } from "./diversity.js";
+import { isMirroredUrl, isSourceUrl, MAX_MIRROR_BATCH, mirrorCreatives, preserveMirroredUrls } from "./creative-mirror.js";
 
 const WORKERS_AI_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 const MAX_WORKERS_AI_CLASSIFICATIONS_PER_RUN = 25;
@@ -310,7 +311,7 @@ async function existingAdsForSourceIds(env, sourceIds) {
     if (!group.length) continue;
     rows.push(...await supabase(
       env,
-      `ads?source_ad_id=in.(${group.join(",")})&select=brand_id,source_ad_id,category,language,creative_style,selling_angle`,
+      `ads?source_ad_id=in.(${group.join(",")})&select=brand_id,source_ad_id,category,language,creative_style,selling_angle,creative_url,thumbnail_url`,
     ));
   }
   return rows;
@@ -782,15 +783,21 @@ async function pilotClassify(env, limit, offset) {
   return classifyAds(env, limit, offset, false, "approved");
 }
 
-const MAX_VALIDATIONS_PER_RUN = 2000;
-const VALIDATE_CONCURRENCY = 8;
+// Workers Free allows 50 subrequests per invocation: each check can cost two
+// (HEAD then ranged GET) plus one write, so the workflow pages through the
+// catalogue in small batches instead of one 2000-ad call.
+const MAX_VALIDATIONS_PER_RUN = 14;
+const VALIDATE_CONCURRENCY = 7;
 
-async function validateCreatives(env, limit, dryRun) {
+async function validateCreatives(env, limit, dryRun, offset = 0) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase secrets are missing");
-  const rows = await supabase(
+  // Stored copies never expire, so only ads still served from the Meta CDN
+  // need checking.
+  const fetched = await supabase(
     env,
-    `ads?status=eq.approved&select=id,source_ad_id,format,creative_url,thumbnail_url&order=updated_at.asc&limit=${limit}`,
+    `ads?status=eq.approved&or=(thumbnail_url.like.*fbcdn.net*,creative_url.like.*fbcdn.net*)&select=id,source_ad_id,format,creative_url,thumbnail_url&order=id.asc&offset=${offset}&limit=${limit}`,
   );
+  const rows = fetched.filter((ad) => isSourceUrl(previewUrlForValidation(ad)));
   const broken = [];
   const unresolved = [];
   let cursor = 0;
@@ -809,8 +816,19 @@ async function validateCreatives(env, limit, dryRun) {
   const circuitBreakerTripped = shouldTripCircuitBreaker(broken.length, rows.length);
 
   let purged = 0;
+  let fellBackToPoster = 0;
   if (!dryRun && broken.length && !circuitBreakerTripped) {
     for (const ad of broken) {
+      if (isMirroredUrl(ad.thumbnail_url, env.SUPABASE_URL)) {
+        // The video expired but its poster is stored: keep the ad as an image.
+        await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
+          method: "PATCH",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify({ creative_url: null, updated_at: new Date().toISOString() }),
+        });
+        fellBackToPoster += 1;
+        continue;
+      }
       await supabase(env, `ads?id=eq.${encodeURIComponent(ad.id)}`, {
         method: "DELETE",
       });
@@ -827,6 +845,11 @@ async function validateCreatives(env, limit, dryRun) {
     checked: rows.length,
     broken: broken.length,
     purged,
+    fell_back_to_poster: fellBackToPoster,
+    // Purged and poster-only ads leave the filtered set, so the next page
+    // starts earlier by that many rows.
+    next_offset: offset + fetched.length - purged - fellBackToPoster,
+    done: fetched.length < limit,
     circuit_breaker: circuitBreakerTripped,
     ...(failureReason ? { error: failureReason } : {}),
     unresolved: unresolved.length,
@@ -905,13 +928,13 @@ async function queueAds(env, discoveries) {
       const ad = { ...toAd(record, brand, timestamp), brand_id: brandId };
       const prior = existingBySource.get(record.id);
       if (prior) {
-        refreshRows.push({
+        refreshRows.push(preserveMirroredUrls({
           ...ad,
           category: prior.category || ad.category,
           language: prior.language || ad.language,
           creative_style: prior.creative_style || ad.creative_style,
           selling_angle: prior.selling_angle || ad.selling_angle,
-        });
+        }, prior, env.SUPABASE_URL));
         refreshed += 1;
       } else {
         candidates.push(ad);
@@ -1091,13 +1114,23 @@ const worker = {
     }
     if (request.method === "POST" && url.pathname === "/validate") {
       if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
-      const limit = boundedInteger(url.searchParams.get("limit"), 200, 1, MAX_VALIDATIONS_PER_RUN);
+      const limit = boundedInteger(url.searchParams.get("limit"), MAX_VALIDATIONS_PER_RUN, 1, MAX_VALIDATIONS_PER_RUN);
+      const offset = boundedInteger(url.searchParams.get("offset"), 0, 0, 100_000);
       const dryRun = (url.searchParams.get("dry_run") || "").toLowerCase();
       const isDryRun = dryRun === "" ? false : ["1", "true"].includes(dryRun);
       try {
-        return Response.json(await validateCreatives(env, limit, isDryRun));
+        return Response.json(await validateCreatives(env, limit, isDryRun, offset));
       } catch (error) {
         return Response.json({ error: error instanceof Error ? error.message : String(error), purged: 0 }, { status: 500 });
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/mirror") {
+      if (!authorized(request, env)) return new Response("Unauthorized", { status: 401 });
+      const limit = boundedInteger(url.searchParams.get("limit"), MAX_MIRROR_BATCH, 1, MAX_MIRROR_BATCH);
+      try {
+        return Response.json(await mirrorCreatives(env, supabase, limit));
+      } catch (error) {
+        return Response.json({ error: error instanceof Error ? error.message : String(error), stored: 0 }, { status: 500 });
       }
     }
     if (request.method !== "POST" || url.pathname !== "/run") return new Response("Not found", { status: 404 });

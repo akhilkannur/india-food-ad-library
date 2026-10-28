@@ -1,0 +1,65 @@
+name: Mirror ad creatives
+
+# Copies approved creatives off the expiring Meta CDN into Supabase Storage so
+# ads stay viewable after their signed source URLs expire. Each worker call
+# handles a small batch (Workers Free allows 50 subrequests per invocation),
+# so this job loops until the backlog is empty or the call budget runs out.
+"on":
+  schedule:
+    - cron: "20 * * * *"
+  workflow_run:
+    workflows: ["Run Indian food ad scraper"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      max_calls:
+        description: "Maximum worker calls this run (8 ads each)"
+        required: false
+        default: "60"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: creative-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Copy pending creatives into storage
+        env:
+          SCRAPER_WORKER_URL: ${{ secrets.SCRAPER_WORKER_URL }}
+          SCRAPER_RUN_TOKEN: ${{ secrets.SCRAPER_RUN_TOKEN }}
+          MAX_CALLS_INPUT: ${{ inputs.max_calls }}
+        run: |
+          MAX_CALLS="${MAX_CALLS_INPUT:-60}"
+          TOTAL_STORED=0
+          : > mirror-results.jsonl
+          for CALL in $(seq 1 "$MAX_CALLS"); do
+            if ! curl --fail-with-body --silent --show-error --max-time 120 \
+              --request POST \
+              --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
+              "$SCRAPER_WORKER_URL/mirror" > mirror-call.json; then
+              cat mirror-call.json
+              echo "Mirror call $CALL failed"
+              exit 1
+            fi
+            cat mirror-call.json >> mirror-results.jsonl
+            echo >> mirror-results.jsonl
+            read -r STORED REMAINING BYTES <<< "$(node -e 'const r = JSON.parse(require("fs").readFileSync("mirror-call.json", "utf8")); console.log(r.stored ?? 0, r.remaining ?? 0, r.storage_bytes ?? 0)')"
+            TOTAL_STORED=$((TOTAL_STORED + STORED))
+            echo "Call $CALL: stored $STORED; storage $((BYTES / 1048576)) MB; more waiting: $REMAINING"
+            [ "$REMAINING" = "0" ] && break
+          done
+          echo "Stored $TOTAL_STORED ads this run."
+      - name: Upload mirror report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: creative-mirror-${{ github.run_id }}
+          path: mirror-results.jsonl
+          if-no-files-found: warn
+          retention-days: 14
