@@ -37,16 +37,22 @@ jobs:
         run: |
           MAX_CALLS="${MAX_CALLS_INPUT:-60}"
           TOTAL_STORED=0
+          FAILURES=0
           : > mirror-results.jsonl
           for CALL in $(seq 1 "$MAX_CALLS"); do
-            if ! curl --fail-with-body --silent --show-error --max-time 120 \
+            if ! curl --fail-with-body --silent --show-error --max-time 300 \
               --request POST \
               --header "Authorization: Bearer $SCRAPER_RUN_TOKEN" \
               "$SCRAPER_WORKER_URL/mirror" > mirror-call.json; then
               cat mirror-call.json
-              echo "Mirror call $CALL failed"
-              exit 1
+              FAILURES=$((FAILURES + 1))
+              echo "Mirror call $CALL failed ($FAILURES in a row)"
+              # One slow batch should not stop the run; repeated failures mean
+              # something is actually broken.
+              [ "$FAILURES" -ge 3 ] && exit 1
+              continue
             fi
+            FAILURES=0
             cat mirror-call.json >> mirror-results.jsonl
             echo >> mirror-results.jsonl
             read -r STORED REMAINING BYTES <<< "$(node -e 'const r = JSON.parse(require("fs").readFileSync("mirror-call.json", "utf8")); console.log(r.stored ?? 0, r.remaining ?? 0, r.storage_bytes ?? 0)')"

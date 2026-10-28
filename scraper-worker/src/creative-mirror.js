@@ -15,6 +15,11 @@ export const MAX_VIDEO_BYTES = 8 * 1024 * 1024;
 export const VIDEO_SOURCE_ONLY_NOTE = "[video-source-only]";
 
 const DEAD_STATUSES = new Set([400, 401, 403, 404, 410]);
+const DOWNLOAD_TIMEOUT_MS = 25_000;
+const UPLOAD_TIMEOUT_MS = 45_000;
+// Stop starting new ads after this long so each call returns well inside the
+// workflow's request timeout; unfinished ads are picked up by the next call.
+const CALL_BUDGET_MS = 60_000;
 const USAGE_PATH = "_meta/usage.json";
 
 function baseUrl(env) {
@@ -135,6 +140,7 @@ async function copyAsset(env, sourceUrl, objectBase, maxBytes) {
         "User-Agent": "IndiaFoodAdLibrary/1.0 (creative-mirror)",
       },
       redirect: "follow",
+      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
     });
   } catch {
     return { status: "unresolved" };
@@ -148,7 +154,12 @@ async function copyAsset(env, sourceUrl, objectBase, maxBytes) {
     await source.body?.cancel();
     return { status: "too_large" };
   }
-  const bytes = new Uint8Array(await source.arrayBuffer());
+  let bytes;
+  try {
+    bytes = new Uint8Array(await source.arrayBuffer());
+  } catch {
+    return { status: "unresolved" };
+  }
   if (bytes.byteLength > maxBytes) return { status: "too_large" };
 
   const contentType = source.headers.get("content-type") || "application/octet-stream";
@@ -157,6 +168,7 @@ async function copyAsset(env, sourceUrl, objectBase, maxBytes) {
     method: "POST",
     headers: { "Content-Type": contentType, "x-upsert": "true", "Cache-Control": "max-age=31536000" },
     body: bytes,
+    signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
   });
   if (!upload.ok) throw new Error(`Storage upload ${upload.status}: ${(await upload.text()).slice(0, 300)}`);
   return { status: "stored", url: `${mirroredUrlPrefix(env.SUPABASE_URL)}${objectPath}`, bytes: bytes.byteLength };
@@ -183,8 +195,10 @@ export async function mirrorCreatives(env, supabase, limit) {
   let usage = await readUsage(env);
   const startingUsage = usage;
   const results = [];
+  const startedAt = Date.now();
 
   for (const { ad, plan } of work) {
+    if (Date.now() - startedAt > CALL_BUDGET_MS) break;
     const patch = {};
     const outcome = { id: ad.id };
 
@@ -234,7 +248,7 @@ export async function mirrorCreatives(env, supabase, limit) {
     storage_bytes: usage,
     over_budget: usage >= STORAGE_BUDGET_BYTES,
     // A full batch means more ads are probably waiting.
-    remaining: candidates.length > work.length || work.length === batch ? 1 : 0,
+    remaining: candidates.length > work.length || work.length === batch || results.length < work.length ? 1 : 0,
     results,
   };
 }
