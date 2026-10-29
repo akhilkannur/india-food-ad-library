@@ -1,6 +1,7 @@
 import type { Ad } from "@/lib/types";
 import { getLandingDefinitions, type CollectionDefinition, type LandingField } from "@/lib/collections";
 import { isVideoCreative } from "@/lib/media";
+import { getBrandCategoryDefinitions } from "@/lib/brand-categories";
 
 /** "Taste/craving" → "Taste & craving" so labels read naturally in titles. */
 export function displayLabel(value: string) {
@@ -161,6 +162,34 @@ export function brandCopy(ads: Ad[]) {
 /** Brand pages below this size are kept out of the index as thin content. */
 export const MIN_INDEXABLE_BRAND_ADS = 3;
 
+/** Brand-category hub pages below this size are noindex. */
+export const MIN_INDEXABLE_BRAND_CATEGORY_ADS = 15;
+
+/** SEO copy for a brand-category hub page (e.g. /brands/category/coffee). */
+export function brandCategoryCopy(categoryName: string, ads: Ad[]) {
+  const summary = summarizeAds(ads);
+  const topBrands = summary.brands.slice(0, 3).map((b) => b.name);
+  const title = `${categoryName} Brand Ads India — ${summary.total} Meta Ad Examples from ${summary.brands.length} Brands`;
+  const topStyle = summary.styles[0];
+  const topAngle = summary.angles[0];
+  const sentences = [
+    `${summary.total} Meta ads from ${summary.brands.length} Indian ${categoryName.toLowerCase()} brands, including ${listNames(topBrands)}.`,
+    summary.videoShare > 0 && summary.videoShare < 100 ? `${summary.videoShare}% are video creatives.` : null,
+    topStyle ? `The most common format is ${displayLabel(topStyle[0]).toLowerCase()} (${topStyle[1]} ads).` : null,
+    topAngle ? `Most ads lead with a ${displayLabel(topAngle[0]).toLowerCase()} message.` : null,
+    "Browse hooks, formats and CTAs side by side before your next brief.",
+  ].filter(Boolean) as string[];
+
+  return {
+    title,
+    description: clampText(
+      `Browse ${summary.total} Indian ${categoryName.toLowerCase()} brand Meta ads from ${listNames(topBrands)}. Real creatives with hooks, angles and CTAs for DTC teams.`,
+      158,
+    ),
+    intro: sentences.join(" "),
+  };
+}
+
 const GROUP_TITLES: Record<LandingField, string> = {
   category: "By category",
   selling_angle: "By message angle",
@@ -174,10 +203,11 @@ function landingLabel(definition: CollectionDefinition) {
   return definition.field === "selling_angle" ? `${name} angle ads` : `${name} ads`;
 }
 
-export function browseGroups(ads: Ad[], { exclude }: { exclude?: string } = {}) {
+export function browseGroups(ads: Ad[], { exclude, excludeCategorySlug }: { exclude?: string; excludeCategorySlug?: string } = {}) {
   const definitions = getLandingDefinitions(ads).filter((definition) => definition.slug !== exclude);
   const fields = Object.keys(GROUP_TITLES) as LandingField[];
   const brands = summarizeAds(ads).brands.filter((brand) => brand.count >= MIN_INDEXABLE_BRAND_ADS);
+  const brandCategories = getBrandCategoryDefinitions(ads).filter((c) => c.slug !== excludeCategorySlug);
   return [
     ...fields.map((field) => ({
       title: GROUP_TITLES[field],
@@ -185,6 +215,10 @@ export function browseGroups(ads: Ad[], { exclude }: { exclude?: string } = {}) 
         .filter((definition) => definition.field === field)
         .map((definition) => ({ href: `/collections/${definition.slug}`, label: landingLabel(definition) })),
     })),
+    {
+      title: "By brand category",
+      links: brandCategories.map((c) => ({ href: `/brands/category/${c.slug}`, label: `${c.name} ads` })),
+    },
     {
       title: "By brand",
       links: brands.map((brand) => ({ href: `/brands/${brand.slug}`, label: `${brand.name} ads` })),
