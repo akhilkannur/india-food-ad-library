@@ -20,7 +20,7 @@ import { isVideoCreative, type MediaFilter } from "@/lib/media";
 
 type SortOrder = "newest" | "oldest";
 const AD_BATCH_SIZE = 36;
-const FREE_AD_OPEN_LIMIT = 10;
+const FREE_AD_OPEN_LIMIT = 3;
 const OPENED_ADS_KEY = "ifal-opened-ads";
 
 function uniqueValues(values: Array<string | null | undefined>) {
