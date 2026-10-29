@@ -5,7 +5,9 @@ import { SeoLinks } from "@/components/seo-links";
 import { isDemoMode } from "@/lib/config";
 import { getApprovedAds } from "@/lib/data";
 import { brandCopy, browseGroups, MIN_INDEXABLE_BRAND_ADS, summarizeAds } from "@/lib/seo";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
+
+const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +37,7 @@ export async function generateMetadata({
       title: `${title} | ${SITE_NAME}`,
       description,
       url: `/brands/${brand.slug}`,
+      images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: title }],
     },
   };
 }
@@ -54,16 +57,28 @@ export default async function BrandPage({
     .slice(0, 10)
     .map((peer) => ({ href: `/brands/${peer.slug}`, label: `${peer.name} ads` }));
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Ad library", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: `${brand.name} ads`, item: `${SITE_URL}/brands/${brand.slug}` },
+    ],
+  };
+
   return (
-    <LibraryExplorer
-      ads={brandAds}
-      demoMode={isDemoMode}
-      showCollections={false}
-      pageTitle={`${brand.name} ads`}
-      pageDescription={intro}
-      intro={<SeoLinks groups={[{ title: `Other ${brand.category.toLowerCase()} brands`, links: peers }]} />}
-      seoContent={<SeoLinks heading="Explore more food & beverage ads" groups={browseGroups(ads)} />}
-      backLabel="All ads"
-    />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <LibraryExplorer
+        ads={brandAds}
+        demoMode={isDemoMode}
+        showCollections={false}
+        pageTitle={`${brand.name} ads`}
+        pageDescription={intro}
+        intro={<SeoLinks groups={[{ title: `Other ${brand.category.toLowerCase()} brands`, links: peers }]} />}
+        seoContent={<SeoLinks heading="Explore more food & beverage ads" groups={browseGroups(ads)} />}
+        backLabel="All ads"
+      />
+    </>
   );
 }

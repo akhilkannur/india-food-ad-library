@@ -8,6 +8,8 @@ import { getApprovedAds } from "@/lib/data";
 import { browseGroups, landingCopy } from "@/lib/seo";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
+const OG_IMAGE = `${SITE_URL}/og-image.png`;
+
 export const dynamic = "force-dynamic";
 
 async function getCollection(slug: string) {
@@ -35,6 +37,7 @@ export async function generateMetadata({
       title: `${copy.title} | ${SITE_NAME}`,
       description: copy.description,
       url: `/collections/${slug}`,
+      images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: copy.title }],
     },
   };
 }
@@ -71,9 +74,19 @@ export default async function CollectionPage({
     label: `${brand.name} (${brand.count})`,
   }));
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Ad library", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: copy.heading, item: canonical },
+    ],
+  };
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <LibraryExplorer
         ads={collectionAds}
         demoMode={isDemoMode}

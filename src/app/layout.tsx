@@ -4,6 +4,8 @@ import "./base.css";
 import "./product.css";
 import { SITE_DEFAULT_DESCRIPTION, SITE_DEFAULT_TITLE, SITE_NAME, SITE_URL } from "@/lib/site";
 
+const OG_IMAGE = `${SITE_URL}/og-image.png`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -32,11 +34,13 @@ export const metadata: Metadata = {
     title: SITE_DEFAULT_TITLE,
     description: SITE_DEFAULT_DESCRIPTION,
     url: "/",
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: "F&B Ad Library — Indian food & beverage ad inspiration" }],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_DEFAULT_TITLE,
     description: SITE_DEFAULT_DESCRIPTION,
+    images: [OG_IMAGE],
   },
   robots: {
     index: true,
