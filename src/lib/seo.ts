@@ -72,29 +72,29 @@ const FIELD_COPY: Record<LandingField, {
   noun: (name: string) => string;
 }> = {
   category: {
-    heading: (name) => `${name} ads from Indian brands`,
-    title: (name, total, brands) => `${name} Ads in India — ${total} Meta Ad Examples${brands > 1 ? ` from ${brands} Brands` : ""}`,
-    noun: (name) => `${name.toLowerCase()} ads`,
+    heading: (name) => `${name} Facebook ad examples from Indian brands`,
+    title: (name, total, brands) => `${name} Facebook Ad Examples — ${total} Indian Meta Creatives${brands > 1 ? ` (${brands} Brands)` : ""}`,
+    noun: (name) => `${name.toLowerCase()} ad examples`,
   },
   selling_angle: {
-    heading: (name) => `${name}-led food & beverage ads`,
-    title: (name, total) => `${name} Angle Food Ads — ${total} Indian Meta Ad Examples`,
-    noun: (name) => `food and beverage ads selling on ${name.toLowerCase()}`,
+    heading: (name) => `${name}-angle Facebook ad examples`,
+    title: (name, total) => `${name} Angle Facebook Ad Examples — ${total} Indian Food Ads`,
+    noun: (name) => `food and beverage ad examples selling on ${name.toLowerCase()}`,
   },
   creative_style: {
-    heading: (name) => `${name} food ads`,
-    title: (name, total) => `${name} Food Ads — ${total} Indian Meta Ad Examples`,
-    noun: (name) => `${name.toLowerCase()} creatives`,
+    heading: (name) => `${name} Facebook ad examples`,
+    title: (name, total) => `${name} Facebook Ad Examples — ${total} Indian Food & Beverage Ads`,
+    noun: (name) => `${name.toLowerCase()} ad examples`,
   },
   format: {
-    heading: (name) => `${name} food & beverage ads`,
-    title: (name, total) => `${name} Food & Beverage Ads — ${total} Indian Meta Ad Examples`,
-    noun: (name) => `${name.toLowerCase()} ads`,
+    heading: (name) => `${name} ad creative examples`,
+    title: (name, total) => `${name} Facebook Ad Examples — ${total} Indian Food Creatives`,
+    noun: (name) => `${name.toLowerCase()} ad examples`,
   },
   language: {
-    heading: (name) => `${name} food & beverage ads`,
-    title: (name, total) => `${name} Food Ads — ${total} Indian Meta Ad Examples`,
-    noun: (name) => `${name}-language food and beverage ads`,
+    heading: (name) => `${name} Facebook ad examples`,
+    title: (name, total) => `${name} Facebook Ad Examples — ${total} Indian Creatives`,
+    noun: (name) => `${name}-language ad examples`,
   },
 };
 
@@ -169,7 +169,7 @@ export const MIN_INDEXABLE_BRAND_CATEGORY_ADS = 15;
 export function brandCategoryCopy(categoryName: string, ads: Ad[]) {
   const summary = summarizeAds(ads);
   const topBrands = summary.brands.slice(0, 3).map((b) => b.name);
-  const title = `${categoryName} Brand Ads India — ${summary.total} Meta Ad Examples from ${summary.brands.length} Brands`;
+  const title = `${categoryName} Facebook Ad Examples — ${summary.total} Meta Creatives from ${summary.brands.length} Indian Brands`;
   const topStyle = summary.styles[0];
   const topAngle = summary.angles[0];
   const sentences = [

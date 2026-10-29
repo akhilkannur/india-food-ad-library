@@ -14,14 +14,18 @@ export const metadata: Metadata = {
   },
   description: SITE_DEFAULT_DESCRIPTION,
   keywords: [
+    "best facebook ads examples",
+    "meta ads examples",
+    "facebook ad examples",
+    "indian brand ads",
+    "meta ads swipe file",
+    "facebook ads swipe file",
+    "food ads examples",
+    "ad creative examples",
+    "facebook ads inspiration",
     "indian food ads",
-    "indian beverage ads",
     "dtc ad inspiration",
-    "meta ads swipe file india",
-    "food creative examples",
     "ugc ads india",
-    "product demo ads",
-    "recipe ads",
   ],
   authors: [{ name: "LISN Agency", url: "https://lisn.agency" }],
   creator: "LISN Agency",
@@ -34,7 +38,7 @@ export const metadata: Metadata = {
     title: SITE_DEFAULT_TITLE,
     description: SITE_DEFAULT_DESCRIPTION,
     url: "/",
-    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: "F&B Ad Library — Indian food & beverage ad inspiration" }],
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: "Best Facebook Ad Examples — Indian Food & Beverage Ad Library" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -67,6 +71,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     url: SITE_URL,
     description: SITE_DEFAULT_DESCRIPTION,
     inLanguage: "en-IN",
+    about: [
+      { "@type": "Thing", name: "Advertising" },
+      { "@type": "Thing", name: "Digital Marketing" },
+      { "@type": "Thing", name: "Facebook Advertising" },
+      { "@type": "Thing", name: "Creative Strategy" },
+    ],
   };
   return (
     <html lang="en">

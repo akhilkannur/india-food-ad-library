@@ -9,7 +9,7 @@ export function siteUrl(path: string) {
 
 export const SITE_NAME = "F&B Ad Library";
 
-export const SITE_DEFAULT_TITLE = "F&B Ad Library — Indian Food & Beverage Ad Inspiration for DTC Teams";
+export const SITE_DEFAULT_TITLE = "Best Facebook Ad Examples — Indian Food & Beverage Meta Ads Swipe File";
 
 export const SITE_DEFAULT_DESCRIPTION =
-  "A swipe file of 1,000+ Indian food & beverage Meta ads — hooks, formats, UGC, product demos and recipe creatives DTC and brand teams can steal inspiration from. Updated weekly.";
+  "A swipe file of 1,000+ top-performing Facebook ad examples and Meta creatives from Indian food & beverage brands. Compare hooks, video formats, UGC, and ad copy for DTC teams. Updated weekly.";

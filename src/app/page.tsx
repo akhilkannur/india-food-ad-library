@@ -10,12 +10,12 @@ import { SITE_URL } from "@/lib/site";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Indian Food & Beverage Ad Inspiration — 1,000+ Meta Creatives",
+  title: "Best Facebook Ad Examples — 1,000+ Indian Food & Beverage Creatives",
   description:
-    "Browse 1,000+ Indian food & beverage Meta ads by brand, format, hook and angle. A swipe file of product demos, UGC, recipe creatives and offers for DTC & brand teams.",
+    "Browse 1,000+ top-performing Facebook ad examples and Meta creatives from Indian food & beverage brands. A swipe file of hooks, video formats, UGC, and ad copy for DTC teams.",
   alternates: { canonical: "/" },
   openGraph: {
-    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: "F&B Ad Library — Indian food & beverage ad inspiration" }],
+    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: "Best Facebook Ad Examples — Indian Food & Beverage Ad Library" }],
   },
 };
 

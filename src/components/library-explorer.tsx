@@ -285,13 +285,13 @@ export function LibraryExplorer({
           )}
 
           {showCollections && (
-            <>
-              <h1 className="visually-hidden">F&amp;B Ad Library — Indian food &amp; beverage ad inspiration for DTC teams</h1>
-              <p className="visually-hidden">
-                A swipe file of Indian food and beverage Meta ads. Browse creatives by brand, format, hook and
-                selling angle for campaign inspiration.
+            <header className="collection-page-heading">
+              <h1>Best Facebook Ad Examples &amp; Creatives</h1>
+              <p>
+                A swipe file of 1,000+ Indian food &amp; beverage Meta ad examples. Browse high-converting hooks,
+                video formats, UGC, and ad copy from top D2C brands. Updated weekly.
               </p>
-            </>
+            </header>
           )}
 
           <ResultsToolbar

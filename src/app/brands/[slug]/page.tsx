@@ -26,7 +26,7 @@ export async function generateMetadata({
   if (!brand) return { title: "Brand not found", robots: { index: false, follow: true } };
 
   const { description } = brandCopy(brandAds);
-  const title = `${brand.name} Ads — ${brandAds.length} Meta Ad Examples & Creatives`;
+  const title = `${brand.name} Facebook Ad Examples — ${brandAds.length} Meta Creatives & Hooks`;
   return {
     title,
     description,
