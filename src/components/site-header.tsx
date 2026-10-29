@@ -34,7 +34,7 @@ export function SiteHeader({
         </div>
 
         {!admin && <nav className="workspace-nav" aria-label="Library navigation">
-          <a href="https://lisnagency.online" target="_blank" rel="noreferrer">
+          <a href="https://lisn.agency" target="_blank" rel="noreferrer">
             Made with <span className="workspace-nav__heart" aria-label="love" role="img">♥</span> by LISN
           </a>
         </nav>}

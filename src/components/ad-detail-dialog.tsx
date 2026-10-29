@@ -110,7 +110,7 @@ export function AdDetailDialog({ ad, onClose, onUnavailable }: { ad: Ad | null; 
             </div>
             <aside className="ad-dialog__lisn-cta">
               <p>Have a brief for your food brand?</p>
-              <a href="https://lisnagency.online" target="_blank" rel="noreferrer">See what LISN does <ArrowUpRight aria-hidden="true" size={14} strokeWidth={1.8} /></a>
+              <a href="https://lisn.agency" target="_blank" rel="noreferrer">See what LISN does <ArrowUpRight aria-hidden="true" size={14} strokeWidth={1.8} /></a>
             </aside>
           </div>
         </div>

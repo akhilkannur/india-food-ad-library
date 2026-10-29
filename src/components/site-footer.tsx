@@ -12,7 +12,7 @@ export function SiteFooter() {
         {" · "}
         <Link href="/#all-ads">All ads</Link>
       </nav>
-      <p>An ad research project by <a href="https://lisnagency.online" target="_blank" rel="noreferrer">LISN Agency</a>, a creative studio for D2C brands.</p>
+      <p>An ad research project by <a href="https://lisn.agency" target="_blank" rel="noreferrer">LISN Agency</a>, a creative studio for D2C brands. Say hello: <a href="mailto:akhil@lisn.agency">akhil@lisn.agency</a></p>
       <p>Source creatives remain the property of their advertisers.</p>
       <p>Meta ad creative · source links included where available</p>
     </footer>

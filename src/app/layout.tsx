@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     "product demo ads",
     "recipe ads",
   ],
-  authors: [{ name: "LISN Agency", url: "https://lisnagency.online" }],
+  authors: [{ name: "LISN Agency", url: "https://lisn.agency" }],
   creator: "LISN Agency",
   alternates: {
     canonical: "/",
@@ -54,7 +54,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "LISN Agency",
-    url: "https://lisnagency.online",
+    url: "https://lisn.agency",
   };
   const siteJsonLd = {
     "@context": "https://schema.org",
