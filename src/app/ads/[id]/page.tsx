@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { getApprovedAd, getApprovedAds } from "@/lib/data";
-import { isVideoCreative } from "@/lib/media";
+import { isPreviewUnavailable, isVideoCreative } from "@/lib/media";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { adLandingLinks, clampText } from "@/lib/seo";
 
@@ -36,6 +36,16 @@ export async function generateMetadata({
   const { id } = await params;
   const ad = await getApprovedAd(id);
   if (!ad) return { title: "Ad not found", robots: { index: false, follow: false } };
+
+  // Dead-creative ads (mirroring failed or CDN expired) are thin content — keep
+  // them crawlable so Googlebot can follow internal links but don't index them.
+  const unavailable = isPreviewUnavailable(ad);
+  if (unavailable) {
+    return {
+      title: adTitle(ad),
+      robots: { index: false, follow: true },
+    };
+  }
 
   const title = adTitle(ad);
   const description = adDescription(ad);

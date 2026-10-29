@@ -3,6 +3,7 @@ import { getApprovedAds } from "@/lib/data";
 import { getLandingDefinitions } from "@/lib/collections";
 import { MIN_INDEXABLE_BRAND_ADS, summarizeAds } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
+import { isPreviewUnavailable } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ads 404, and thin brand pages carry noindex.
   const brands = summarizeAds(ads).brands.filter((brand) => brand.count >= MIN_INDEXABLE_BRAND_ADS);
 
+  // Only index ads whose creative is still available — dead-creative pages
+  // carry noindex so there's no point listing them in the sitemap.
+  const indexableAds = ads.filter((ad) => !isPreviewUnavailable(ad));
+
   return [
     ...home,
     ...getLandingDefinitions(ads).map((definition) => ({
@@ -45,7 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),
-    ...ads.map((ad) => ({
+    ...indexableAds.map((ad) => ({
       url: `${SITE_URL}/ads/${ad.id}`,
       lastModified: new Date(ad.last_seen_at || ad.approved_at || ad.submitted_at),
       changeFrequency: "monthly" as const,
