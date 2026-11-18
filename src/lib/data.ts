@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { diversifyByBrandAndMedia } from "@/lib/collections";
 import { isFoodCreative } from "@/lib/curation";
@@ -144,16 +145,28 @@ export async function getApprovedAds(): Promise<Ad[]> {
   }
 }
 
-export async function getApprovedAd(id: string): Promise<Ad | null> {
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// cache() dedupes the lookup between generateMetadata and the page render.
+export const getApprovedAd = cache(async (id: string): Promise<Ad | null> => {
   if (!hasDatabase) {
     return demoAds.find((ad) => ad.id === id && ad.status === "approved") || null;
   }
+
+  // ads.id is a uuid column: anything else makes Postgres error (500) instead of 404.
+  if (!UUID_PATTERN.test(id)) return null;
+
+  // Serve from the warm per-isolate catalogue when we have it.
+  const warm = memoryAds && memoryAds.expiresAt > Date.now()
+    ? memoryAds.ads.find((ad) => ad.id === id)
+    : undefined;
+  if (warm) return warm;
 
   const rows = await supabaseFetch<Ad[]>(
     `ads?select=*,brand:brands(*)&id=eq.${encodeURIComponent(id)}&status=eq.approved&limit=1`,
   );
   return rows[0] || null;
-}
+});
 
 export async function getApprovedAdsPage({
   limit = 36,

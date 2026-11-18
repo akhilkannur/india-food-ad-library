@@ -5,7 +5,7 @@ import { SeoLinks } from "@/components/seo-links";
 import { isDemoMode } from "@/lib/config";
 import { getApprovedAds } from "@/lib/data";
 import { brandCategoryCopy, browseGroups, MIN_INDEXABLE_BRAND_CATEGORY_ADS, summarizeAds } from "@/lib/seo";
-import { slugifyBrandCategory, getBrandCategoryAds } from "@/lib/brand-categories";
+import { getBrandCategoryAds } from "@/lib/brand-categories";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
